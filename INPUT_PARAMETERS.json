@@ -1,0 +1,19 @@
+{
+    "XUD_x_row_index": 0,
+    "XUD_y_row_index": 1,
+    "XUD_u_row_index": 2,
+    "XUD_v_row_index": 3,
+    "XUD_disa_row_index": 5,
+    "XUD_pressure_row_index": 6,
+    "TMD_move_row_index": 1,
+    "pressure_min_value_contour": 0,
+    "pressure_max_value_contour": 1000,
+    "snapshot_dpi": 100,
+    "timestep_ms": 50,
+    "snap_start_time_ms": 50,
+    "snap_end_time_ms": 1000,
+    "xlim_min": -0.2,
+    "xlim_max": 0.8,
+    "ylim_min": -0.02,
+    "ylim_max": 0.4
+}

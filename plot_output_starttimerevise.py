@@ -1,10 +1,12 @@
+import json
 import os
+from dataclasses import dataclass
+from pathlib import Path
 
 import matplotlib
 import matplotlib.collections as mcoll
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
-import matplotlib.style as mplstyle
 import matplotlib.ticker as mticker
 import numpy as np
 from matplotlib.cm import ScalarMappable
@@ -58,94 +60,70 @@ from matplotlib.colors import Normalize, to_rgba
 # # )
 
 
+@dataclass(frozen=True)
+class Dataclass_Input_Parameters:
+    XUD_x_row_index: int = 0
+    XUD_y_row_index: int = 1
+    XUD_u_row_index: int = 2
+    XUD_v_row_index: int = 3
+    XUD_disa_row_index: int = 5
+    XUD_pressure_row_index: int = 6
+    TMD_move_row_index: int = 1
+    pressure_min_value_contour: int = 0
+    pressure_max_value_contour: int = 2000
+    snapshot_dpi: int = 100
+    timestep_ms: int = (
+        50  # datファイルの00050のとこ.　SNAPの出力時間間隔が違う場合に注意
+    )
+    snap_start_time_ms: int = 50
+    snap_end_time_ms: int = 1000
+    xlim_min: float = 0.0
+    xlim_max: float = 115.0
+    ylim_min: float = 0.0
+    ylim_max: float = 115.0
+
+
+def construct_input_parameters_dataclass() -> Dataclass_Input_Parameters:
+    with open("./INPUT_PARAMETERS.json", mode="r") as f:
+        INPUT_PARAMETERS = Dataclass_Input_Parameters(json.load(f))
+
+    return INPUT_PARAMETERS
+
+
+INPUT_PARAMETERS = construct_input_parameters_dataclass()
+
+
 def SetFrameRange_ByAllDAT(start_time: str, frame_skip: int) -> list[int]:
     int_second_starttime = int(start_time)
     print(int_second_starttime)
     for i in range(int_second_starttime, 100010, frame_skip):
         # print(f"./OUTPUT/SNAP/XUD{str(i).zfill(5)}.DAT")
         if not os.path.isfile(f"./OUTPUT/SNAP/XUD{str(i).zfill(5)}.DAT"):
-            frame_range = np.arange(int_second_starttime, i, frame_skip)
+            snap_time_array_ms = np.arange(int_second_starttime, i, frame_skip)
             print(
-                "frame_range generate break ", f"./OUTPUT/SNAP/XUD{str(i).zfill(5)}.DAT"
+                "snap_time_array_ms generate break ",
+                f"./OUTPUT/SNAP/XUD{str(i).zfill(5)}.DAT",
             )
             break
     else:
-        frame_range = None  # error
+        snap_time_array_ms = None  # error
 
-    return frame_range
+    return snap_time_array_ms
 
 
-def GetXlimAndYlimByShoki():
-    xudisa = np.loadtxt(f"./INPUT/XUDISA.DAT")
-    par = xudisa[:, (0, 1, -1)]  # [x,y,disa]
-
-    minx0, minx1 = np.amin(par[:, :], axis=0)[:2]
-    maxx0, maxx1 = np.amax(par[:, :], axis=0)[:2]
-
-    add_len_x0 = (maxx0 - minx0) / 20
-    add_len_x1 = (maxx1 - minx1) / 20
-
-    return (
-        minx0 - add_len_x0,
-        maxx0 + add_len_x0,
-        minx1 - add_len_x1,
-        maxx1 + add_len_x1,
+def get_x_y_disa_physics(
+    snap_time_ms: int, physics_row_index: int
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    par_data = np.loadtxt(
+        rf"./OUTPUT/SNAP/XUD{snap_time_ms:05}.DAT", usecols=(0, 1, 4, 5)
     )
 
+    x = par_data[:, INPUT_PARAMETERS.XUD_x_row_index]
+    y = par_data[:, INPUT_PARAMETERS.XUD_y_row_index]
+    disa = par_data[:, INPUT_PARAMETERS.XUD_disa_row_index]
+    physics = par_data[:, physics_row_index]
 
-def InitPlotForFixedWall(ax, frame_skip):
-    # 最初のプロットを使って差分更新と更新しないプロットを分ける
-    xud = np.loadtxt(f"./OUTPUT/SNAP/XUD{str(frame_skip*1).zfill(5)}.DAT")
-    tmd = np.loadtxt(f"./OUTPUT/SNAP/TMD{str(frame_skip*1).zfill(5)}.DAT")
-
-    par = xud[:, (0, 1, 5)]  # [x,y,disa]
-    nump = len(par)
-
-    color = ["aqua", "rosybrown", "brown", "black", "violet", "magenta"]
-    vector = np.vectorize(np.int_)
-    par_color_idx = vector(tmd[:, (1)])  # [color]
-    par_color = np.array([color[i] for i in par_color_idx])
-
-    # ボトルネック
-    circles = [
-        patches.Circle((par[i, 0], par[i, 1]), par[i, -1] / 2)
-        for i in range(len(par_color))
-    ]
-    idx_ax = set([i for i in range(nump) if par_color_idx[i] in {1, 2}])
-    idx_sabun = set([i for i in range(nump) if par_color_idx[i] not in {1, 2}])
-    circles_ax = [circles[i] for i in range(nump) if i in idx_ax]
-    circles_sabun = [circles[i] for i in range(nump) if i in idx_sabun]
-    color_ax = [par_color[i] for i in range(nump) if i in idx_ax]
-    color_sabun = [par_color[i] for i in range(nump) if i in idx_sabun]
-
-    # Collectionを作成して円を追加
-    collection_ax = mcoll.PatchCollection(circles_ax, color=color_ax, linewidth=0)
-    collection_sabun = mcoll.PatchCollection(
-        circles_sabun, color=color_sabun, linewidth=0
-    )
-
-    # サブプロットにCollectionを追加
-    ax.add_collection(collection_ax)
-    sabun = ax.add_collection(collection_sabun)
-
-    return sabun
-
-
-def GetParDat(cur_time):
-    # xud = np.loadtxt(rf"./OUTPUT/SNAP/XUD{cur_time:05}.DAT", usecols=(0, 1, 4, 5))
-
-    xud = np.loadtxt(rf"./OUTPUT/SNAP/XUD{cur_time:05}.DAT", usecols=(0, 1, 4, 5))
-    print(xud.shape)
-
-    x = xud[:, 0]
-    y = xud[:, 1]
-    r = xud[:, 3] / 2
-    p = xud[:, 2]
-    nump = len(x)
-
-    assert nump == len(y) and nump == len(r) and nump == len(p)
-
-    return x, y, r, p, nump
+    return x[:], y[:], disa[:], physics[:]
 
 
 def GetParColorByMove(cur_time):
@@ -206,40 +184,45 @@ def ChangeColorOfDummyPar(cur_time, par_color, change_color):
             # par_color[i] = (0, 0, 0, 0)  # 透明
 
 
-def PlotBypatchcollection(ax, x, y, r, p, par_color, nump):
-    circles = [patches.Circle((x[i], y[i]), r[i]) for i in range(nump)]
-
-    # Collectionを作成して円を追加
-    # 個々のオブジェクトのcolorを上書きしてしまうので注意
-    collection = mcoll.PatchCollection(
-        circles, match_original=True, facecolor=par_color, linewidth=0
-    )
-
-    # サブプロットにCollectionを追加
-    ax.add_collection(collection)
-
-
-def CalcSizeForScatter(fig, ax, r, maxx, minx):
+def CalcSizeForScatter(fig: plt.Figure, ax: plt.Axes, par_disa: np.ndarray) -> float:
     ppi = 72
     ax_size_inch = ax.figure.get_size_inches()
     ax_w_inch = ax_size_inch[0] * (
         ax.figure.subplotpars.right - ax.figure.subplotpars.left
     )
-    ax_w_px = ax_w_inch * fig.get_dpi()
-    size = 2 * r[:] * (ax_w_px / (maxx - minx)) * (ppi / fig.dpi)
+    ax_w_px = ax_w_inch * fig.dpi
+    size = (
+        par_disa[:]
+        * (ax_w_px / (INPUT_PARAMETERS.xlim_max - INPUT_PARAMETERS.xlim_min))
+        * (ppi / fig.dpi)
+    )
 
     return size
 
 
-def PlotByScatter(fig, ax, x, y, r, par_color, maxx, minx):
-    size = CalcSizeForScatter(fig, ax, r, maxx, minx)
-    ax.scatter(x[:], y[:], linewidths=0, s=size**2, c=par_color[:])
+def PlotByScatter(fig, ax, par_x, par_y, par_disa, par_color, maxx, minx):
+    size = CalcSizeForScatter(fig, ax, r, maxx, minx) ** 2
+    ax.scatter(x[:], y[:], linewidths=0, s=size, c=par_color[:])
 
 
-def GetParColorByPressureContour(p, cmap, norm):
-    par_color = cmap(norm(p))
+# TODO よくないので修正
+def set_facecolor_by_physics_contour(
+    physics_name: str, par_physics: np.ndarray
+) -> np.ndarray:
+    #! 任意のカラーマップを選択
+    cmap = matplotlib.colormaps.get_cmap("rainbow")
 
-    return par_color
+    #! 圧力コンターの最小，最大値設定
+    if physics_name == "pressure":
+        for_coloring_min = INPUT_PARAMETERS.pressure_min_value_contour
+        for_coloring_max = INPUT_PARAMETERS.pressure_max_value_contour
+
+    norm = Normalize(vmin=for_coloring_min, vmax=for_coloring_max)
+    #!----------------------------------------------------------
+
+    par_color = cmap(norm(par_physics[:]))
+
+    return par_color[:]
 
 
 #!　Colorbarのいろいろな調整
@@ -262,85 +245,75 @@ def PlotColorBar(ax, norm, cmap):
     ).set_label(r"Pressure [Pa]")
 
 
-#! 1フレームごとの描画の部分
-def update(frame, fig, ax, frame_skip, minx, maxx, miny, maxy, cmap, norm):
-    cur_time = frame * frame_skip  # ms
-    plt.cla()
-
-    ax.set_xlim(minx, maxx)
-    ax.set_ylim(miny, maxy)
+# 色だけでグループ分けするか，色の配列作って最後にgroupby
+# svg出力は一番最後にax.axis("off")とかやって出力するか？
+def make_snap_contour(
+    fig: plt.Figure,
+    ax: plt.Axes,
+    snap_time_ms: int,
+    save_dir_of_snap_path: Path,
+    physics_row_index: int,
+    physics_name: str,
+) -> None:
+    ax.set_xlim(INPUT_PARAMETERS.xlim_min, INPUT_PARAMETERS.xlim_max)
+    ax.set_ylim(INPUT_PARAMETERS.ylim_min, INPUT_PARAMETERS.ylim_max)
     ax.set_xlabel(r"$x \mathrm{(m)}$")
     ax.set_ylabel(r"$y \mathrm{(m)}$")
     ax.minorticks_on()
-    ax.set_title(rf"$t=$ {round(cur_time*1E-3,3):.2f}s")
+    ax.set_title(rf"$t=$ {snap_time_ms/1000:.3}s")
 
-    x, y, r, p, nump = GetParDat(cur_time)
+    par_x, par_y, par_disa, par_physics = get_x_y_disa_physics(
+        snap_time_ms=snap_time_ms, physics_row_index=physics_row_index
+    )
 
     #! 色付け方法選択
-    # par_color = GetParColorByMove(cur_time)
-    par_color = GetParColorByPressureContour(p, cmap, norm)
-    # par_color = GetParColorByBconForHakokeisoku(cur_time)
+    par_color = set_facecolor_by_physics_contour(
+        physics_name=physics_name, par_physics=par_physics[:]
+    )
 
     #! Check Coloring Porous Area By Specific Color
     # ChangeColorInPorousArea(x, y, par_color, nump)
 
     #! Check Coloring WallPar Black
-    ChangeColorOfWallPar(cur_time, par_color, change_color="black")
-    ChangeColorOfDummyPar(cur_time, par_color, change_color="black")
+    # ChangeColorOfWallPar(cur_time, par_color, change_color="black")
+    # ChangeColorOfDummyPar(cur_time, par_color, change_color="black")
 
     PlotByScatter(fig, ax, x, y, r, par_color, maxx, minx)
 
-    #! SnapShot
-    plt.subplots_adjust(left=0, right=1, bottom=0, top=1)
-    plt.savefig(
-        f"{savedirname}/snap_shot/snap_{str(frame*frame_skip).zfill(5)}.png",
-        bbox_inches="tight",
-        pad_inches=0.1,
-    )
+    # #! SnapShot
+    # plt.subplots_adjust(left=0, right=1, bottom=0, top=1)
+    # plt.savefig(
+    #     f"{savedirname}/snap_shot/snap_{str(cur_time).zfill(5)}.png",
+    #     bbox_inches="tight",
+    #     pad_inches=0.1,
+    # )
 
-    print(f"{frame_skip*frame/1000} finished")
-    return
-
-
-def MakeSnap(fig, ax, frame, cur_time, frame_skip, minx, maxx, miny, maxy, cmap, norm):
-    # cur_time = frame * frame_skip  # ms
-    plt.cla()
-
-    ax.set_xlim(minx, maxx)
-    ax.set_ylim(miny, maxy)
-    ax.set_xlabel(r"$x \mathrm{(m)}$")
-    ax.set_ylabel(r"$y \mathrm{(m)}$")
-    ax.minorticks_on()
-    ax.set_title(rf"$t=$ {round(cur_time*1E-3,3):.2f}s")
-
-    x, y, r, p, nump = GetParDat(cur_time)
-
-    #! 色付け方法選択
-    # par_color = GetParColorByMove(cur_time)
-    par_color = GetParColorByPressureContour(p, cmap, norm)
-    # par_color = GetParColorByBconForHakokeisoku(cur_time)
-
-    #! Check Coloring Porous Area By Specific Color
-    # ChangeColorInPorousArea(x, y, par_color, nump)
-
-    #! Check Coloring WallPar Black
-    ChangeColorOfWallPar(cur_time, par_color, change_color="black")
-    ChangeColorOfDummyPar(cur_time, par_color, change_color="black")
-
-    PlotByScatter(fig, ax, x, y, r, par_color, maxx, minx)
-
-    #! SnapShot
-    plt.subplots_adjust(left=0, right=1, bottom=0, top=1)
-    plt.savefig(
-        f"{savedirname}/snap_shot/snap_{str(cur_time).zfill(5)}.png",
-        bbox_inches="tight",
-        pad_inches=0.1,
-    )
-
-    print(f"{cur_time/1000} finished")
+    # print(f"{cur_time/1000} finished")
     plt.cla()
 
     return
+
+
+def make_snap_contour_all_time(
+    snap_time_array_ms: np.ndarray, save_dir_path: Path, contourphysics_row_index: int
+) -> None:
+    rowindex_to_physicsname = {
+        INPUT_PARAMETERS.XUD_pressure_row_index: "pressure"
+    }  # TODO　あとでリファクタリング
+
+    physicsname = rowindex_to_physicsname[contourphysics_row_index]
+    save_dir_of_snap_path = save_dir_path / Path(physicsname)
+    fig = plt.figure(dpi=INPUT_PARAMETERS.snapshot_dpi)
+    ax = fig.add_subplot(1, 1, 1, aspect="equal")
+    for snap_time_ms in snap_time_array_ms:
+        make_snap_contour(
+            fig=fig,
+            ax=ax,
+            snap_time_ms=snap_time_ms,
+            save_dir_of_snap_path=save_dir_of_snap_path,
+            physics_row_index=contourphysics_row_index,
+            physics_name=physicsname,
+        )
 
 
 def MakeAnimation(savefilename, start_time):
@@ -367,91 +340,33 @@ def MakeAnimation(savefilename, start_time):
             "yuv420p",
             f"../animation/{savefilename}.mp4",
         ],
-        cwd=f"{savedirname}/snap_shot",
+        # cwd=f"{savedirname}/snap_shot",
     )
-
-
-savedirname = "./plot_output_tmp"
-INF = 1 << 61 - 1
 
 
 #!　main部分
 def main() -> None:
-    mplstyle.use("fast")
+    save_dir_path = Path(__file__).parent / Path("plot_output_results")
+    (save_dir_path / Path("snap_shot")).mkdir(exist_ok=True)
 
-    # 出力用ディレクトリ作成
-    if not os.path.exists(f"{savedirname}"):
-        os.mkdir(f"{savedirname}")
-    if not os.path.exists(f"{savedirname}/snap_shot"):
-        os.mkdir(f"{savedirname}/snap_shot")
-    if not os.path.exists(f"{savedirname}/animation"):
-        os.mkdir(f"{savedirname}/animation")
+    snap_time_array_ms = np.arange(
+        INPUT_PARAMETERS.snap_start_time_ms,
+        INPUT_PARAMETERS.snap_end_time_ms + INPUT_PARAMETERS.timestep_ms,
+        INPUT_PARAMETERS.timestep_ms,
+    )
+    print(
+        f"animation range is: {snap_time_array_ms[0]/1000:.3}[s] ~ {snap_time_array_ms[-1]/1000:.3}[s]"
+    )
 
-    #! datファイルの00050のとこ.　SNAPの出力時間間隔が違う場合に注意
-    frame_skip = 50
+    # plt.subplots_adjust(left=0, right=1, bottom=0, top=1)
 
-    #! SNAP図示の開始時間 [ms]
-    start_time = f"{50:05}"
-    #! Check 描画する時間範囲
-    frame_range = list(range(1, 3))
-    # frame_range = SetFrameRange_ByAllDAT(start_time, frame_skip)[:2]
-    frame_range = SetFrameRange_ByAllDAT(start_time, frame_skip)
-    # if frame_range == None:
-    #     print("frame_range = None")
-    #     assert False
-    # if frame_range == []:
-    #     print("frame_range = []")
-    #     assert False
+    # for frame, cur_time in enumerate(snap_time_array_ms):
+    # MakeSnap(
+    #     fig, ax, frame + 1, cur_time, frame_skip, minx, maxx, miny, maxy, cmap, norm
+    # )
 
-    print(frame_range)
-    print(f"animation range is: {frame_range[0]/1000}[s] ~ {frame_range[-1]/1000}[s]")
+    # MakeAnimation(savefilename, start_time)
 
-    #! Check dpi
-    dpi = 100
-
-    fig = plt.figure(dpi=dpi)
-    plt.clf()
-
-    print("dpi is: ", dpi)
-    ax = fig.add_subplot(1, 1, 1, aspect="equal")
-
-    #! Check savefilename,　gifとmp4に対応
-    savefilename = ""
-    savefilename = f"{os.path.basename(os.getcwd())}"
-    print("savefilename is: ", savefilename)
-
-    #! 圧力Contour図の場合---------------------------------------
-    #! 任意のカラーマップを選択
-    cmap = matplotlib.colormaps.get_cmap("rainbow")
-
-    #! 圧力コンターの最小，最大値設定
-    minp_for_coloring = 0
-    maxp_for_coloring = 1200
-
-    norm = Normalize(vmin=minp_for_coloring, vmax=maxp_for_coloring)
-
-    #! 手動で切り替え．．．
-    PlotColorBar(ax, norm, cmap)
-
-    #!----------------------------------------------------------
-
-    # minx, maxx, miny, maxy = 0, 0.89, 0, 0.4
-
-    #! ポーラスエリア拡大した範囲
-    minx, maxx, miny, maxy = -0.2, 0.8, -0.02, 0.4
-
-    # minx, maxx, miny, maxy = GetXlimAndYlimByShoki()
-    print("minx, maxx, miny, maxy: ", minx, maxx, miny, maxy)
-
-    plt.subplots_adjust(left=0, right=1, bottom=0, top=1)
-    for frame, cur_time in enumerate(frame_range):
-        MakeSnap(
-            fig, ax, frame + 1, cur_time, frame_skip, minx, maxx, miny, maxy, cmap, norm
-        )
-
-    MakeAnimation(savefilename, start_time)
-
-    plt.close(fig)
     print("描画終了")
 
 
