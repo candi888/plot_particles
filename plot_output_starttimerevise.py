@@ -1,74 +1,24 @@
 import json
-import os
 from dataclasses import dataclass
 from pathlib import Path
 
 import matplotlib
-import matplotlib.collections as mcoll
-import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import numpy as np
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import Normalize, to_rgba
 
-#!フォント設定
-# plt.rcParams["font.family"] = "Times New Roman"  # font familyの設定
-# plt.rcParams["mathtext.fontset"] = "stix"  # math fontの設定
-# plt.rcParams["font.size"] = 15  # 全体のフォントサイズが変更されます。
-# # plt.rcParams['xtick.labelsize'] = 9 # 軸だけ変更されます。
-# # plt.rcParams['ytick.labelsize'] = 24 # 軸だけ変更されます
-# #!日本語フォント設定
-# font_paths = findSystemFonts()
-# use_jp_font = [path for path in font_paths if "yumin.ttf" in path.lower()]
-# print(font_paths)
-# assert len(use_jp_font) == 1
-# jp_font = FontProperties(fname=use_jp_font[0])
-# #!軸設定
-# plt.rcParams["xtick.direction"] = "out"  # x軸の目盛りの向き
-# plt.rcParams["ytick.direction"] = "out"  # y軸の目盛りの向き
-# # plt.rcParams['axes.grid'] = True # グリッドの作成
-# # plt.rcParams['grid.linestyle']='--' #グリッドの線種
-# plt.rcParams["xtick.minor.visible"] = True  # x軸補助目盛りの追加
-# plt.rcParams["ytick.minor.visible"] = True  # y軸補助目盛りの追加
-# plt.rcParams["xtick.top"] = True  # x軸の上部目盛り
-# plt.rcParams["ytick.right"] = True  # y軸の右部目盛り
-# #!軸大きさ
-# # plt.rcParams["xtick.major.width"] = 1.0             #x軸主目盛り線の線幅
-# # plt.rcParams["ytick.major.width"] = 1.0             #y軸主目盛り線の線幅
-# # plt.rcParams["xtick.minor.width"] = 1.0             #x軸補助目盛り線の線幅
-# # plt.rcParams["ytick.minor.width"] = 1.0             #y軸補助目盛り線の線幅
-# # plt.rcParams["xtick.major.size"] = 10               #x軸主目盛り線の長さ
-# # plt.rcParams["ytick.major.size"] = 10               #y軸主目盛り線の長さ
-# # plt.rcParams["xtick.minor.size"] = 5                #x軸補助目盛り線の長さ
-# # plt.rcParams["ytick.minor.size"] = 5                #y軸補助目盛り線の長さ
-# # plt.rcParams["axes.linewidth"] = 1.0                #囲みの太さ
-# #!凡例設定
-# plt.rcParams["legend.fancybox"] = False  # 丸角OFF
-# plt.rcParams["legend.framealpha"] = 1  # 透明度の指定、0で塗りつぶしなし
-# plt.rcParams["legend.edgecolor"] = "black"  # edgeの色を変更
-# plt.rcParams["legend.markerscale"] = 5  # markerサイズの倍率
-# # * 以下，よく使うコマンドのメモ
-# # .set_label(label="全断面に対する出現率", fontproperties=jp_font)
-
-# # plt.subplots_adjust(left=0, right=1, bottom=0, top=1)
-# # plt.savefig(
-# #     f"{outdir}/danmen_appearrate.png",
-# #     bbox_inches="tight",
-# #     pad_inches=0.1,
-# #     transparent="True",
-# # )
-
 
 @dataclass(frozen=True)
 class Dataclass_Input_Parameters:
-    XUD_x_row_index: int = 0
-    XUD_y_row_index: int = 1
-    XUD_u_row_index: int = 2
-    XUD_v_row_index: int = 3
-    XUD_disa_row_index: int = 5
-    XUD_pressure_row_index: int = 6
-    TMD_move_row_index: int = 1
+    XUD_x_col_index: int = 0
+    XUD_y_col_index: int = 1
+    XUD_u_col_index: int = 2
+    XUD_v_col_index: int = 3
+    XUD_disa_col_index: int = 5
+    XUD_pressure_col_index: int = 6
+    TMD_move_col_index: int = 1
     pressure_min_value_contour: int = 0
     pressure_max_value_contour: int = 2000
     snapshot_dpi: int = 100
@@ -85,45 +35,18 @@ class Dataclass_Input_Parameters:
 
 def construct_input_parameters_dataclass() -> Dataclass_Input_Parameters:
     with open("./INPUT_PARAMETERS.json", mode="r") as f:
-        INPUT_PARAMETERS = Dataclass_Input_Parameters(json.load(f))
-
-    return INPUT_PARAMETERS
+        return Dataclass_Input_Parameters(**json.load(f))
 
 
 INPUT_PARAMETERS = construct_input_parameters_dataclass()
 
 
-def SetFrameRange_ByAllDAT(start_time: str, frame_skip: int) -> list[int]:
-    int_second_starttime = int(start_time)
-    print(int_second_starttime)
-    for i in range(int_second_starttime, 100010, frame_skip):
-        # print(f"./OUTPUT/SNAP/XUD{str(i).zfill(5)}.DAT")
-        if not os.path.isfile(f"./OUTPUT/SNAP/XUD{str(i).zfill(5)}.DAT"):
-            snap_time_array_ms = np.arange(int_second_starttime, i, frame_skip)
-            print(
-                "snap_time_array_ms generate break ",
-                f"./OUTPUT/SNAP/XUD{str(i).zfill(5)}.DAT",
-            )
-            break
-    else:
-        snap_time_array_ms = None  # error
-
-    return snap_time_array_ms
-
-
-def get_x_y_disa_physics(
-    snap_time_ms: int, physics_row_index: int
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    par_data = np.loadtxt(
-        rf"./OUTPUT/SNAP/XUD{snap_time_ms:05}.DAT", usecols=(0, 1, 4, 5)
-    )
-
-    x = par_data[:, INPUT_PARAMETERS.XUD_x_row_index]
-    y = par_data[:, INPUT_PARAMETERS.XUD_y_row_index]
-    disa = par_data[:, INPUT_PARAMETERS.XUD_disa_row_index]
-    physics = par_data[:, physics_row_index]
-
-    return x[:], y[:], disa[:], physics[:]
+def get_selected_par_data(
+    snap_time_ms: int, selected_cols_index: tuple[int, ...]
+) -> np.ndarray:
+    return np.loadtxt(
+        rf"./OUTPUT/SNAP/XUD{snap_time_ms:05}.DAT", usecols=selected_cols_index
+    )[:, :]
 
 
 def GetParColorByMove(cur_time):
@@ -184,25 +107,34 @@ def ChangeColorOfDummyPar(cur_time, par_color, change_color):
             # par_color[i] = (0, 0, 0, 0)  # 透明
 
 
-def CalcSizeForScatter(fig: plt.Figure, ax: plt.Axes, par_disa: np.ndarray) -> float:
+def calc_s_for_scatter(
+    fig: plt.Figure, ax: plt.Axes, par_disa: np.ndarray
+) -> np.ndarray:
     ppi = 72
     ax_size_inch = ax.figure.get_size_inches()
     ax_w_inch = ax_size_inch[0] * (
         ax.figure.subplotpars.right - ax.figure.subplotpars.left
     )
     ax_w_px = ax_w_inch * fig.dpi
-    size = (
+    s = (
         par_disa[:]
         * (ax_w_px / (INPUT_PARAMETERS.xlim_max - INPUT_PARAMETERS.xlim_min))
         * (ppi / fig.dpi)
-    )
+    ) ** 2
 
-    return size
+    return s[:]
 
 
-def PlotByScatter(fig, ax, par_x, par_y, par_disa, par_color, maxx, minx):
-    size = CalcSizeForScatter(fig, ax, r, maxx, minx) ** 2
-    ax.scatter(x[:], y[:], linewidths=0, s=size, c=par_color[:])
+def plot_particles_by_scatter(
+    fig: plt.Figure,
+    ax: plt.Axes,
+    par_x: np.ndarray,
+    par_y: np.ndarray,
+    par_disa: np.ndarray,
+    par_color: np.ndarray,
+) -> None:
+    s = calc_s_for_scatter(fig=fig, ax=ax, par_disa=par_disa[:])
+    ax.scatter(par_x[:], par_y[:], s=s[:], c=par_color[:], linewidths=0)
 
 
 # TODO よくないので修正
@@ -245,26 +177,36 @@ def PlotColorBar(ax, norm, cmap):
     ).set_label(r"Pressure [Pa]")
 
 
-# 色だけでグループ分けするか，色の配列作って最後にgroupby
-# svg出力は一番最後にax.axis("off")とかやって出力するか？
+# TODO 色だけでグループ分けするか，色の配列作って最後にgroupby
+# TODO svg出力は一番最後にax.axis("off")とかやって出力するか？
 def make_snap_contour(
     fig: plt.Figure,
     ax: plt.Axes,
     snap_time_ms: int,
     save_dir_of_snap_path: Path,
-    physics_row_index: int,
+    physics_col_index: int,
     physics_name: str,
 ) -> None:
+    ax.minorticks_on()
     ax.set_xlim(INPUT_PARAMETERS.xlim_min, INPUT_PARAMETERS.xlim_max)
     ax.set_ylim(INPUT_PARAMETERS.ylim_min, INPUT_PARAMETERS.ylim_max)
     ax.set_xlabel(r"$x \mathrm{(m)}$")
     ax.set_ylabel(r"$y \mathrm{(m)}$")
-    ax.minorticks_on()
     ax.set_title(rf"$t=$ {snap_time_ms/1000:.3}s")
 
-    par_x, par_y, par_disa, par_physics = get_x_y_disa_physics(
-        snap_time_ms=snap_time_ms, physics_row_index=physics_row_index
-    )
+    tmp_par_data = get_selected_par_data(
+        snap_time_ms=snap_time_ms,
+        selected_cols_index=(
+            INPUT_PARAMETERS.XUD_x_col_index,
+            INPUT_PARAMETERS.XUD_y_col_index,
+            INPUT_PARAMETERS.XUD_disa_col_index,
+            physics_col_index,
+        ),
+    )[:, :]
+    par_x = tmp_par_data[:, 0]
+    par_y = tmp_par_data[:, 1]
+    par_disa = tmp_par_data[:, 2]
+    par_physics = tmp_par_data[:, 3]
 
     #! 色付け方法選択
     par_color = set_facecolor_by_physics_contour(
@@ -278,31 +220,48 @@ def make_snap_contour(
     # ChangeColorOfWallPar(cur_time, par_color, change_color="black")
     # ChangeColorOfDummyPar(cur_time, par_color, change_color="black")
 
-    PlotByScatter(fig, ax, x, y, r, par_color, maxx, minx)
+    plt.subplots_adjust(left=0, right=1, bottom=0, top=1)
+    plot_particles_by_scatter(
+        fig=fig,
+        ax=ax,
+        par_x=par_x[:],
+        par_y=par_y[:],
+        par_disa=par_disa[:],
+        par_color=par_color[:],
+    )
 
-    # #! SnapShot
-    # plt.subplots_adjust(left=0, right=1, bottom=0, top=1)
-    # plt.savefig(
-    #     f"{savedirname}/snap_shot/snap_{str(cur_time).zfill(5)}.png",
-    #     bbox_inches="tight",
-    #     pad_inches=0.1,
-    # )
+    #! SnapShot保存
+    fig.savefig(
+        save_dir_of_snap_path / Path(f"snap{snap_time_ms:05}_{physics_name}.jpeg"),
+        bbox_inches="tight",
+        pad_inches=0.05,
+    )
 
-    # print(f"{cur_time/1000} finished")
+    print(f"{snap_time_ms:05} ms contour:{physics_name} plot finished")
     plt.cla()
 
     return
 
 
 def make_snap_contour_all_time(
-    snap_time_array_ms: np.ndarray, save_dir_path: Path, contourphysics_row_index: int
+    snap_time_array_ms: np.ndarray, save_dir_path: Path, contourphysics_col_index: int
 ) -> None:
-    rowindex_to_physicsname = {
-        INPUT_PARAMETERS.XUD_pressure_row_index: "pressure"
-    }  # TODO　あとでリファクタリング
+    """指定した物理量のContour図のスナップショットを，指定した時刻全てで作成
 
-    physicsname = rowindex_to_physicsname[contourphysics_row_index]
-    save_dir_of_snap_path = save_dir_path / Path(physicsname)
+    Args:
+        snap_time_array_ms (np.ndarray): スナップショットを作成する時刻(ms)のndarray
+        save_dir_path (Path): スナップやアニメーションを保存するディレクトリのPath
+        contourphysics_col_index (int): Contour図を作成する物理量を指すindex
+    """
+    colindex_to_physicsname = {
+        INPUT_PARAMETERS.XUD_pressure_col_index: "pressure"
+    }  # TODO　あとでリファクタリング
+    physicsname = colindex_to_physicsname[contourphysics_col_index]
+
+    save_dir_of_snap_path = save_dir_path / Path(physicsname) / Path("snap_shot")
+    print(save_dir_of_snap_path)
+    save_dir_of_snap_path.mkdir(exist_ok=True, parents=True)
+
     fig = plt.figure(dpi=INPUT_PARAMETERS.snapshot_dpi)
     ax = fig.add_subplot(1, 1, 1, aspect="equal")
     for snap_time_ms in snap_time_array_ms:
@@ -311,7 +270,7 @@ def make_snap_contour_all_time(
             ax=ax,
             snap_time_ms=snap_time_ms,
             save_dir_of_snap_path=save_dir_of_snap_path,
-            physics_row_index=contourphysics_row_index,
+            physics_col_index=contourphysics_col_index,
             physics_name=physicsname,
         )
 
@@ -347,7 +306,6 @@ def MakeAnimation(savefilename, start_time):
 #!　main部分
 def main() -> None:
     save_dir_path = Path(__file__).parent / Path("plot_output_results")
-    (save_dir_path / Path("snap_shot")).mkdir(exist_ok=True)
 
     snap_time_array_ms = np.arange(
         INPUT_PARAMETERS.snap_start_time_ms,
@@ -358,14 +316,12 @@ def main() -> None:
         f"animation range is: {snap_time_array_ms[0]/1000:.3}[s] ~ {snap_time_array_ms[-1]/1000:.3}[s]"
     )
 
-    # plt.subplots_adjust(left=0, right=1, bottom=0, top=1)
-
-    # for frame, cur_time in enumerate(snap_time_array_ms):
-    # MakeSnap(
-    #     fig, ax, frame + 1, cur_time, frame_skip, minx, maxx, miny, maxy, cmap, norm
-    # )
-
-    # MakeAnimation(savefilename, start_time)
+    # 圧力コンターを出力
+    make_snap_contour_all_time(
+        snap_time_array_ms=snap_time_array_ms[:],
+        save_dir_path=save_dir_path,
+        contourphysics_col_index=INPUT_PARAMETERS.XUD_pressure_col_index,  # 圧力を指定
+    )
 
     print("描画終了")
 
