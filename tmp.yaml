@@ -1,0 +1,10 @@
+# 渦度コンター作成関係
+vorticity_label: "vorticity" # colorbarのlegendに使用
+vorticity_col_index: 4
+vorticity_min_value_contour: 0
+vorticity_max_value_contour: 1000
+vorticity_cmap: "rainbow"
+vorticity_wall_particle_color: "#000000" # 16進数カラーコードで指定
+vorticity_wall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+vorticity_dummy_particle_color: "#000000"
+vorticity_dummy_particle_alpha: 1.0

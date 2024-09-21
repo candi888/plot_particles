@@ -10,12 +10,18 @@ TMD_move_col_index: 1
 timestep_ms: 10 # datファイルの00050のとこ.　SNAPの出力時間間隔が違う場合に注意
 snap_start_time_ms: 10
 snap_end_time_ms: 1500
-# xlim_min: -0.06
-xlim_min: 1
+xlim_min: -0.06
 xlim_max: 1.25
 ylim_min: -0.06
 ylim_max: 0.5
 snapshot_dpi: 300
+
+# アニメーション関連
+framerate: 100
+
+# どのプロットを行うか（True or False）
+is_plot_contour_pressure: True
+is_plot_contour_vorticity: True
 
 # 圧力コンター作成関係
 pressure_label: "Pressure (Pa)" # colorbarのlegendに使用
@@ -23,13 +29,22 @@ pressure_col_index: 4
 pressure_min_value_contour: 0
 pressure_max_value_contour: 1000
 pressure_cmap: "rainbow"
-pressure_wall_particle_color_rgba:
-    - 255
-    - 255
-    - 255
-    - 1.0
-pressure_dummy_particle_color_rgba:
-    - 1
-    - 1
-    - 1
-    - 1.0
+pressure_is_change_color_wall: True
+pressure_wall_particle_color: "#000000" # 16進数カラーコードで指定
+pressure_wall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+pressure_is_change_color_dummy: True
+pressure_dummy_particle_color: "#000000"
+pressure_dummy_particle_alpha: 1.0
+
+# 渦度コンター作成関係
+vorticity_label: "vorticity" # colorbarのlegendに使用
+vorticity_col_index: 6
+vorticity_min_value_contour: -10
+vorticity_max_value_contour: 10
+vorticity_cmap: "rainbow"
+vorticity_is_change_color_wall: False
+vorticity_wall_particle_color: "#000000" # 16進数カラーコードで指定
+vorticity_wall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+vorticity_is_change_color_dummy: False
+vorticity_dummy_particle_color: "#000000"
+vorticity_dummy_particle_alpha: 1.0

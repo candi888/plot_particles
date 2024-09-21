@@ -7,8 +7,45 @@ import matplotlib.pyplot as plt
 import numpy as np
 import yaml
 from matplotlib.cm import ScalarMappable
-from matplotlib.colors import Normalize
+from matplotlib.colors import Normalize, to_rgba
 
+# 以下はイラレで編集可能なsvgを出力するために必要
+matplotlib.use("Agg")
+plt.rcParams["svg.fonttype"] = "none"
+
+# フォント設定
+plt.rcParams["font.family"] = "Times New Roman", "Arial"  # font familyの設定
+plt.rcParams["mathtext.fontset"] = "cm"  # math fontの設定
+# plt.rcParams["font.size"] = 12  # 全体のフォントサイズを変更
+
+# 軸設定
+plt.rcParams["xtick.direction"] = "out"  # x軸の目盛りの向き
+plt.rcParams["ytick.direction"] = "out"  # y軸の目盛りの向き
+plt.rcParams["xtick.minor.visible"] = True  # x軸補助目盛りの追加
+plt.rcParams["ytick.minor.visible"] = True  # y軸補助目盛りの追加
+plt.rcParams["xtick.top"] = True  # x軸の上部目盛り
+plt.rcParams["ytick.right"] = True  # y軸の右部目盛り
+# plt.rcParams["xtick.major.pad"] = 4  # distance to major tick label in points
+# plt.rcParams["ytick.major.pad"] = 3  # distance to major tick label in points
+# plt.rcParams["axes.spines.top"] = False  # 上側の軸を表示するか
+# plt.rcParams["axes.spines.right"] = False  # 右側の軸を表示するか
+# plt.rcParams['axes.grid'] = True # グリッドの作成
+# plt.rcParams['grid.linestyle']='--' #グリッドの線種
+
+# 軸大きさ
+# plt.rcParams["xtick.major.width"] = 1.0  # x軸主目盛り線の線幅
+# plt.rcParams["ytick.major.width"] = 1.0  # y軸主目盛り線の線幅
+# plt.rcParams["xtick.minor.width"] = 1.0  # x軸補助目盛り線の線幅
+# plt.rcParams["ytick.minor.width"] = 1.0  # y軸補助目盛り線の線幅
+# plt.rcParams["xtick.major.size"] = 5  # x軸主目盛り線の長さ
+# plt.rcParams["ytick.major.size"] = 5  # y軸主目盛り線の長さ
+# plt.rcParams["xtick.labelsize"] = 20.0  # 軸目盛のフォントサイズ変更
+# plt.rcParams["ytick.labelsize"] = 20.0  # 軸目盛のフォントサイズ変更
+# plt.rcParams["xtick.minor.size"] = 5  # x軸補助目盛り線の長さ
+# plt.rcParams["ytick.minor.size"] = 5  # y軸補助目盛り線の長さ
+# plt.rcParams["axes.linewidth"] = 1.0
+
+# 画像保存時の余白調整など
 plt.rcParams["savefig.bbox"] = "tight"
 plt.rcParams["savefig.pad_inches"] = 0.05
 
@@ -21,6 +58,7 @@ class Dataclass_Input_Parameters:
     XUD_v_col_index: int
     XUD_disa_col_index: int
     TMD_move_col_index: int
+
     timestep_ms: int
     snap_start_time_ms: int
     snap_end_time_ms: int
@@ -29,23 +67,45 @@ class Dataclass_Input_Parameters:
     ylim_min: float
     ylim_max: float
     snapshot_dpi: int
+
+    framerate: int
+
+    is_plot_contour_pressure: bool
+    is_plot_contour_vorticity: bool
+
     pressure_label: str
     pressure_col_index: int
     pressure_min_value_contour: int
     pressure_max_value_contour: int
     pressure_cmap: str
-    pressure_wall_particle_color_rgba: list[float]
-    pressure_dummy_particle_color_rgba: list[float]
+    pressure_is_change_color_wall: bool
+    pressure_wall_particle_color: str
+    pressure_wall_particle_alpha: float
+    pressure_is_change_color_dummy: bool
+    pressure_dummy_particle_color: str
+    pressure_dummy_particle_alpha: float
+
+    vorticity_label: str
+    vorticity_col_index: int
+    vorticity_min_value_contour: int
+    vorticity_max_value_contour: int
+    vorticity_cmap: str
+    vorticity_is_change_color_wall: bool
+    vorticity_wall_particle_color: str
+    vorticity_wall_particle_alpha: float
+    vorticity_is_change_color_dummy: bool
+    vorticity_dummy_particle_color: str
+    vorticity_dummy_particle_alpha: float
 
 
 def construct_input_parameters_dataclass() -> Dataclass_Input_Parameters:
-    with open("./INPUT_PARAMETERS.yaml", mode="r") as f:
+    with open(Path(__file__).parent / "INPUT_PARAMETERS.yaml", mode="r") as f:
         return Dataclass_Input_Parameters(**yaml.safe_load(f))
 
 
 def get_mask_array_by_plot_region(snap_time_ms: int) -> np.ndarray:
     ori_data = np.loadtxt(
-        rf"./OUTPUT/SNAP/XUD{snap_time_ms:05}.DAT",
+        Path(__file__).parent / Path(f"./OUTPUT/SNAP/XUD{snap_time_ms:05}.DAT"),
         usecols=(
             IN_PARAMS.XUD_x_col_index,
             IN_PARAMS.XUD_y_col_index,
@@ -78,9 +138,10 @@ def load_selected_par_data(
     return masked_data.T
 
 
-def change_color_wall_particles(
+# TODO tmdの読み込みを別に分けるか．その上でmoveでグループ分けしてプロットもグループ分けするか
+def change_facecolor_wall_particles(
     snap_time_ms: int, par_color: np.ndarray, physics_name: str, mask_array: np.ndarray
-) -> np.ndarray:
+) -> None:
     masked_move_index = np.loadtxt(
         rf"./OUTPUT/SNAP/TMD{snap_time_ms:05}.DAT",
         dtype=np.int_,
@@ -89,30 +150,37 @@ def change_color_wall_particles(
 
     mask_by_wall = np.mod(masked_move_index, 3) == 1
 
-    par_color[mask_by_wall] = np.array(
-        getattr(IN_PARAMS, f"{physics_name}_wall_particle_color_rgba")
+    par_color[mask_by_wall] = to_rgba(
+        c=getattr(IN_PARAMS, f"{physics_name}_wall_particle_color"),
+        alpha=getattr(
+            IN_PARAMS,
+            f"{physics_name}_wall_particle_alpha",
+        ),
     )
 
-    print(par_color)
-    return par_color
+    return
 
 
-def change_color_dummy_particles(
+def change_facecolor_dummy_particles(
     snap_time_ms: int, par_color: np.ndarray, physics_name: str, mask_array: np.ndarray
-) -> np.ndarray:
+) -> None:
     masked_move_index = np.loadtxt(
         rf"./OUTPUT/SNAP/TMD{snap_time_ms:05}.DAT",
         dtype=np.int_,
         usecols=IN_PARAMS.TMD_move_col_index,
     )[mask_array]
 
-    mask_by_dummy = np.mod(masked_move_index, 3) == 2
+    mask_by_wall = np.mod(masked_move_index, 3) == 2
 
-    par_color[mask_by_dummy] = np.array(
-        getattr(IN_PARAMS, f"{physics_name}_dummy_particle_color_rgba")
+    par_color[mask_by_wall] = to_rgba(
+        c=getattr(IN_PARAMS, f"{physics_name}_dummy_particle_color"),
+        alpha=getattr(
+            IN_PARAMS,
+            f"{physics_name}_dummy_particle_alpha",
+        ),
     )
 
-    return par_color
+    return
 
 
 # Thank you chatgpt
@@ -160,8 +228,6 @@ def plot_particles_by_scatter(
     par_disa: np.ndarray,
     par_color: np.ndarray,
 ) -> None:
-    # s = calc_s_for_scatter(fig=fig, ax=ax, par_disa=par_disa[:])
-
     s = data_unit_to_points_size(diameter_in_data_units=par_disa, fig=fig, axis=ax)
     ax.scatter(par_x, par_y, s=s, c=par_color, linewidths=0)
 
@@ -194,11 +260,9 @@ def plot_colorbar(
     cmap = matplotlib.colormaps.get_cmap(getattr(IN_PARAMS, f"{physics_name}_cmap"))
     mappable = ScalarMappable(cmap=cmap, norm=norm)
 
-    #! カラーバーの軸刻み
     assert norm.vmin is not None and norm.vmax is not None
     ticks = np.linspace(norm.vmin, norm.vmax, 5)
 
-    #! 大きさと縦向き，横向き
     fig.colorbar(
         mappable,
         ax=ax,
@@ -223,7 +287,7 @@ def set_ax_labels(ax: plt.Axes) -> None:
 
 
 def set_ax_title(ax: plt.Axes, snap_time_ms: int) -> None:
-    ax.set_title(rf"$t=$ {snap_time_ms/1000:.03f}s")
+    ax.set_title(rf"$t=$ {snap_time_ms/1000:.03f}s", pad=10)
 
 
 # TODO 色だけでグループ分けするか，色の配列作って最後にgroupby
@@ -232,7 +296,7 @@ def make_snap_contour(
     fig: plt.Figure,
     ax: plt.Axes,
     snap_time_ms: int,
-    save_dir_of_snap_path: Path,
+    save_dir_snap_path: Path,
     physics_col_index: int,
     physics_name: str,
 ) -> None:
@@ -261,13 +325,13 @@ def make_snap_contour(
         physics_name=physics_name, par_physics=par_physics
     )
 
-    change_color_wall_particles(
+    change_facecolor_wall_particles(
         snap_time_ms=snap_time_ms,
         par_color=par_color,
         physics_name=physics_name,
         mask_array=mask_array,
     )
-    change_color_dummy_particles(
+    change_facecolor_dummy_particles(
         snap_time_ms=snap_time_ms,
         par_color=par_color,
         physics_name=physics_name,
@@ -284,11 +348,11 @@ def make_snap_contour(
     )
 
     fig.savefig(
-        save_dir_of_snap_path / Path(f"snap{snap_time_ms:05}_{physics_name}.jpeg"),
+        save_dir_snap_path / Path(f"snap{snap_time_ms:05}_{physics_name}.jpeg"),
     )
 
-    print(f"{snap_time_ms:05} ms contour:{physics_name} plot finished")
     plt.cla()
+    print(f"{snap_time_ms:05} ms contour:{physics_name} plot finished")
 
     return
 
@@ -298,13 +362,14 @@ def make_snap_contour_all_time(
     save_dir_physics_path: Path,
     physicsname: str,
 ) -> None:
-    save_dir_of_snap_path = save_dir_physics_path / Path("snap_shot")
-    save_dir_of_snap_path.mkdir(exist_ok=True, parents=True)
+    save_dir_snap_path = save_dir_physics_path / Path("snap_shot")
+    save_dir_snap_path.mkdir(exist_ok=True, parents=True)
 
     fig = plt.figure(dpi=IN_PARAMS.snapshot_dpi)
     ax = fig.add_subplot(1, 1, 1, aspect="equal")
 
     fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
+
     plot_colorbar(fig=fig, ax=ax, physics_name=physicsname)
 
     for snap_time_ms in snap_time_array_ms:
@@ -312,13 +377,12 @@ def make_snap_contour_all_time(
             fig=fig,
             ax=ax,
             snap_time_ms=snap_time_ms,
-            save_dir_of_snap_path=save_dir_of_snap_path,
+            save_dir_snap_path=save_dir_snap_path,
             physics_col_index=getattr(IN_PARAMS, f"{physicsname}_col_index"),
             physics_name=physicsname,
         )
 
     plt.close()
-
     return
 
 
@@ -328,7 +392,7 @@ def make_animation_contour(
     save_dir_animation_path = save_dir_physics_path / Path("animation")
     save_dir_animation_path.mkdir(exist_ok=True)
 
-    for_ffmpeg = [f"file 'snap{i:05}_pressure.jpeg'" for i in snap_time_array_ms]
+    for_ffmpeg = [f"file 'snap{i:05}_{physicsname}.jpeg'" for i in snap_time_array_ms]
     save_file_forffmpeg_path = save_dir_physics_path / Path("snap_shot/for_ffmpeg.txt")
     with open(save_file_forffmpeg_path, mode="w") as f:
         for i in for_ffmpeg:
@@ -339,8 +403,7 @@ def make_animation_contour(
             "ffmpeg",
             "-y",
             "-r",
-            "60",  # TODO 与え方どうする？INPARAMか
-            # f"{int(1000/IN_PARAMS.timestep_ms)}",  # TODO 与え方どうする？INPARAMか
+            f"{IN_PARAMS.framerate}",
             "-f",
             "concat",
             "-safe",
@@ -377,19 +440,20 @@ def main() -> None:
         f"animation range is: {snap_time_array_ms[0]/1000:.03f}[s] ~ {snap_time_array_ms[-1]/1000:.03f}[s]"
     )
 
-    # 圧力コンターを出力
-    cur_physicname = "pressure"
-    save_dir_physics_path = save_dir_path / Path(cur_physicname)
-    make_snap_contour_all_time(
-        snap_time_array_ms=snap_time_array_ms,
-        save_dir_physics_path=save_dir_physics_path,
-        physicsname=cur_physicname,
-    )
-    make_animation_contour(
-        snap_time_array_ms=snap_time_array_ms,
-        save_dir_physics_path=save_dir_physics_path,
-        physicsname=cur_physicname,
-    )
+    # コンター図を作成
+    for cur_physicsname in ["pressure", "vorticity"]:
+        if getattr(IN_PARAMS, f"is_plot_contour_{cur_physicsname}"):
+            save_dir_physics_path = save_dir_path / Path(cur_physicsname)
+            make_snap_contour_all_time(
+                snap_time_array_ms=snap_time_array_ms,
+                save_dir_physics_path=save_dir_physics_path,
+                physicsname=cur_physicsname,
+            )
+            make_animation_contour(
+                snap_time_array_ms=snap_time_array_ms,
+                save_dir_physics_path=save_dir_physics_path,
+                physicsname=cur_physicsname,
+            )
 
     print("描画終了")
 
@@ -397,5 +461,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    print(IN_PARAMS)
     main()
