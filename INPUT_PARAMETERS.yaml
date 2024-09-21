@@ -13,15 +13,12 @@ snap_end_time_ms: 1500
 xlim_min: -0.06
 xlim_max: 1.25
 ylim_min: -0.06
-ylim_max: 0.5
+ylim_max: 0.4
 snapshot_dpi: 300
 
 # アニメーション関連
 framerate: 100
-
-# どのプロットを行うか（True or False）
-is_plot_contour_pressure: True
-is_plot_contour_vorticity: True
+crf_num: 35 # CRF値を設定．lowqualityの動画を作成するときに使用する．大きいほどクオリティを下げる．35くらいでちょうど良さそう．
 
 # 圧力コンター作成関係
 pressure_label: "Pressure (Pa)" # colorbarのlegendに使用
@@ -31,10 +28,11 @@ pressure_max_value_contour: 1000
 pressure_cmap: "rainbow"
 pressure_is_change_color_wall: True
 pressure_wall_particle_color: "#000000" # 16進数カラーコードで指定
-pressure_wall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+pressure_wall_particle_alpha: 0.0 # 透明度の指定（0で完全透明，1で不透明）．rgbaのaの部分．
 pressure_is_change_color_dummy: True
 pressure_dummy_particle_color: "#000000"
-pressure_dummy_particle_alpha: 1.0
+pressure_dummy_particle_alpha: 0.0
+pressure_is_plot_velocity_vector: False
 
 # 渦度コンター作成関係
 vorticity_label: "vorticity" # colorbarのlegendに使用
@@ -48,3 +46,13 @@ vorticity_wall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
 vorticity_is_change_color_dummy: False
 vorticity_dummy_particle_color: "#000000"
 vorticity_dummy_particle_alpha: 1.0
+vorticity_is_plot_velocity_vector: True
+
+# 流速ベクトル図関連
+scaler_length_vector: 1 # ベクトルの長さの調整用．nに設定 -> ベクトルの長さをn倍
+scaler_width_vector: 1 # ベクトルの太さの調整用．nに設定 -> ベクトルの太さをn倍
+length_reference_vector: 1
+
+# どのプロットを行うか（True or False）.プロットしないものはFalseにするorコメントアウトで対応
+is_plot_contour_pressure: True
+is_plot_contour_vorticity: True

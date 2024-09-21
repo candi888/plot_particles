@@ -50,6 +50,7 @@ plt.rcParams["savefig.bbox"] = "tight"
 plt.rcParams["savefig.pad_inches"] = 0.05
 
 
+# TODO 型が合っているかのチェック含め，妥当なパラメータが設定されているかのチェック
 @dataclass(frozen=True)
 class Dataclass_Input_Parameters:
     XUD_x_col_index: int
@@ -70,9 +71,6 @@ class Dataclass_Input_Parameters:
 
     framerate: int
 
-    is_plot_contour_pressure: bool
-    is_plot_contour_vorticity: bool
-
     pressure_label: str
     pressure_col_index: int
     pressure_min_value_contour: int
@@ -84,6 +82,7 @@ class Dataclass_Input_Parameters:
     pressure_is_change_color_dummy: bool
     pressure_dummy_particle_color: str
     pressure_dummy_particle_alpha: float
+    pressure_is_plot_velocity_vector: bool
 
     vorticity_label: str
     vorticity_col_index: int
@@ -96,6 +95,16 @@ class Dataclass_Input_Parameters:
     vorticity_is_change_color_dummy: bool
     vorticity_dummy_particle_color: str
     vorticity_dummy_particle_alpha: float
+    vorticity_is_plot_velocity_vector: bool
+
+    crf_num: int = 35
+
+    scaler_length_vector: float = 1
+    scaler_width_vector: float = 1
+    length_reference_vector: float = 1
+
+    is_plot_contour_pressure: bool = False
+    is_plot_contour_vorticity: bool = False
 
 
 def construct_input_parameters_dataclass() -> Dataclass_Input_Parameters:
@@ -139,6 +148,7 @@ def load_selected_par_data(
 
 
 # TODO tmdの読み込みを別に分けるか．その上でmoveでグループ分けしてプロットもグループ分けするか
+# TODO hako_keisokuのときとかも中身の値でグルーピングするか？
 def change_facecolor_wall_particles(
     snap_time_ms: int, par_color: np.ndarray, physics_name: str, mask_array: np.ndarray
 ) -> None:
@@ -183,12 +193,12 @@ def change_facecolor_dummy_particles(
     return
 
 
-# Thank you chatgpt
+# TODO  Thank you chatgpt
 def data_unit_to_points_size(
     diameter_in_data_units: np.ndarray, fig: plt.Figure, axis: plt.Axes
 ) -> np.ndarray:
     """
-    todo revise
+    # TODO revise
     データ単位で指定した直径を、matplotlib の scatter プロットで使用する s パラメータ（ポイントの面積）に変換します。
 
     Parameters
@@ -241,10 +251,14 @@ def get_norm_for_color_contour(physics_name: str) -> Normalize:
     )
 
 
-def set_facecolor_by_physics_contour(
+def get_cmap_for_color_contour(physics_name: str) -> matplotlib.colors.Colormap:
+    return matplotlib.colormaps.get_cmap(getattr(IN_PARAMS, f"{physics_name}_cmap"))
+
+
+def get_facecolor_by_physics_contour(
     physics_name: str, par_physics: np.ndarray
 ) -> np.ndarray:
-    cmap = matplotlib.colormaps.get_cmap(getattr(IN_PARAMS, f"{physics_name}_cmap"))
+    cmap = get_cmap_for_color_contour(physics_name=physics_name)
     norm = get_norm_for_color_contour(physics_name=physics_name)
     par_color = cmap(norm(par_physics))
 
@@ -256,8 +270,8 @@ def plot_colorbar(
     ax: plt.Axes,
     physics_name: str,
 ) -> None:
+    cmap = get_cmap_for_color_contour(physics_name=physics_name)
     norm = get_norm_for_color_contour(physics_name=physics_name)
-    cmap = matplotlib.colormaps.get_cmap(getattr(IN_PARAMS, f"{physics_name}_cmap"))
     mappable = ScalarMappable(cmap=cmap, norm=norm)
 
     assert norm.vmin is not None and norm.vmax is not None
@@ -269,29 +283,65 @@ def plot_colorbar(
         ticks=ticks,
         shrink=0.6,
         orientation="horizontal",
-        pad=0.1,
+        pad=0.12,
     ).set_label(f"{getattr(IN_PARAMS,f"{physics_name}_label")}")
 
     return
 
 
+# TODO 矢印の見た目全般，移動壁への対応（その際のreference vectorへの対応），reference vectorがfloatのときのラベル
+def plot_velocity_vector(
+    ax: plt.Axes, snap_time_ms: int, mask_array: np.ndarray
+) -> None:
+    par_x, par_y, par_u, par_v = load_selected_par_data(
+        snap_time_ms=snap_time_ms,
+        mask_array=mask_array,
+        usecols=(
+            IN_PARAMS.XUD_x_col_index,
+            IN_PARAMS.XUD_y_col_index,
+            IN_PARAMS.XUD_u_col_index,
+            IN_PARAMS.XUD_v_col_index,
+        ),
+    )
+
+    # scale_units="x"で軸の長さが基準
+    # scale=10で，軸単位で0.1の長さが大きさ1のベクトルの長さに対応する
+    original_scale = 10 / (IN_PARAMS.xlim_max - IN_PARAMS.xlim_min)
+    scale = original_scale / IN_PARAMS.scaler_length_vector
+    width = original_scale / 5000 * IN_PARAMS.scaler_width_vector
+    q = ax.quiver(par_x, par_y, par_u, par_v, scale=scale, scale_units="x", width=width)
+    ax.quiverkey(
+        Q=q,
+        X=0.8,
+        Y=1.1,
+        U=IN_PARAMS.length_reference_vector,
+        label=rf"{IN_PARAMS.length_reference_vector} m/s",
+        labelpos="E",
+    )
+
+    return
+
+
 def set_ax_ticks(ax: plt.Axes) -> None:
-    ax.minorticks_on()
     ax.set_xlim(IN_PARAMS.xlim_min, IN_PARAMS.xlim_max)
     ax.set_ylim(IN_PARAMS.ylim_min, IN_PARAMS.ylim_max)
+
+    return
 
 
 def set_ax_labels(ax: plt.Axes) -> None:
     ax.set_xlabel(r"$x \mathrm{(m)}$")
     ax.set_ylabel(r"$y \mathrm{(m)}$")
+    return
 
 
 def set_ax_title(ax: plt.Axes, snap_time_ms: int) -> None:
-    ax.set_title(rf"$t=$ {snap_time_ms/1000:.03f}s", pad=10)
+    ax.set_title(rf"$t=$ {snap_time_ms/1000:.03f}s", y=1.1, loc="left")
+
+    return
 
 
 # TODO 色だけでグループ分けするか，色の配列作って最後にgroupby
-# TODO svg出力は一番最後にax.axis("off")とかやって出力するか？　<- scatterの大きさの計算大丈夫？
 def make_snap_contour(
     fig: plt.Figure,
     ax: plt.Axes,
@@ -320,23 +370,24 @@ def make_snap_contour(
             physics_col_index,
         ),
     )
-
-    par_color = set_facecolor_by_physics_contour(
+    par_color = get_facecolor_by_physics_contour(
         physics_name=physics_name, par_physics=par_physics
     )
 
-    change_facecolor_wall_particles(
-        snap_time_ms=snap_time_ms,
-        par_color=par_color,
-        physics_name=physics_name,
-        mask_array=mask_array,
-    )
-    change_facecolor_dummy_particles(
-        snap_time_ms=snap_time_ms,
-        par_color=par_color,
-        physics_name=physics_name,
-        mask_array=mask_array,
-    )
+    if getattr(IN_PARAMS, f"{physics_name}_is_change_color_wall"):
+        change_facecolor_wall_particles(
+            snap_time_ms=snap_time_ms,
+            par_color=par_color,
+            physics_name=physics_name,
+            mask_array=mask_array,
+        )
+    if getattr(IN_PARAMS, f"{physics_name}_is_change_color_dummy"):
+        change_facecolor_dummy_particles(
+            snap_time_ms=snap_time_ms,
+            par_color=par_color,
+            physics_name=physics_name,
+            mask_array=mask_array,
+        )
 
     plot_particles_by_scatter(
         fig=fig,
@@ -347,12 +398,15 @@ def make_snap_contour(
         par_color=par_color,
     )
 
+    if getattr(IN_PARAMS, f"{physics_name}_is_plot_velocity_vector"):
+        plot_velocity_vector(ax=ax, snap_time_ms=snap_time_ms, mask_array=mask_array)
+
     fig.savefig(
         save_dir_snap_path / Path(f"snap{snap_time_ms:05}_{physics_name}.jpeg"),
     )
 
     plt.cla()
-    print(f"{snap_time_ms:05} ms contour:{physics_name} plot finished")
+    print(f"{snap_time_ms/1000:.03f} s contour:{physics_name} plot finished")
 
     return
 
@@ -360,7 +414,7 @@ def make_snap_contour(
 def make_snap_contour_all_time(
     snap_time_array_ms: np.ndarray,
     save_dir_physics_path: Path,
-    physicsname: str,
+    physics_name: str,
 ) -> None:
     save_dir_snap_path = save_dir_physics_path / Path("snap_shot")
     save_dir_snap_path.mkdir(exist_ok=True, parents=True)
@@ -370,7 +424,7 @@ def make_snap_contour_all_time(
 
     fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
 
-    plot_colorbar(fig=fig, ax=ax, physics_name=physicsname)
+    plot_colorbar(fig=fig, ax=ax, physics_name=physics_name)
 
     for snap_time_ms in snap_time_array_ms:
         make_snap_contour(
@@ -378,48 +432,64 @@ def make_snap_contour_all_time(
             ax=ax,
             snap_time_ms=snap_time_ms,
             save_dir_snap_path=save_dir_snap_path,
-            physics_col_index=getattr(IN_PARAMS, f"{physicsname}_col_index"),
-            physics_name=physicsname,
+            physics_col_index=getattr(IN_PARAMS, f"{physics_name}_col_index"),
+            physics_name=physics_name,
         )
 
     plt.close()
     return
 
 
+# TODO subporocessのとこリファクタリング
 def make_animation_contour(
-    snap_time_array_ms: np.ndarray, save_dir_physics_path: Path, physicsname: str
+    snap_time_array_ms: np.ndarray, save_dir_physics_path: Path, physics_name: str
 ) -> None:
     save_dir_animation_path = save_dir_physics_path / Path("animation")
     save_dir_animation_path.mkdir(exist_ok=True)
 
-    for_ffmpeg = [f"file 'snap{i:05}_{physicsname}.jpeg'" for i in snap_time_array_ms]
+    for_ffmpeg = [f"file 'snap{i:05}_{physics_name}.jpeg'" for i in snap_time_array_ms]
     save_file_forffmpeg_path = save_dir_physics_path / Path("snap_shot/for_ffmpeg.txt")
     with open(save_file_forffmpeg_path, mode="w") as f:
         for i in for_ffmpeg:
             f.write(f"{i}\n")
 
+    cmd_list1 = [
+        "ffmpeg",
+        "-y",
+        "-r",
+        f"{IN_PARAMS.framerate}",
+        "-f",
+        "concat",
+        "-safe",
+        "0",
+        "-i",
+        str(save_file_forffmpeg_path),
+        "-vf",
+        "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+        "-vcodec",
+        "libx264",
+    ]
+    cmd_list2 = ["-pix_fmt", "yuv420p"]
+
+    cur_save_file_name = f"{physics_name}.mp4"
     subprocess.run(
-        [
-            "ffmpeg",
-            "-y",
-            "-r",
-            f"{IN_PARAMS.framerate}",
-            "-f",
-            "concat",
-            "-safe",
-            "0",
-            "-i",
-            str(save_file_forffmpeg_path),
-            "-vf",
-            "scale=trunc(iw/2)*2:trunc(ih/2)*2",
-            "-vcodec",
-            "libx264",
-            "-pix_fmt",
-            "yuv420p",
-            str(save_dir_animation_path / Path(f"{physicsname}.mp4")),
-        ],
+        cmd_list1
+        + cmd_list2
+        + [str(save_dir_animation_path / Path(cur_save_file_name))],
         cwd=str(save_dir_physics_path / Path("snap_shot")),
     )
+
+    # 以下は低画質用
+    cur_save_file_name = f"{physics_name}_lowquality.mp4"
+    subprocess.run(
+        cmd_list1
+        + ["-crf", f"{IN_PARAMS.crf_num}"]  # ここで動画の品質を調整
+        + cmd_list2
+        + [str(save_dir_animation_path / Path(cur_save_file_name))],
+        cwd=str(save_dir_physics_path / Path("snap_shot")),
+    )
+
+    print(f"contour:{physics_name} animation finished")
 
     return
 
@@ -441,18 +511,18 @@ def main() -> None:
     )
 
     # コンター図を作成
-    for cur_physicsname in ["pressure", "vorticity"]:
-        if getattr(IN_PARAMS, f"is_plot_contour_{cur_physicsname}"):
-            save_dir_physics_path = save_dir_path / Path(cur_physicsname)
+    for cur_physics_name in ["pressure", "vorticity"]:
+        if getattr(IN_PARAMS, f"is_plot_contour_{cur_physics_name}"):
+            save_dir_physics_path = save_dir_path / Path(cur_physics_name)
             make_snap_contour_all_time(
                 snap_time_array_ms=snap_time_array_ms,
                 save_dir_physics_path=save_dir_physics_path,
-                physicsname=cur_physicsname,
+                physics_name=cur_physics_name,
             )
             make_animation_contour(
                 snap_time_array_ms=snap_time_array_ms,
                 save_dir_physics_path=save_dir_physics_path,
-                physicsname=cur_physicsname,
+                physics_name=cur_physics_name,
             )
 
     print("描画終了")
