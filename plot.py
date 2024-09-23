@@ -52,10 +52,13 @@ plt.rcParams["savefig.pad_inches"] = 0.05
 
 @dataclasses.dataclass(frozen=True)
 class DataclassInputParameters:
+    # * スナップやアニメーションを保存するディレクトリ名
     save_dir_name: str
 
+    # * プロットの順序．上から順番にプロットを行う．いらないものはコメントアウトすればプロットされない．
     plot_order_list: list | None  # リストの要素がゼロのときはNoneになる
 
+    # * 物理量が素データのどの軸か．0-index
     XUD_x_col_index: int
     XUD_y_col_index: int
     XUD_u_col_index: int
@@ -63,6 +66,7 @@ class DataclassInputParameters:
     XUD_disa_col_index: int
     TMD_move_col_index: int
 
+    # * プロット関連
     timestep_ms: int
     snap_start_time_ms: int
     snap_end_time_ms: int
@@ -74,6 +78,7 @@ class DataclassInputParameters:
 
     framerate: int
 
+    # * 圧力コンター作成関係
     pressure_label: str
     pressure_col_index: int
     pressure_min_value_contour: int
@@ -81,6 +86,7 @@ class DataclassInputParameters:
     pressure_cmap: str
     pressure_is_plot_velocity_vector: bool
 
+    # * 渦度コンター作成関係
     vorticity_label: str
     vorticity_col_index: int
     vorticity_min_value_contour: int
@@ -88,8 +94,41 @@ class DataclassInputParameters:
     vorticity_cmap: str
     vorticity_is_plot_velocity_vector: bool
 
-    aqua_is_plot_velocity_vector: bool
+    # * Q_signedコンター作成関係
+    Q_signed_label: str
+    Q_signed_col_index: int
+    Q_signed_min_value_contour: int
+    Q_signed_max_value_contour: int
+    Q_signed_cmap: str
+    Q_signed_is_plot_velocity_vector: bool
 
+    # * densityコンター作成関係
+    density_label: str
+    density_col_index: int
+    density_min_value_contour: float
+    density_max_value_contour: float
+    density_cmap: str
+    density_is_plot_velocity_vector: bool
+
+    # * div_Uコンター作成関係
+    div_U_label: str
+    div_U_col_index: int
+    div_U_min_value_contour: float
+    div_U_max_value_contour: float
+    div_U_cmap: str
+    div_U_is_plot_velocity_vector: bool
+
+    # * speedコンター作成関係
+    speed_label: str
+    speed_col_index: int
+    speed_min_value_contour: float
+    speed_max_value_contour: float
+    speed_cmap: str
+    speed_is_plot_velocity_vector: bool
+
+    #!　以下，デフォルト値あり
+
+    # * 圧力コンター作成関係
     pressure_wall_particle_color: str | None = None
     pressure_wall_particle_alpha: float = 1.0
     pressure_dummy_particle_color: str | None = None
@@ -99,6 +138,7 @@ class DataclassInputParameters:
     pressure_movedummy_particle_color: str | None = None
     pressure_movedummy_particle_alpha: float = 1.0
 
+    # * 渦度コンター作成関係
     vorticity_wall_particle_color: str | None = None
     vorticity_wall_particle_alpha: float = 1.0
     vorticity_dummy_particle_color: str | None = None
@@ -108,16 +148,58 @@ class DataclassInputParameters:
     vorticity_movedummy_particle_color: str | None = None
     vorticity_movedummy_particle_alpha: float = 1.0
 
-    aqua_water_particle_color: str | None = None
-    aqua_water_particle_alpha: float = 1.0
-    aqua_wall_particle_color: str | None = None
-    aqua_wall_particle_alpha: float = 1.0
-    aqua_dummy_particle_color: str | None = None
-    aqua_dummy_particle_alpha: float = 1.0
-    aqua_movewall_particle_color: str | None = None
-    aqua_movewall_particle_alpha: float = 1.0
-    aqua_movedummy_particle_color: str | None = None
-    aqua_movedummy_particle_alpha: float = 1.0
+    # * Q_signedコンター作成関係
+    Q_signed_wall_particle_color: str | None = None
+    Q_signed_wall_particle_alpha: float = 1.0
+    Q_signed_dummy_particle_color: str | None = None
+    Q_signed_dummy_particle_alpha: float = 1.0
+    Q_signed_movewall_particle_color: str | None = None
+    Q_signed_movewall_particle_alpha: float = 1.0
+    Q_signed_movedummy_particle_color: str | None = None
+    Q_signed_movedummy_particle_alpha: float = 1.0
+
+    # * densityコンター作成関係
+    density_wall_particle_color: str | None = None
+    density_wall_particle_alpha: float = 1.0
+    density_dummy_particle_color: str | None = None
+    density_dummy_particle_alpha: float = 1.0
+    density_movewall_particle_color: str | None = None
+    density_movewall_particle_alpha: float = 1.0
+    density_movedummy_particle_color: str | None = None
+    density_movedummy_particle_alpha: float = 1.0
+
+    # * div_Uコンター作成関係
+    div_U_wall_particle_color: str | None = None
+    div_U_wall_particle_alpha: float = 1.0
+    div_U_dummy_particle_color: str | None = None
+    div_U_dummy_particle_alpha: float = 1.0
+    div_U_movewall_particle_color: str | None = None
+    div_U_movewall_particle_alpha: float = 1.0
+    div_U_movedummy_particle_color: str | None = None
+    div_U_movedummy_particle_alpha: float = 1.0
+
+    # * speedコンター作成関係
+    speed_wall_particle_color: str | None = None
+    speed_wall_particle_alpha: float = 1.0
+    speed_dummy_particle_color: str | None = None
+    speed_dummy_particle_alpha: float = 1.0
+    speed_movewall_particle_color: str | None = None
+    speed_movewall_particle_alpha: float = 1.0
+    speed_movedummy_particle_color: str | None = None
+    speed_movedummy_particle_alpha: float = 1.0
+
+    # * move関連
+    move_is_plot_velocity_vector: bool = True
+    move_water_particle_color: str = "#00FFFF"
+    move_water_particle_alpha: float = 1.0
+    move_wall_particle_color: str = "#BC8F8F"
+    move_wall_particle_alpha: float = 1.0
+    move_dummy_particle_color: str = "#A52A2A"
+    move_dummy_particle_alpha: float = 1.0
+    move_movewall_particle_color: str = "#ff1493"
+    move_movewall_particle_alpha: float = 1.0
+    move_movedummy_particle_color: str = "#ff69b4"
+    move_movedummy_particle_alpha: float = 1.0
 
     crf_num: int = 35
 
@@ -173,20 +255,20 @@ def get_mask_array_by_plot_region(snap_time_ms: int) -> np.ndarray:
     margin = np.max(original_data[:, 2]) * 3  # 最大粒径の３倍分marginを設定
 
     # 範囲条件を設定
-    mask = (
+    mask_array = (
         (x >= IN_PARAMS.xlim_min - margin)
         & (x <= IN_PARAMS.xlim_max + margin)
         & (y >= IN_PARAMS.ylim_min - margin)
         & (y <= IN_PARAMS.ylim_max + margin)
     )
 
-    return mask
+    return mask_array
 
 
-def load_selected_par_data(
+def load_par_data_masked_by_plot_region(
     snap_time_ms: int,
-    mask_array: np.ndarray,
     usecols: tuple[int, ...],
+    mask_array: np.ndarray,
     mask_array_by_group: np.ndarray | None = None,
 ) -> np.ndarray:
     original_data = np.loadtxt(
@@ -194,10 +276,10 @@ def load_selected_par_data(
         usecols=usecols,
     )
 
-    masked_data = original_data[mask_array, :]
+    masked_data = original_data[mask_array]
 
     if mask_array_by_group is not None:
-        masked_data = masked_data[mask_array_by_group, :]
+        masked_data = masked_data[mask_array_by_group]
 
     return masked_data.T
 
@@ -261,131 +343,6 @@ def plot_particles_by_scatter(
     return
 
 
-def make_snap(
-    fig: plt.Figure,
-    ax: plt.Axes,
-    snap_time_ms: int,
-    save_dir_snap_path: Path,
-    physics_name: str,
-    grouping_choice: str,
-) -> None:
-    set_ax_ticks(ax=ax)
-    set_ax_labels(ax=ax)
-    set_ax_title(ax=ax, snap_time_ms=snap_time_ms)
-
-    # TODO キャンバス更新
-    if snap_time_ms == IN_PARAMS.snap_start_time_ms:
-        fig.canvas.draw()
-
-    mask_array = get_mask_array_by_plot_region(snap_time_ms=snap_time_ms)
-
-    par_x, par_y, par_disa = load_selected_par_data(
-        snap_time_ms=snap_time_ms,
-        mask_array=mask_array,
-        usecols=(
-            IN_PARAMS.XUD_x_col_index,
-            IN_PARAMS.XUD_y_col_index,
-            IN_PARAMS.XUD_disa_col_index,
-        ),
-    )
-    par_color = np.full((par_x.shape[0], 4), to_rgba(c="#FFFFFF", alpha=1.0))
-
-    if grouping_choice == "move":
-        par_move = get_move_index_array(
-            snap_time_ms=snap_time_ms, mask_array=mask_array
-        )
-        move_to_movelabel = {
-            0: "water",
-            1: "wall",
-            2: "dummy",
-            4: "movewall",
-            5: "movedummy",
-        }
-
-        # TODO リファクタリング
-        for iter, move in enumerate(np.unique(par_move)):
-            mask_array_by_move: np.ndarray = par_move == move
-
-            cur_par_x = par_x[mask_array_by_move]
-            cur_par_y = par_y[mask_array_by_move]
-            cur_par_disa = par_disa[mask_array_by_move]
-            cur_par_color = par_color[mask_array_by_move]
-
-            # movelabelがないもの以外はコンターの色をそのまま
-            if move in move_to_movelabel.keys():
-                cur_par_color = change_facecolor_by_move(
-                    par_color_masked_by_move=par_color[mask_array_by_move],
-                    physics_name=physics_name,
-                    move_label=move_to_movelabel[move],
-                )
-
-            plot_particles_by_scatter(
-                fig=fig,
-                ax=ax,
-                par_x=cur_par_x,
-                par_y=cur_par_y,
-                par_disa=cur_par_disa,
-                par_color=cur_par_color,
-            )
-
-            if getattr(IN_PARAMS, f"{physics_name}_is_plot_velocity_vector"):
-                plot_velocity_vector(
-                    ax=ax,
-                    snap_time_ms=snap_time_ms,
-                    mask_array=mask_array,
-                    mask_array_by_group=mask_array_by_move,
-                    is_plot_reference_vector=iter
-                    == 0,  # 最初の一回のみreference vectorをプロットする
-                )
-
-    # elif grouping_choice=="splash":
-    #     par_group_index = get_move_index_array(snap_time_ms=snap_time_ms, mask_array=mask_array)
-
-    else:
-        raise ValueError
-
-    fig.savefig(
-        save_dir_snap_path / Path(f"snap{snap_time_ms:05}_{physics_name}.jpeg"),
-    )
-    # if snap_time_ms == 1000:
-    #     fig.savefig(
-    #         save_dir_snap_path / Path(f"snap{snap_time_ms:05}_{physics_name}.svg"),
-    #     )
-
-    plt.cla()
-
-    return
-
-
-def make_snap_all_snap_time(
-    snap_time_array_ms: np.ndarray,
-    save_dir_physics_path: Path,
-    physics_name: str,
-    grouping_choice: str,
-) -> None:
-    save_dir_snap_path = save_dir_physics_path / Path("snap_shot")
-    save_dir_snap_path.mkdir(exist_ok=True, parents=True)
-
-    fig = plt.figure(dpi=IN_PARAMS.snapshot_dpi)
-    ax = fig.add_subplot(1, 1, 1, aspect="equal")
-
-    fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
-
-    for snap_time_ms in snap_time_array_ms:
-        make_snap(
-            fig=fig,
-            ax=ax,
-            snap_time_ms=snap_time_ms,
-            save_dir_snap_path=save_dir_snap_path,
-            physics_name=physics_name,
-            grouping_choice=grouping_choice,
-        )
-        print(f"{snap_time_ms/1000:.03f} s {physics_name} plot finished")
-
-    plt.close()
-    return
-
-
 def get_norm_for_color_contour(physics_name: str) -> Normalize:
     return Normalize(
         vmin=getattr(IN_PARAMS, f"{physics_name}_min_value_contour"),
@@ -398,10 +355,21 @@ def get_cmap_for_color_contour(physics_name: str) -> mpl.colors.Colormap:
 
 
 def get_facecolor_by_physics_contour(
-    physics_name: str, par_physics: np.ndarray
+    physics_name: str,
+    snap_time_ms: int,
+    mask_array: np.ndarray,
+    mask_array_by_group: np.ndarray | None = None,
 ) -> np.ndarray:
     cmap = get_cmap_for_color_contour(physics_name=physics_name)
     norm = get_norm_for_color_contour(physics_name=physics_name)
+
+    par_physics = load_par_data_masked_by_plot_region(
+        snap_time_ms=snap_time_ms,
+        mask_array=mask_array,
+        usecols=getattr(IN_PARAMS, f"{physics_name}_col_index"),
+        mask_array_by_group=mask_array_by_group,
+    )
+
     par_color = cmap(norm(par_physics))
 
     return par_color
@@ -438,7 +406,7 @@ def plot_velocity_vector(
     is_plot_reference_vector: bool,
     mask_array_by_group: np.ndarray | None = None,
 ) -> None:
-    par_x, par_y, par_u, par_v = load_selected_par_data(
+    par_x, par_y, par_u, par_v = load_par_data_masked_by_plot_region(
         snap_time_ms=snap_time_ms,
         mask_array=mask_array,
         usecols=(
@@ -508,14 +476,50 @@ def change_facecolor_by_move(
     return par_color_masked_by_move
 
 
+def get_facecolor_array_for_move_or_physics_contour(
+    is_move: bool,
+    move_index: int,
+    physics_name: str,
+    snap_time_ms: int,
+    num_par_cur_group: int,
+    mask_array: np.ndarray,
+    mask_array_by_group: np.ndarray,
+):
+    move_to_movelabel = {
+        0: "water",
+        1: "wall",
+        2: "dummy",
+        4: "movewall",
+        5: "movedummy",
+    }
+
+    if is_move:
+        par_color = np.full((num_par_cur_group, 4), -1)
+    else:
+        par_color = get_facecolor_by_physics_contour(
+            physics_name=physics_name,
+            snap_time_ms=snap_time_ms,
+            mask_array=mask_array,
+            mask_array_by_group=mask_array_by_group,
+        )
+
+    # move以外のコンター図 かつ 水粒子　-> 色を変えずそのまま
+    if (not is_move) and move_index % 3 == 0:
+        return par_color
+
+    return change_facecolor_by_move(
+        par_color_masked_by_move=par_color,
+        physics_name=physics_name,
+        move_label=move_to_movelabel[move_index],
+    )
+
+
 def make_snap_physics_contour(
     fig: plt.Figure,
     ax: plt.Axes,
     snap_time_ms: int,
     save_dir_snap_path: Path,
-    physics_col_index: int,
     physics_name: str,
-    grouping_choice: str,
 ) -> None:
     set_ax_ticks(ax=ax)
     set_ax_labels(ax=ax)
@@ -527,72 +531,59 @@ def make_snap_physics_contour(
 
     mask_array = get_mask_array_by_plot_region(snap_time_ms=snap_time_ms)
 
-    par_x, par_y, par_disa, par_physics = load_selected_par_data(
-        snap_time_ms=snap_time_ms,
-        mask_array=mask_array,
-        usecols=(
-            IN_PARAMS.XUD_x_col_index,
-            IN_PARAMS.XUD_y_col_index,
-            IN_PARAMS.XUD_disa_col_index,
-            physics_col_index,
-        ),
+    par_group_index = get_move_index_array(
+        snap_time_ms=snap_time_ms, mask_array=mask_array
     )
-    par_color = get_facecolor_by_physics_contour(
-        physics_name=physics_name, par_physics=par_physics
-    )
+    # TODO if physics_name == "splash" else get_splash...
 
-    if grouping_choice == "move":
-        par_move = get_move_index_array(
-            snap_time_ms=snap_time_ms, mask_array=mask_array
+    # TODO リファクタリング
+    # TODO sort()[::-1]は水粒子を最後にプロットして一番上に置くため
+    for iter, group_index in enumerate(np.unique(par_group_index)[::-1]):
+        mask_array_by_group: np.ndarray = par_group_index == group_index
+
+        par_x, par_y, par_disa = load_par_data_masked_by_plot_region(
+            snap_time_ms=snap_time_ms,
+            mask_array=mask_array,
+            usecols=(
+                IN_PARAMS.XUD_x_col_index,
+                IN_PARAMS.XUD_y_col_index,
+                IN_PARAMS.XUD_disa_col_index,
+            ),
+            mask_array_by_group=mask_array_by_group,
         )
-        move_to_movelabel = {
-            1: "wall",
-            2: "dummy",
-            4: "movewall",
-            5: "movedummy",
-        }
 
-        # TODO リファクタリング
-        for iter, move in enumerate(np.unique(par_move)):
-            mask_array_by_move: np.ndarray = par_move == move
-
-            cur_par_x = par_x[mask_array_by_move]
-            cur_par_y = par_y[mask_array_by_move]
-            cur_par_disa = par_disa[mask_array_by_move]
-            cur_par_color = par_color[mask_array_by_move]
-
-            # movelabelがないもの以外はコンターの色をそのまま
-            if move in move_to_movelabel.keys():
-                cur_par_color = change_facecolor_by_move(
-                    par_color_masked_by_move=par_color[mask_array_by_move],
-                    physics_name=physics_name,
-                    move_label=move_to_movelabel[move],
-                )
-
-            plot_particles_by_scatter(
-                fig=fig,
-                ax=ax,
-                par_x=cur_par_x,
-                par_y=cur_par_y,
-                par_disa=cur_par_disa,
-                par_color=cur_par_color,
+        if physics_name == "splash":
+            pass  # TODO
+        else:
+            is_move: bool = physics_name == "move"
+            par_color = get_facecolor_array_for_move_or_physics_contour(
+                is_move=is_move,
+                move_index=group_index,
+                physics_name=physics_name,
+                snap_time_ms=snap_time_ms,
+                num_par_cur_group=par_x.shape[0],
+                mask_array=mask_array,
+                mask_array_by_group=mask_array_by_group,
             )
 
-            if getattr(IN_PARAMS, f"{physics_name}_is_plot_velocity_vector"):
-                plot_velocity_vector(
-                    ax=ax,
-                    snap_time_ms=snap_time_ms,
-                    mask_array=mask_array,
-                    is_plot_reference_vector=iter
-                    == 0,  # 最初の一回のみreference vectorをプロットする
-                    mask_array_by_group=mask_array_by_move,
-                )
+        plot_particles_by_scatter(
+            fig=fig,
+            ax=ax,
+            par_x=par_x,
+            par_y=par_y,
+            par_disa=par_disa,
+            par_color=par_color,
+        )
 
-    # elif grouping_choice=="splash":
-    #     par_group_index = get_move_index_array(snap_time_ms=snap_time_ms, mask_array=mask_array)
-
-    else:
-        raise ValueError
+        if getattr(IN_PARAMS, f"{physics_name}_is_plot_velocity_vector"):
+            plot_velocity_vector(
+                ax=ax,
+                snap_time_ms=snap_time_ms,
+                mask_array=mask_array,
+                is_plot_reference_vector=iter
+                == 0,  # 最初の一回のみreference vectorをプロットする
+                mask_array_by_group=mask_array_by_group,
+            )
 
     fig.savefig(
         save_dir_snap_path / Path(f"snap{snap_time_ms:05}_{physics_name}.jpeg"),
@@ -607,7 +598,7 @@ def make_snap_physics_contour_all_snap_time(
     snap_time_array_ms: np.ndarray,
     save_dir_physics_path: Path,
     physics_name: str,
-    grouping_choice: str,
+    is_move_or_splash: bool,
 ) -> None:
     save_dir_snap_path = save_dir_physics_path / Path("snap_shot")
     save_dir_snap_path.mkdir(exist_ok=True, parents=True)
@@ -617,7 +608,8 @@ def make_snap_physics_contour_all_snap_time(
 
     fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
 
-    plot_colorbar(fig=fig, ax=ax, physics_name=physics_name)
+    if not is_move_or_splash:
+        plot_colorbar(fig=fig, ax=ax, physics_name=physics_name)
 
     for snap_time_ms in snap_time_array_ms:
         make_snap_physics_contour(
@@ -625,9 +617,7 @@ def make_snap_physics_contour_all_snap_time(
             ax=ax,
             snap_time_ms=snap_time_ms,
             save_dir_snap_path=save_dir_snap_path,
-            physics_col_index=getattr(IN_PARAMS, f"{physics_name}_col_index"),
             physics_name=physics_name,
-            grouping_choice=grouping_choice,
         )
         print(f"{snap_time_ms/1000:.03f} s contour:{physics_name} plot finished")
 
@@ -644,7 +634,7 @@ def make_animation_from_snap(
 
     # 連番でない画像の読み込みに対応させるための準備
     for_ffmpeg = [f"file 'snap{i:05}_{physics_name}.jpeg'" for i in snap_time_array_ms]
-    save_file_forffmpeg_path = save_dir_sub_path / Path("snap_shot/for_ffmpeg.txt")
+    save_file_forffmpeg_path = save_dir_sub_path / Path("snap_shot/tmp_for_ffmpeg.txt")
     with open(save_file_forffmpeg_path, mode="w") as f:
         for i in for_ffmpeg:
             f.write(f"{i}\n")
@@ -685,6 +675,8 @@ def make_animation_from_snap(
         cwd=str(save_dir_sub_path / Path("snap_shot")),
     )
 
+    # tmp_for_ffmpeg.txtを削除
+    save_file_forffmpeg_path.unlink()
     print(f"{physics_name} animation finished")
 
     return
@@ -707,36 +699,20 @@ def main() -> None:
         IN_PARAMS.timestep_ms,
     )
 
-    # 粒子のグルーピングの選択．現状は"move"か"splash"のみを想定
-    grouping_choice = "move"
-    # grouping_choice="splash"
-    if grouping_choice not in set(["move", "splash"]):
-        raise ValueError(f"grouping_choiceの設定が不適切です．:{grouping_choice}")
-
     # * コンター図を作成
     for cur_physics_name in IN_PARAMS.plot_order_list:
         save_dir_physics_path = save_dir_path / Path(cur_physics_name)
+        is_move_or_splash: bool = (
+            cur_physics_name == "move" or cur_physics_name == "splash"
+        )
 
-        # * aqua: 流速ベクトル図
-        if cur_physics_name == "aqua":
-            make_snap_all_snap_time(
-                snap_time_array_ms=snap_time_array_ms,
-                save_dir_physics_path=save_dir_physics_path,
-                physics_name=cur_physics_name,
-                grouping_choice=grouping_choice,
-            )
-            make_animation_from_snap(
-                snap_time_array_ms=snap_time_array_ms,
-                save_dir_sub_path=save_dir_physics_path,
-                physics_name=cur_physics_name,
-            )
-            continue
-
+        # TODO ↓いつかリファクタリングしたい
+        # * moveとsplashのみは物理量によるコンター図にはしない
         make_snap_physics_contour_all_snap_time(
             snap_time_array_ms=snap_time_array_ms,
             save_dir_physics_path=save_dir_physics_path,
             physics_name=cur_physics_name,
-            grouping_choice=grouping_choice,
+            is_move_or_splash=is_move_or_splash,
         )
         make_animation_from_snap(
             snap_time_array_ms=snap_time_array_ms,
