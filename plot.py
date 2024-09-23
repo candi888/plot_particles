@@ -8,6 +8,7 @@ import numpy as np
 import yaml
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import Normalize, to_rgba
+from numpy.typing import NDArray
 
 # 以下はイラレで編集可能なsvgを出力するために必要
 mpl.use("Agg")
@@ -56,7 +57,9 @@ class DataclassInputParameters:
     save_dir_name: str
 
     # * プロットの順序．上から順番にプロットを行う．いらないものはコメントアウトすればプロットされない．
-    plot_order_list: list | None  # リストの要素がゼロのときはNoneになる
+    plot_order_list: (
+        list | None
+    )  # リストの要素がゼロのときはNoneになる．List[str]であるが，後の__post_init__でチェック
 
     # * 物理量が素データのどの軸か．0-index
     XUD_x_col_index: int
@@ -240,7 +243,7 @@ def construct_input_parameters_dataclass() -> DataclassInputParameters:
         return DataclassInputParameters(**yaml.safe_load(f))
 
 
-def get_mask_array_by_plot_region(snap_time_ms: int) -> np.ndarray:
+def get_mask_array_by_plot_region(snap_time_ms: int) -> NDArray[np.bool]:
     original_data = np.loadtxt(
         Path(__file__).parent / Path(f"OUTPUT/SNAP/XUD{snap_time_ms:05}.DAT"),
         usecols=(
@@ -248,6 +251,7 @@ def get_mask_array_by_plot_region(snap_time_ms: int) -> np.ndarray:
             IN_PARAMS.XUD_y_col_index,
             IN_PARAMS.XUD_disa_col_index,
         ),
+        dtype=np.float64,
     )
 
     x = original_data[:, 0]
@@ -268,12 +272,13 @@ def get_mask_array_by_plot_region(snap_time_ms: int) -> np.ndarray:
 def load_par_data_masked_by_plot_region(
     snap_time_ms: int,
     usecols: tuple[int, ...],
-    mask_array: np.ndarray,
-    mask_array_by_group: np.ndarray | None = None,
-) -> np.ndarray:
+    mask_array: NDArray[np.bool],
+    mask_array_by_group: NDArray[np.bool] | None = None,
+) -> NDArray[np.float64]:
     original_data = np.loadtxt(
         Path(__file__).parent / Path(f"OUTPUT/SNAP/XUD{snap_time_ms:05}.DAT"),
         usecols=usecols,
+        dtype=np.float64,
     )
 
     masked_data = original_data[mask_array]
@@ -284,10 +289,12 @@ def load_par_data_masked_by_plot_region(
     return masked_data.T
 
 
-def get_move_index_array(snap_time_ms: int, mask_array: np.ndarray) -> np.ndarray:
+def get_move_index_array(
+    snap_time_ms: int, mask_array: NDArray[np.bool]
+) -> NDArray[np.int8]:
     masked_move_index = np.loadtxt(
         Path(__file__).parent / Path(f"OUTPUT/SNAP/TMD{snap_time_ms:05}.DAT"),
-        dtype=int,
+        dtype=np.int8,
         usecols=IN_PARAMS.TMD_move_col_index,
     )[mask_array]
 
@@ -295,21 +302,21 @@ def get_move_index_array(snap_time_ms: int, mask_array: np.ndarray) -> np.ndarra
 
 
 def data_unit_to_points_size(
-    diameter_in_data_units: np.ndarray, fig: plt.Figure, axis: plt.Axes
-) -> np.ndarray:
+    diameter_in_data_units: NDArray[np.float64], fig: plt.Figure, axis: plt.Axes
+) -> NDArray[np.float64]:
     """
     データ単位で指定した直径を、matplotlib の scatter プロットで使用する s パラメータ（ポイントの面積）に変換します。
 
     Parameters
     ----------
-    diameter_in_data_units : np.ndarray
+    diameter_in_data_units : NDArray[np.float64]
         データ単位での直径の配列。
     axis : matplotlib.axes.Axes
         対象の Axes オブジェクト。
 
     Returns
     -------
-    np.ndarray
+    NDArray[np.float64]
         s パラメータとして使用可能なポイント^2 単位の面積の配列。
     """
     # データ座標からディスプレイ座標への変換関数
@@ -332,10 +339,10 @@ def data_unit_to_points_size(
 def plot_particles_by_scatter(
     fig: plt.Figure,
     ax: plt.Axes,
-    par_x: np.ndarray,
-    par_y: np.ndarray,
-    par_disa: np.ndarray,
-    par_color: np.ndarray,
+    par_x: NDArray[np.float64],
+    par_y: NDArray[np.float64],
+    par_disa: NDArray[np.float64],
+    par_color: NDArray[np.float64],
 ) -> None:
     s = data_unit_to_points_size(diameter_in_data_units=par_disa, fig=fig, axis=ax)
     ax.scatter(par_x, par_y, s=s, c=par_color, linewidths=0)
@@ -357,9 +364,9 @@ def get_cmap_for_color_contour(physics_name: str) -> mpl.colors.Colormap:
 def get_facecolor_by_physics_contour(
     physics_name: str,
     snap_time_ms: int,
-    mask_array: np.ndarray,
-    mask_array_by_group: np.ndarray | None = None,
-) -> np.ndarray:
+    mask_array: NDArray[np.bool],
+    mask_array_by_group: NDArray[np.bool] | None = None,
+) -> NDArray[np.float64]:
     cmap = get_cmap_for_color_contour(physics_name=physics_name)
     norm = get_norm_for_color_contour(physics_name=physics_name)
 
@@ -402,9 +409,9 @@ def plot_colorbar(
 def plot_velocity_vector(
     ax: plt.Axes,
     snap_time_ms: int,
-    mask_array: np.ndarray,
     is_plot_reference_vector: bool,
-    mask_array_by_group: np.ndarray | None = None,
+    mask_array: NDArray[np.bool],
+    mask_array_by_group: NDArray[np.bool] | None = None,
 ) -> None:
     par_x, par_y, par_u, par_v = load_par_data_masked_by_plot_region(
         snap_time_ms=snap_time_ms,
@@ -459,10 +466,10 @@ def set_ax_title(ax: plt.Axes, snap_time_ms: int) -> None:
 
 
 def change_facecolor_by_move(
-    par_color_masked_by_move: np.ndarray,
+    par_color_masked_by_move: NDArray[np.float64],
     physics_name: str,
     move_label: str,
-) -> np.ndarray:
+) -> NDArray[np.float64]:
     input_color = getattr(IN_PARAMS, f"{physics_name}_{move_label}_particle_color")
     input_alpha = getattr(IN_PARAMS, f"{physics_name}_{move_label}_particle_alpha")
 
@@ -482,9 +489,9 @@ def get_facecolor_array_for_move_or_physics_contour(
     physics_name: str,
     snap_time_ms: int,
     num_par_cur_group: int,
-    mask_array: np.ndarray,
-    mask_array_by_group: np.ndarray,
-):
+    mask_array: NDArray[np.bool],
+    mask_array_by_group: NDArray[np.bool],
+) -> NDArray[np.float64]:
     move_to_movelabel = {
         0: "water",
         1: "wall",
@@ -494,7 +501,7 @@ def get_facecolor_array_for_move_or_physics_contour(
     }
 
     if is_move:
-        par_color = np.full((num_par_cur_group, 4), -1)
+        par_color = np.full((num_par_cur_group, 4), -1, dtype=np.float64)
     else:
         par_color = get_facecolor_by_physics_contour(
             physics_name=physics_name,
@@ -539,7 +546,7 @@ def make_snap_physics_contour(
     # TODO リファクタリング
     # TODO sort()[::-1]は水粒子を最後にプロットして一番上に置くため
     for iter, group_index in enumerate(np.unique(par_group_index)[::-1]):
-        mask_array_by_group: np.ndarray = par_group_index == group_index
+        mask_array_by_group: NDArray[np.bool] = par_group_index == group_index
 
         par_x, par_y, par_disa = load_par_data_masked_by_plot_region(
             snap_time_ms=snap_time_ms,
@@ -595,7 +602,7 @@ def make_snap_physics_contour(
 
 
 def make_snap_physics_contour_all_snap_time(
-    snap_time_array_ms: np.ndarray,
+    snap_time_array_ms: NDArray[np.int64],
     save_dir_physics_path: Path,
     physics_name: str,
     is_move_or_splash: bool,
@@ -627,7 +634,7 @@ def make_snap_physics_contour_all_snap_time(
 
 # TODO subporocessのとこリファクタリング
 def make_animation_from_snap(
-    snap_time_array_ms: np.ndarray, save_dir_sub_path: Path, physics_name: str
+    snap_time_array_ms: NDArray[np.int64], save_dir_sub_path: Path, physics_name: str
 ) -> None:
     save_dir_animation_path = save_dir_sub_path / Path("animation")
     save_dir_animation_path.mkdir(exist_ok=True)
@@ -693,7 +700,7 @@ def main() -> None:
     save_dir_path: Path = Path(__file__).parent / Path(IN_PARAMS.save_dir_name)
 
     # スナップショットを出力する時間[ms]のarray
-    snap_time_array_ms: np.ndarray = np.arange(
+    snap_time_array_ms: NDArray[np.int64] = np.arange(
         IN_PARAMS.snap_start_time_ms,
         IN_PARAMS.snap_end_time_ms + IN_PARAMS.timestep_ms,
         IN_PARAMS.timestep_ms,
