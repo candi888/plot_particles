@@ -1,5 +1,6 @@
 import dataclasses
 import subprocess
+import sys
 from pathlib import Path
 
 import matplotlib as mpl
@@ -230,22 +231,26 @@ class DataclassInputParameters:
 
         # * 2.諸々のエラー処理
 
-        print("IN_PARAMS construct OK")
+        print("IN_PARAMS construct OK\n")
         return
 
 
 def construct_input_parameters_dataclass() -> DataclassInputParameters:
-    # print("Please input file name(without extension):")
-    # input_yaml_name = input()
+    # print("Please input file name(with extension):")
+    input_yaml_name = sys.argv[1]
 
-    input_yaml_name = "INPUT_PARAMETERS"
-    with open(Path(__file__).parent / f"{input_yaml_name}.yaml", mode="r") as f:
+    with open(
+        Path(__file__).parent / "input_yaml" / f"{input_yaml_name}",
+        mode="r",
+        encoding="utf-8",
+    ) as f:
+        print(f"plot execute by {input_yaml_name}\n")
         return DataclassInputParameters(**yaml.safe_load(f))
 
 
-def get_mask_array_by_plot_region(snap_time_ms: int) -> NDArray[np.bool]:
+def get_mask_array_by_plot_region(snap_time_ms: int) -> NDArray[np.bool_]:
     original_data = np.loadtxt(
-        Path(__file__).parent / Path(f"OUTPUT/SNAP/XUD{snap_time_ms:05}.DAT"),
+        Path(__file__).parent / "OUTPUT" / "SNAP" / f"XUD{snap_time_ms:05}.DAT",
         usecols=(
             IN_PARAMS.XUD_x_col_index,
             IN_PARAMS.XUD_y_col_index,
@@ -272,11 +277,11 @@ def get_mask_array_by_plot_region(snap_time_ms: int) -> NDArray[np.bool]:
 def load_par_data_masked_by_plot_region(
     snap_time_ms: int,
     usecols: tuple[int, ...],
-    mask_array: NDArray[np.bool],
-    mask_array_by_group: NDArray[np.bool] | None = None,
+    mask_array: NDArray[np.bool_],
+    mask_array_by_group: NDArray[np.bool_] | None = None,
 ) -> NDArray[np.float64]:
     original_data = np.loadtxt(
-        Path(__file__).parent / Path(f"OUTPUT/SNAP/XUD{snap_time_ms:05}.DAT"),
+        Path(__file__).parent / "OUTPUT" / "SNAP" / f"XUD{snap_time_ms:05}.DAT",
         usecols=usecols,
         dtype=np.float64,
     )
@@ -290,10 +295,10 @@ def load_par_data_masked_by_plot_region(
 
 
 def get_move_index_array(
-    snap_time_ms: int, mask_array: NDArray[np.bool]
+    snap_time_ms: int, mask_array: NDArray[np.bool_]
 ) -> NDArray[np.int8]:
     masked_move_index = np.loadtxt(
-        Path(__file__).parent / Path(f"OUTPUT/SNAP/TMD{snap_time_ms:05}.DAT"),
+        Path(__file__).parent / "OUTPUT" / "SNAP" / f"TMD{snap_time_ms:05}.DAT",
         dtype=np.int8,
         usecols=IN_PARAMS.TMD_move_col_index,
     )[mask_array]
@@ -364,8 +369,8 @@ def get_cmap_for_color_contour(physics_name: str) -> mpl.colors.Colormap:
 def get_facecolor_by_physics_contour(
     physics_name: str,
     snap_time_ms: int,
-    mask_array: NDArray[np.bool],
-    mask_array_by_group: NDArray[np.bool] | None = None,
+    mask_array: NDArray[np.bool_],
+    mask_array_by_group: NDArray[np.bool_] | None = None,
 ) -> NDArray[np.float64]:
     cmap = get_cmap_for_color_contour(physics_name=physics_name)
     norm = get_norm_for_color_contour(physics_name=physics_name)
@@ -410,8 +415,8 @@ def plot_velocity_vector(
     ax: plt.Axes,
     snap_time_ms: int,
     is_plot_reference_vector: bool,
-    mask_array: NDArray[np.bool],
-    mask_array_by_group: NDArray[np.bool] | None = None,
+    mask_array: NDArray[np.bool_],
+    mask_array_by_group: NDArray[np.bool_] | None = None,
 ) -> None:
     par_x, par_y, par_u, par_v = load_par_data_masked_by_plot_region(
         snap_time_ms=snap_time_ms,
@@ -460,8 +465,7 @@ def set_ax_labels(ax: plt.Axes) -> None:
 
 
 def set_ax_title(ax: plt.Axes, snap_time_ms: int) -> None:
-    ax.set_title(rf"$t=$ {snap_time_ms/1000:.03f}s", y=1.1, loc="left")
-
+    ax.set_title(rf"$t=$ {snap_time_ms/1000:.03f}s", pad=10, loc="left")
     return
 
 
@@ -489,8 +493,8 @@ def get_facecolor_array_for_move_or_physics_contour(
     physics_name: str,
     snap_time_ms: int,
     num_par_cur_group: int,
-    mask_array: NDArray[np.bool],
-    mask_array_by_group: NDArray[np.bool],
+    mask_array: NDArray[np.bool_],
+    mask_array_by_group: NDArray[np.bool_],
 ) -> NDArray[np.float64]:
     move_to_movelabel = {
         0: "water",
@@ -546,7 +550,7 @@ def make_snap_physics_contour(
     # TODO リファクタリング
     # TODO sort()[::-1]は水粒子を最後にプロットして一番上に置くため
     for iter, group_index in enumerate(np.unique(par_group_index)[::-1]):
-        mask_array_by_group: NDArray[np.bool] = par_group_index == group_index
+        mask_array_by_group: NDArray[np.bool_] = par_group_index == group_index
 
         par_x, par_y, par_disa = load_par_data_masked_by_plot_region(
             snap_time_ms=snap_time_ms,
@@ -592,9 +596,11 @@ def make_snap_physics_contour(
                 mask_array_by_group=mask_array_by_group,
             )
 
-    fig.savefig(
-        save_dir_snap_path / Path(f"snap{snap_time_ms:05}_{physics_name}.jpeg"),
-    )
+    fig.savefig(save_dir_snap_path / f"snap{snap_time_ms:05}_{physics_name}.jpeg")
+    # if physics_name == "move" and snap_time_ms == 50:
+    #     fig.savefig(
+    #         Path(__file__).parent / Path(f"snap{snap_time_ms:05}_{physics_name}.svg"),
+    #     )
 
     plt.cla()
 
@@ -607,7 +613,7 @@ def make_snap_physics_contour_all_snap_time(
     physics_name: str,
     is_move_or_splash: bool,
 ) -> None:
-    save_dir_snap_path = save_dir_physics_path / Path("snap_shot")
+    save_dir_snap_path = save_dir_physics_path / "snap_shot"
     save_dir_snap_path.mkdir(exist_ok=True, parents=True)
 
     fig = plt.figure(dpi=IN_PARAMS.snapshot_dpi)
@@ -619,15 +625,22 @@ def make_snap_physics_contour_all_snap_time(
         plot_colorbar(fig=fig, ax=ax, physics_name=physics_name)
 
     for snap_time_ms in snap_time_array_ms:
-        make_snap_physics_contour(
-            fig=fig,
-            ax=ax,
-            snap_time_ms=snap_time_ms,
-            save_dir_snap_path=save_dir_snap_path,
-            physics_name=physics_name,
-        )
-        print(f"{snap_time_ms/1000:.03f} s contour:{physics_name} plot finished")
+        try:
+            make_snap_physics_contour(
+                fig=fig,
+                ax=ax,
+                snap_time_ms=snap_time_ms,
+                save_dir_snap_path=save_dir_snap_path,
+                physics_name=physics_name,
+            )
+            print(f"{snap_time_ms/1000:.03f} s contour:{physics_name} plot finished")
+        except FileNotFoundError:
+            print(
+                f"{snap_time_ms/1000:.03f} s時点の計算データがありません．スナップショットの作成を終了します．\n"
+            )
+            break
 
+    print(f"{snap_time_ms/1000:.03f} s contour:{physics_name} all make snap finished\n")
     plt.close()
     return
 
@@ -636,12 +649,32 @@ def make_snap_physics_contour_all_snap_time(
 def make_animation_from_snap(
     snap_time_array_ms: NDArray[np.int64], save_dir_sub_path: Path, physics_name: str
 ) -> None:
-    save_dir_animation_path = save_dir_sub_path / Path("animation")
+    save_dir_animation_path = save_dir_sub_path / "animation"
     save_dir_animation_path.mkdir(exist_ok=True)
 
     # 連番でない画像の読み込みに対応させるための準備
-    for_ffmpeg = [f"file 'snap{i:05}_{physics_name}.jpeg'" for i in snap_time_array_ms]
-    save_file_forffmpeg_path = save_dir_sub_path / Path("snap_shot/tmp_for_ffmpeg.txt")
+    for_ffmpeg = []
+    for snap_time_ms in snap_time_array_ms:
+        cur_snap_path = (
+            save_dir_sub_path
+            / "snap_shot"
+            / f"snap{snap_time_ms:05}_{physics_name}.jpeg"
+        )
+        # アニメーション作成で使うsnapが存在するかの確認
+        if not cur_snap_path.exists():
+            break
+        for_ffmpeg.append(f"file 'snap{snap_time_ms:05}_{physics_name}.jpeg'")
+
+    if for_ffmpeg == []:
+        print(
+            "アニメーション作成対象のスナップショットがありません．アニメーション作成を終了します.\n"
+        )
+        return
+
+    print(f"animation range: {for_ffmpeg[0]} ~ {for_ffmpeg[-1]}")
+
+    # 一度ファイルに書き込んでからffmpegで読み取る．あとでこのファイルは削除
+    save_file_forffmpeg_path = save_dir_sub_path / "snap_shot" / "tmp_for_ffmpeg.txt"
     with open(save_file_forffmpeg_path, mode="w") as f:
         for i in for_ffmpeg:
             f.write(f"{i}\n")
@@ -657,6 +690,8 @@ def make_animation_from_snap(
         "0",
         "-i",
         str(save_file_forffmpeg_path),
+        "-loglevel",
+        "warning",
         "-vf",
         "scale=trunc(iw/2)*2:trunc(ih/2)*2",
         "-vcodec",
@@ -666,10 +701,8 @@ def make_animation_from_snap(
 
     cur_save_file_name = f"{physics_name}.mp4"
     subprocess.run(
-        cmd_list1
-        + cmd_list2
-        + [str(save_dir_animation_path / Path(cur_save_file_name))],
-        cwd=str(save_dir_sub_path / Path("snap_shot")),
+        cmd_list1 + cmd_list2 + [str(save_dir_animation_path / cur_save_file_name)],
+        cwd=str(save_dir_sub_path / "snap_shot"),
     )
 
     # 以下は低画質用
@@ -678,13 +711,14 @@ def make_animation_from_snap(
         cmd_list1
         + ["-crf", f"{IN_PARAMS.crf_num}"]  # ここで動画の品質を調整
         + cmd_list2
-        + [str(save_dir_animation_path / Path(cur_save_file_name))],
-        cwd=str(save_dir_sub_path / Path("snap_shot")),
+        + [str(save_dir_animation_path / cur_save_file_name)],
+        cwd=str(save_dir_sub_path / "snap_shot"),
     )
 
     # tmp_for_ffmpeg.txtを削除
     save_file_forffmpeg_path.unlink()
-    print(f"{physics_name} animation finished")
+
+    print(f"{physics_name} animation finished\n")
 
     return
 
@@ -697,7 +731,7 @@ def main() -> None:
         exit()
 
     # スナップやアニメーションを保存するディレクトリ名
-    save_dir_path: Path = Path(__file__).parent / Path(IN_PARAMS.save_dir_name)
+    save_dir_path: Path = Path(__file__).parent / IN_PARAMS.save_dir_name
 
     # スナップショットを出力する時間[ms]のarray
     snap_time_array_ms: NDArray[np.int64] = np.arange(
@@ -708,7 +742,7 @@ def main() -> None:
 
     # * コンター図を作成
     for cur_physics_name in IN_PARAMS.plot_order_list:
-        save_dir_physics_path = save_dir_path / Path(cur_physics_name)
+        save_dir_physics_path = save_dir_path / cur_physics_name
         is_move_or_splash: bool = (
             cur_physics_name == "move" or cur_physics_name == "splash"
         )
@@ -726,9 +760,9 @@ def main() -> None:
             save_dir_sub_path=save_dir_physics_path,
             physics_name=cur_physics_name,
         )
-        print(f"contour:{cur_physics_name} finished")
+        print(f"contour:{cur_physics_name} finished\n")
 
-    print("描画終了")
+    print("all finished\n")
 
     return
 
