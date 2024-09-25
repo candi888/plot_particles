@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import yaml
 from matplotlib.cm import ScalarMappable
-from matplotlib.colors import Normalize, to_rgba
+from matplotlib.colors import Colormap, Normalize, to_rgba
 from numpy.typing import NDArray
 
 # 以下はイラレで編集可能なsvgを出力するために必要
@@ -132,6 +132,10 @@ class DataclassInputParameters:
 
     #!　以下，デフォルト値あり
 
+    # * svg出力用．これをTrueにした場合，ここで指定した時刻のsvgのみを作成する．jpegの画像やアニメーションの作成は行わないので注意．
+    svg_flag: bool = False
+    svg_snap_time_ms: int | None = None
+
     # * 圧力コンター作成関係
     pressure_wall_particle_color: str | None = None
     pressure_wall_particle_alpha: float = 1.0
@@ -228,6 +232,12 @@ class DataclassInputParameters:
                     f"plot_order_listの要素の型が一致しません．\nplot_order_listの中身の型は全て{str}である必要があります．"
                 )
         print("1. 型チェック OK")
+
+        # svg関連の処理
+        if self.svg_flag and self.svg_snap_time_ms is None:
+            raise ValueError(
+                "svg_snap time_msの値が設定されていません．svgを作成したい時刻[ms]を設定してください"
+            )
 
         # * 2.諸々のエラー処理
 
@@ -348,9 +358,14 @@ def plot_particles_by_scatter(
     par_y: NDArray[np.float64],
     par_disa: NDArray[np.float64],
     par_color: NDArray[np.float64],
+    group_index: int,
 ) -> None:
     s = data_unit_to_points_size(diameter_in_data_units=par_disa, fig=fig, axis=ax)
-    ax.scatter(par_x, par_y, s=s, c=par_color, linewidths=0)
+    scat = ax.scatter(par_x, par_y, s=s, c=par_color, linewidths=0)
+
+    if IN_PARAMS.svg_flag:
+        scat.set_gid(f"particle group{group_index}")
+        scat.set_clip_on(False)
 
     return
 
@@ -362,7 +377,7 @@ def get_norm_for_color_contour(physics_name: str) -> Normalize:
     )
 
 
-def get_cmap_for_color_contour(physics_name: str) -> mpl.colors.Colormap:
+def get_cmap_for_color_contour(physics_name: str) -> Colormap:
     return mpl.colormaps.get_cmap(getattr(IN_PARAMS, f"{physics_name}_cmap"))
 
 
@@ -414,6 +429,7 @@ def plot_colorbar(
 def plot_velocity_vector(
     ax: plt.Axes,
     snap_time_ms: int,
+    group_index: int,
     is_plot_reference_vector: bool,
     mask_array: NDArray[np.bool_],
     mask_array_by_group: NDArray[np.bool_] | None = None,
@@ -437,6 +453,10 @@ def plot_velocity_vector(
     width = original_scale / 5000 * IN_PARAMS.scaler_width_vector
     q = ax.quiver(par_x, par_y, par_u, par_v, scale=scale, scale_units="x", width=width)
 
+    if IN_PARAMS.svg_flag:
+        q.set_gid(f"vector_group{group_index}")
+        q.set_clip_on(False)
+
     if is_plot_reference_vector:
         ax.quiverkey(
             Q=q,
@@ -458,14 +478,25 @@ def set_ax_ticks(ax: plt.Axes) -> None:
 
 
 def set_ax_labels(ax: plt.Axes) -> None:
-    ax.set_xlabel(r"$x \mathrm{(m)}$")
-    ax.set_ylabel(r"$y \mathrm{(m)}$")
+    # mathtextを使用するとIllustratorでsvgを読み込んだ時にテキストの編集がしづらくなってしまうので以下のように対応
+    xlabel = "x (m)" if IN_PARAMS.svg_flag else r"$x \mathrm{(m)}$"
+    ylabel = "y (m)" if IN_PARAMS.svg_flag else r"$y \mathrm{(m)}$"
+
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
 
     return
 
 
 def set_ax_title(ax: plt.Axes, snap_time_ms: int) -> None:
-    ax.set_title(rf"$t=$ {snap_time_ms/1000:.03f}s", pad=10, loc="left")
+    # mathtextを使用するとIllustratorでsvgを読み込んだ時にテキストの編集がしづらくなってしまうので以下のように対応
+    title_text = (
+        f"t= {snap_time_ms/1000:.03f}s"
+        if IN_PARAMS.svg_flag
+        else rf"$t=$ {snap_time_ms/1000:.03f}s"
+    )
+
+    ax.set_title(title_text, pad=10, loc="left")
     return
 
 
@@ -548,7 +579,6 @@ def make_snap_physics_contour(
     # TODO if physics_name == "splash" else get_splash...
 
     # TODO リファクタリング
-    # TODO sort()[::-1]は水粒子を最後にプロットして一番上に置くため
     for iter, group_index in enumerate(np.unique(par_group_index)[::-1]):
         mask_array_by_group: NDArray[np.bool_] = par_group_index == group_index
 
@@ -584,6 +614,7 @@ def make_snap_physics_contour(
             par_y=par_y,
             par_disa=par_disa,
             par_color=par_color,
+            group_index=group_index,
         )
 
         if getattr(IN_PARAMS, f"{physics_name}_is_plot_velocity_vector"):
@@ -594,13 +625,13 @@ def make_snap_physics_contour(
                 is_plot_reference_vector=iter
                 == 0,  # 最初の一回のみreference vectorをプロットする
                 mask_array_by_group=mask_array_by_group,
+                group_index=group_index,
             )
 
-    fig.savefig(save_dir_snap_path / f"snap{snap_time_ms:05}_{physics_name}.jpeg")
-    # if physics_name == "move" and snap_time_ms == 50:
-    #     fig.savefig(
-    #         Path(__file__).parent / Path(f"snap{snap_time_ms:05}_{physics_name}.svg"),
-    #     )
+    extension = "svg" if IN_PARAMS.svg_flag else "jpeg"
+    fig.savefig(
+        save_dir_snap_path / f"snap{snap_time_ms:05}_{physics_name}.{extension}"
+    )
 
     plt.cla()
 
@@ -723,6 +754,44 @@ def make_animation_from_snap(
     return
 
 
+def make_snap_physics_contour_svg(
+    save_dir_path: Path, physics_name: str, is_move_or_splash: bool
+) -> None:
+    save_dir_path.mkdir(exist_ok=True, parents=True)
+
+    snap_time_ms = IN_PARAMS.svg_snap_time_ms
+    assert (
+        snap_time_ms is not None
+    )  # __post_init__でチェック済みだががwarningをなくすために記述
+
+    fig = plt.figure(dpi=IN_PARAMS.snapshot_dpi)
+    ax = fig.add_subplot(1, 1, 1, aspect="equal")
+
+    fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
+
+    if not is_move_or_splash:
+        plot_colorbar(fig=fig, ax=ax, physics_name=physics_name)
+
+    try:
+        print(
+            f"時刻{snap_time_ms/1000:.03f} sのsvgを作成します．jpegのsnapやアニメーションはここでは作成されません．"
+        )
+        make_snap_physics_contour(
+            fig=fig,
+            ax=ax,
+            snap_time_ms=snap_time_ms,
+            save_dir_snap_path=save_dir_path,
+            physics_name=physics_name,
+        )
+    except FileNotFoundError:
+        raise ValueError(f"{snap_time_ms/1000:.03f} s時点の計算データがありません．\n")
+
+    print(f"{snap_time_ms/1000:.03f} s contour:{physics_name} make svg finished\n")
+    plt.close()
+
+    return
+
+
 IN_PARAMS = construct_input_parameters_dataclass()
 
 
@@ -746,6 +815,15 @@ def main() -> None:
         is_move_or_splash: bool = (
             cur_physics_name == "move" or cur_physics_name == "splash"
         )
+
+        if IN_PARAMS.svg_flag:
+            make_snap_physics_contour_svg(
+                save_dir_path=save_dir_path,
+                physics_name=cur_physics_name,
+                is_move_or_splash=is_move_or_splash,
+            )
+
+            continue
 
         # TODO ↓いつかリファクタリングしたい
         # * moveとsplashのみは物理量によるコンター図にはしない

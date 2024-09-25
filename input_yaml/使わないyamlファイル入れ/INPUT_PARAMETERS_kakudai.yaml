@@ -13,8 +13,8 @@ plot_order_list:
 
 #* プロット関連
 timestep_ms: 10 # datファイルの00050のとこ.　SNAPの出力時間間隔が違う場合に注意
-snap_start_time_ms: 1100
-snap_end_time_ms: 8000
+snap_start_time_ms: 40
+snap_end_time_ms: 50
 xlim_min: &xlim_min 0.83
 xlim_max: &xlim_max 1.15
 ylim_min: &ylim_min -0.006

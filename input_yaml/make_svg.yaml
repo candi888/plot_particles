@@ -1,5 +1,5 @@
 #* スナップやアニメーションを保存するディレクトリ名
-save_dir_name: "plot_output_results"
+save_dir_name: "plot_output_results_svg"
 
 #* プロットの順序．上から順番にプロットを行う．いらないものはコメントアウトすればプロットされない．ラベル名は変更してはならない．
 plot_order_list:
@@ -12,8 +12,8 @@ plot_order_list:
   # - "div_U"
 
 #* svg出力用．これをTrueにした場合，ここで指定した時刻のsvgのみを作成する．jpegの画像やアニメーションの作成は行わないので注意．
-# svg_flag: True
-# svg_snap_time_ms: 50
+svg_flag: True
+svg_snap_time_ms: 50
 
 #* プロット関連
 timestep_ms: 10 # datファイルの00050のとこ.　SNAPの出力時間間隔が違う場合に注意
