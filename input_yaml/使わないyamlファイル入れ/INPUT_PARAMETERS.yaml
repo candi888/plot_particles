@@ -5,8 +5,8 @@ save_dir_name: "plot_output_results"
 plot_order_list:
   - "pressure"
   - "move" # 特別扱い1
+  - "speed"
   # - "density"
-  # - "speed"
   # - "vorticity"
   # - "Q_signed"
   # - "div_U"
@@ -34,7 +34,7 @@ pressure_label: "Pressure (Pa)" # colorbarのlegendに使用
 pressure_col_index: 4
 pressure_min_value_contour: -100
 pressure_max_value_contour: 100
-pressure_cmap: "rainbow"
+pressure_cmap: "small rainbow"
 pressure_is_plot_velocity_vector: False
 
 # pressure_wall_particle_color: "000000" # 以下2*4はコメントアウトでコンターの色そのまま出力

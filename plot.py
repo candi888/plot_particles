@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import yaml
 from matplotlib.cm import ScalarMappable
-from matplotlib.colors import Colormap, Normalize, to_rgba
+from matplotlib.colors import Colormap, LinearSegmentedColormap, Normalize, to_rgba
 from numpy.typing import NDArray
 
 # 以下はイラレで編集可能なsvgを出力するために必要
@@ -378,7 +378,20 @@ def get_norm_for_color_contour(physics_name: str) -> Normalize:
 
 
 def get_cmap_for_color_contour(physics_name: str) -> Colormap:
-    return mpl.colormaps.get_cmap(getattr(IN_PARAMS, f"{physics_name}_cmap"))
+    cmap_name = getattr(IN_PARAMS, f"{physics_name}_cmap")
+
+    try:
+        return (
+            LinearSegmentedColormap.from_list(
+                "custom", ["blue", "cyan", "lime", "yellow", "red"], N=512
+            )
+            if cmap_name == "small rainbow"
+            else mpl.colormaps.get_cmap(cmap_name)
+        )
+    except ValueError:
+        raise ValueError(
+            f'{physics_name}_cmap で設定されているcolormap名は存在しません．\nhttps://matplotlib.org/stable/users/explain/colors/colormaps.html に載っているcolormap名，もしくは"small rainbow"を設定してください．'
+        )
 
 
 def get_facecolor_by_physics_contour(
