@@ -1,0 +1,181 @@
+#* スナップやアニメーションを保存するディレクトリ名
+save_dir_name: "plot_output_results"
+
+#* プロットの順序．上から順番にプロットを行う．いらないものはコメントアウトすればプロットされない．ラベル名は変更してはならない．
+plot_order_list:
+  - "pressure"
+  - "move" # 特別扱い1
+  - "speed"
+  - "density"
+  - "vorticity"
+  - "Q_signed"
+  # - "div_U"
+
+#* svg出力用．これをTrueにした場合，ここで指定した時刻のsvgのみを作成する．jpegの画像やアニメーションの作成は行わないので注意．
+# svg_flag: True
+# svg_snap_time_ms: 50
+
+#* プロット関連
+timestep_ms: 10 # datファイルの00050のとこ.　SNAPの出力時間間隔が違う場合に注意
+snap_start_time_ms: 40
+snap_end_time_ms: 50
+xlim_min: &xlim_min -0.02
+xlim_max: &xlim_max 1.2
+ylim_min: &ylim_min -0.006
+ylim_max: &ylim_max 0.06
+snapshot_dpi: 900
+
+#* アニメーション関連
+framerate: 100
+crf_num: 35 # CRF値を設定．lowqualityの動画を作成するときに使用する．大きいほどクオリティが下がる．35くらいでちょうど良さそう．
+
+#* 圧力コンター作成関係
+pressure_label: "Pressure (Pa)" # colorbarのlegendに使用
+pressure_col_index: 4
+pressure_min_value_contour: -100
+pressure_max_value_contour: 100
+pressure_cmap: "small rainbow"
+pressure_is_plot_velocity_vector: False
+
+# pressure_wall_particle_color: "000000" # 以下2*4はコメントアウトでコンターの色そのまま出力
+# pressure_wall_particle_alpha: 1.0 # 透明度の指定（0で完全透明，1で不透明）．rgbaのaの部分．
+
+# pressure_dummy_particle_color: "#000000" # 16進数カラーコードで指定
+# pressure_dummy_particle_alpha: 1.0
+
+# pressure_movewall_particle_color: "#000000" # 16進数カラーコードで指定
+# pressure_movewall_particle_alpha: 1.0 # 透明度の指定（0で完全透明，1で不透明）．rgbaのaの部分．
+
+# pressure_movedummy_particle_color: "#000000"
+# pressure_movedummy_particle_alpha: 1.0
+
+#* 渦度コンター作成関係
+vorticity_label: "Vorticity" # colorbarのlegendに使用
+vorticity_col_index: 6
+vorticity_min_value_contour: -50
+vorticity_max_value_contour: 50
+vorticity_cmap: "bwr"
+vorticity_is_plot_velocity_vector: False
+
+vorticity_wall_particle_color: "#000000" # 16進数カラーコードで指定
+vorticity_wall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+vorticity_dummy_particle_color: "#000000"
+vorticity_dummy_particle_alpha: 1.0
+
+vorticity_movewall_particle_color: "#000000" # 16進数カラーコードで指定
+vorticity_movewall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+vorticity_movedummy_particle_color: "#000000"
+vorticity_movedummy_particle_alpha: 1.0
+
+#* Q_signedコンター作成関係
+Q_signed_label: "Q_signed" # colorbarのlegendに使用
+Q_signed_col_index: 9
+Q_signed_min_value_contour: -50
+Q_signed_max_value_contour: 50
+Q_signed_cmap: "bwr"
+Q_signed_is_plot_velocity_vector: False
+
+Q_signed_wall_particle_color: "#000000" # 16進数カラーコードで指定
+Q_signed_wall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+Q_signed_dummy_particle_color: "#000000"
+Q_signed_dummy_particle_alpha: 1.0
+
+Q_signed_movewall_particle_color: "#000000" # 16進数カラーコードで指定
+Q_signed_movewall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+Q_signed_movedummy_particle_color: "#000000"
+Q_signed_movedummy_particle_alpha: 1.0
+
+#* densityコンター作成関係
+density_label: "Density" # colorbarのlegendに使用
+density_col_index: 7
+density_min_value_contour: 0.95
+density_max_value_contour: 1.0
+density_cmap: "rainbow"
+density_is_plot_velocity_vector: False
+
+# density_wall_particle_color: "#000000" # 16進数カラーコードで指定
+# density_wall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+# density_dummy_particle_color: "#000000"
+# density_dummy_particle_alpha: 1.0
+
+# density_movewall_particle_color: "#000000" # 16進数カラーコードで指定
+# density_movewall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+# density_movedummy_particle_color: "#000000"
+# density_movedummy_particle_alpha: 1.0
+
+#* div_Uコンター作成関係
+div_U_label: "div_U" # colorbarのlegendに使用
+div_U_col_index: 8
+div_U_min_value_contour: 0.0
+div_U_max_value_contour: 1.0
+div_U_cmap: "rainbow"
+div_U_is_plot_velocity_vector: False
+
+# div_U_wall_particle_color: "#000000" # 16進数カラーコードで指定
+# div_U_wall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+# div_U_dummy_particle_color: "#000000"
+# div_U_dummy_particle_alpha: 1.0
+
+# div_U_movewall_particle_color: "#000000" # 16進数カラーコードで指定
+# div_U_movewall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+# div_U_movedummy_particle_color: "#000000"
+# div_U_movedummy_particle_alpha: 1.0
+
+#* speedコンター作成関係
+speed_label: "Speed (m/s)" # colorbarのlegendに使用
+speed_col_index: 10
+speed_min_value_contour: 0.0
+speed_max_value_contour: 1.5
+speed_cmap: "rainbow"
+speed_is_plot_velocity_vector: False
+
+speed_wall_particle_color: "#000000" # 16進数カラーコードで指定
+speed_wall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+speed_dummy_particle_color: "#000000"
+speed_dummy_particle_alpha: 1.0
+
+speed_movewall_particle_color: "#000000" # 16進数カラーコードで指定
+speed_movewall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+speed_movedummy_particle_color: "#000000"
+speed_movedummy_particle_alpha: 1.0
+
+#* move関連　これらは何も設定しないでもいい感じの配色でプロットしてくれる．流速ベクトルだけ注意
+# move_is_plot_velocity_vector: True
+
+# move_water_particle_color: "#00FFFF" # 16進数カラーコードで指定
+# move_water_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+# move_wall_particle_color: "#BC8F8F" # 16進数カラーコードで指定
+# move_wall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+# move_dummy_particle_color: "#A52A2A"
+# move_dummy_particle_alpha: 1.0
+
+# move_movewall_particle_color: "#ff1493" # 16進数カラーコードで指定
+# move_movewall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+# move_movedummy_particle_color: "#ff69b4"
+# move_movedummy_particle_alpha: 1.0
+
+#* 流速ベクトル図関連
+scaler_length_vector: 0.5 # ベクトルの長さの調整用．nに設定 -> ベクトルの長さをn倍
+scaler_width_vector: 0.2 # ベクトルの太さの調整用．nに設定 -> ベクトルの太さをn倍
+length_reference_vector: 1
+
+#* 物理量が素データのどの軸か．0-index
+XUD_x_col_index: 0
+XUD_y_col_index: 1
+XUD_u_col_index: 2
+XUD_v_col_index: 3
+XUD_disa_col_index: 5
+TMD_move_col_index: 1
