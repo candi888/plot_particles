@@ -271,7 +271,7 @@ def get_mask_array_by_plot_region(snap_time_ms: int) -> NDArray[np.bool_]:
 
     x = original_data[:, 0]
     y = original_data[:, 1]
-    margin = np.max(original_data[:, 2]) * 3  # 最大粒径の３倍分marginを設定
+    margin = np.max(original_data[:, 2]) * 2  # 最大粒径の2倍分marginを設定
 
     # 範囲条件を設定
     mask_array = (
@@ -427,14 +427,16 @@ def plot_colorbar(
     assert norm.vmin is not None and norm.vmax is not None
     ticks = np.linspace(norm.vmin, norm.vmax, 5)
 
-    fig.colorbar(
+    cbar = fig.colorbar(
         mappable,
         ax=ax,
         ticks=ticks,
-        shrink=0.6,
+        shrink=0.5,
         orientation="horizontal",
         pad=0.12,
-    ).set_label(f"{getattr(IN_PARAMS,f"{physics_name}_label")}")
+    )
+    cbar.set_label(f"{getattr(IN_PARAMS,f"{physics_name}_label")}")
+    cbar.minorticks_off()
 
     return
 
@@ -502,12 +504,10 @@ def set_ax_labels(ax: plt.Axes) -> None:
 
 
 def set_ax_title(ax: plt.Axes, snap_time_ms: int) -> None:
+    time_text = f"{snap_time_ms/1000:.03f}s"
+
     # mathtextを使用するとIllustratorでsvgを読み込んだ時にテキストの編集がしづらくなってしまうので以下のように対応
-    title_text = (
-        f"t= {snap_time_ms/1000:.03f}s"
-        if IN_PARAMS.svg_flag
-        else rf"$t=$ {snap_time_ms/1000:.03f}s"
-    )
+    title_text = f"t= {time_text}" if IN_PARAMS.svg_flag else rf"$t=$ {time_text}"
 
     ax.set_title(title_text, pad=10, loc="left")
     return
@@ -797,7 +797,9 @@ def make_snap_physics_contour_svg(
             physics_name=physics_name,
         )
     except FileNotFoundError:
-        raise ValueError(f"{snap_time_ms/1000:.03f} s時点の計算データがありません．\n")
+        raise FileNotFoundError(
+            f"{snap_time_ms/1000:.03f} s時点の計算データがありません．\n"
+        )
 
     print(f"{snap_time_ms/1000:.03f} s contour:{physics_name} make svg finished\n")
     plt.close()
@@ -809,6 +811,7 @@ IN_PARAMS = construct_input_parameters_dataclass()
 
 
 def main() -> None:
+    # 指定したスナップ作成時間のデータが存在しないときは処理を止める
     if IN_PARAMS.plot_order_list is None:
         exit()
 
@@ -829,16 +832,15 @@ def main() -> None:
             cur_physics_name == "move" or cur_physics_name == "splash"
         )
 
+        # svg出力
         if IN_PARAMS.svg_flag:
             make_snap_physics_contour_svg(
                 save_dir_path=save_dir_path,
                 physics_name=cur_physics_name,
                 is_move_or_splash=is_move_or_splash,
             )
-
             continue
 
-        # TODO ↓いつかリファクタリングしたい
         # * moveとsplashのみは物理量によるコンター図にはしない
         make_snap_physics_contour_all_snap_time(
             snap_time_array_ms=snap_time_array_ms,
@@ -853,7 +855,7 @@ def main() -> None:
         )
         print(f"contour:{cur_physics_name} finished\n")
 
-    print("all finished\n")
+    print("all finished")
 
     return
 
