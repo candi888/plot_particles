@@ -130,6 +130,14 @@ class DataclassInputParameters:
     speed_cmap: str
     speed_is_plot_velocity_vector: bool
 
+    # * 渦動粘性係数コンター作成関係
+    eddy_viscos_label: str
+    eddy_viscos_col_index: int
+    eddy_viscos_min_value_contour: float
+    eddy_viscos_max_value_contour: float
+    eddy_viscos_cmap: str
+    eddy_viscos_is_plot_velocity_vector: bool
+
     #!　以下，デフォルト値あり
 
     # * svg出力用．これをTrueにした場合，ここで指定した時刻のsvgのみを作成する．jpegの画像やアニメーションの作成は行わないので注意．
@@ -195,6 +203,16 @@ class DataclassInputParameters:
     speed_movewall_particle_alpha: float = 1.0
     speed_movedummy_particle_color: str | None = None
     speed_movedummy_particle_alpha: float = 1.0
+
+    # * speedコンター作成関係
+    eddy_viscos_wall_particle_color: str | None = None
+    eddy_viscos_wall_particle_alpha: float = 1.0
+    eddy_viscos_dummy_particle_color: str | None = None
+    eddy_viscos_dummy_particle_alpha: float = 1.0
+    eddy_viscos_movewall_particle_color: str | None = None
+    eddy_viscos_movewall_particle_alpha: float = 1.0
+    eddy_viscos_movedummy_particle_color: str | None = None
+    eddy_viscos_movedummy_particle_alpha: float = 1.0
 
     # * move関連
     move_is_plot_velocity_vector: bool = True
