@@ -335,16 +335,17 @@ def get_move_index_array(
     return masked_move_index
 
 
-def set_clippath(svg_file_path: Path) -> None:
+def postprocess_svg_setclippath(
+    svg_file_path: Path, particle_group_id_prefix: str, vector_group_id_prefix: str
+) -> None:
     """
-    指定されたSVGファイルに対して，'particle_group'または'vector_group'というIDを持つ要素に
-    クリッピングマスクを適用し，修正したファイルを上書き保存します．
+    指定されたSVGファイルに対して，'{particle_group_id_prefix}'または'{vector_group_id_prefix}'という文字列を含むIDを持つ要素に
+    クリッピングマスクを適用し，修正したファイルを上書き保存する．
 
-    Parameters:
-    svg_file_path (Path): 修正対象のSVGファイルのパス
-
-    Returns:
-    None
+    Args:
+        svg_file_path (Path): 修正対象のSVGファイルのパス
+        particle_group_id_prefix (str): 粒子のグループID
+        vector_group_id_prefix (str): 流速ベクトルのグループID
     """
     # SVGファイルをパースしてツリー構造を取得
     tree = ET.parse(svg_file_path)
@@ -424,14 +425,19 @@ def plot_particles_by_scatter(
     par_y: NDArray[np.float64],
     par_disa: NDArray[np.float64],
     par_color: NDArray[np.float64],
+    group_id_prefix: str,
     group_index: int,
 ) -> None:
     s = data_unit_to_points_size(diameter_in_data_units=par_disa, fig=fig, axis=ax)
-    scat = ax.scatter(par_x, par_y, s=s, c=par_color, linewidths=0)
-
-    if IN_PARAMS.svg_flag:
-        scat.set_gid(f"particle_group{group_index}")
-        scat.set_clip_on(False)
+    ax.scatter(
+        par_x,
+        par_y,
+        s=s,
+        c=par_color,
+        linewidths=0,
+        gid=f"{group_id_prefix}{group_index}",
+        clip_on=not IN_PARAMS.svg_flag,
+    )
 
     return
 
@@ -510,9 +516,10 @@ def plot_colorbar(
 def plot_velocity_vector(
     ax: plt.Axes,
     snap_time_ms: int,
-    group_index: int,
     is_plot_reference_vector: bool,
     mask_array: NDArray[np.bool_],
+    group_id_prefix: str,
+    group_index: int,
     mask_array_by_group: NDArray[np.bool_] | None = None,
 ) -> None:
     par_x, par_y, par_u, par_v = load_par_data_masked_by_plot_region(
@@ -532,11 +539,17 @@ def plot_velocity_vector(
     original_scale = 10 / (IN_PARAMS.xlim_max - IN_PARAMS.xlim_min)
     scale = original_scale / IN_PARAMS.scaler_length_vector
     width = original_scale / 5000 * IN_PARAMS.scaler_width_vector
-    q = ax.quiver(par_x, par_y, par_u, par_v, scale=scale, scale_units="x", width=width)
-
-    if IN_PARAMS.svg_flag:
-        q.set_gid(f"vector_group{group_index}")
-        q.set_clip_on(False)
+    q = ax.quiver(
+        par_x,
+        par_y,
+        par_u,
+        par_v,
+        scale=scale,
+        scale_units="x",
+        width=width,
+        gid=f"{group_id_prefix}{group_index}",
+        clip_on=not IN_PARAMS.svg_flag,
+    )
 
     if is_plot_reference_vector:
         ax.quiverkey(
@@ -655,6 +668,9 @@ def make_snap_physics_contour(
     par_group_index = get_move_index_array(
         snap_time_ms=snap_time_ms, mask_array=mask_array
     )
+
+    particle_group_id_prefix = "particle_group"
+    vector_group_id_prefix = "vector_group"
     # TODO if physics_name == "splash" else get_splash...
 
     # TODO リファクタリング
@@ -693,6 +709,7 @@ def make_snap_physics_contour(
             par_y=par_y,
             par_disa=par_disa,
             par_color=par_color,
+            group_id_prefix=particle_group_id_prefix,
             group_index=group_index,
         )
 
@@ -704,6 +721,7 @@ def make_snap_physics_contour(
                 is_plot_reference_vector=iter
                 == 0,  # 最初の一回のみreference vectorをプロットする
                 mask_array_by_group=mask_array_by_group,
+                group_id_prefix=vector_group_id_prefix,
                 group_index=group_index,
             )
 
@@ -715,7 +733,11 @@ def make_snap_physics_contour(
     fig.savefig(save_file_path)
 
     if IN_PARAMS.svg_flag:
-        set_clippath(svg_file_path=save_file_path)
+        postprocess_svg_setclippath(
+            svg_file_path=save_file_path,
+            particle_group_id_prefix=particle_group_id_prefix,
+            vector_group_id_prefix=vector_group_id_prefix,
+        )
 
     plt.cla()
 
