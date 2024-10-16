@@ -1,6 +1,7 @@
 import dataclasses
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import matplotlib as mpl
@@ -25,8 +26,8 @@ plt.rcParams["xtick.direction"] = "out"  # x軸の目盛りの向き
 plt.rcParams["ytick.direction"] = "out"  # y軸の目盛りの向き
 plt.rcParams["xtick.minor.visible"] = True  # x軸補助目盛りの追加
 plt.rcParams["ytick.minor.visible"] = True  # y軸補助目盛りの追加
-plt.rcParams["xtick.top"] = True  # x軸の上部目盛り
-plt.rcParams["ytick.right"] = True  # y軸の右部目盛り
+# plt.rcParams["xtick.top"] = True  # x軸の上部目盛り
+# plt.rcParams["ytick.right"] = True  # y軸の右部目盛り
 # plt.rcParams["xtick.major.pad"] = 4  # distance to major tick label in points
 # plt.rcParams["ytick.major.pad"] = 3  # distance to major tick label in points
 # plt.rcParams["axes.spines.top"] = False  # 上側の軸を表示するか
@@ -334,6 +335,53 @@ def get_move_index_array(
     return masked_move_index
 
 
+def set_clippath(svg_file_path: Path) -> None:
+    """
+    指定されたSVGファイルに対して，'particle_group'または'vector_group'というIDを持つ要素に
+    クリッピングマスクを適用し，修正したファイルを上書き保存します．
+
+    Parameters:
+    svg_file_path (Path): 修正対象のSVGファイルのパス
+
+    Returns:
+    None
+    """
+    # SVGファイルをパースしてツリー構造を取得
+    tree = ET.parse(svg_file_path)
+    root = tree.getroot()
+
+    # クリッピングパスが定義されていない場合は、<defs>セクションに追加
+    defs = root.find("{http://www.w3.org/2000/svg}defs")
+    if defs is None:
+        defs = ET.Element("{http://www.w3.org/2000/svg}defs")
+        root.insert(0, defs)
+
+    # クリッピングパスを定義
+    clip_path = ET.Element("{http://www.w3.org/2000/svg}clipPath", {"id": "clip-axis"})
+    clip_rect = ET.Element(
+        "{http://www.w3.org/2000/svg}rect",
+        {
+            "x": "41.201563",  # 軸の開始位置
+            "y": "21.9325",  # 軸の下限
+            "width": "460.8",  # 軸の幅
+            "height": "25",  # 軸の高さ
+        },
+    )
+    clip_path.append(clip_rect)
+    defs.append(clip_path)
+
+    # 'particle_group'または'vector_group'を含むIDを持つグループに対してクリッピングマスクを適用
+    for group in root.findall(".//{http://www.w3.org/2000/svg}g"):
+        group_id = group.attrib.get("id", "")
+        if ("particle_group" in group_id) or ("vector_group" in group_id):
+            group.set("clip-path", "url(#clip-axis)")
+
+    # 修正内容を元のファイルに上書き保存
+    tree.write(svg_file_path, encoding="utf-8", xml_declaration=True)
+
+    return
+
+
 def data_unit_to_points_size(
     diameter_in_data_units: NDArray[np.float64], fig: plt.Figure, axis: plt.Axes
 ) -> NDArray[np.float64]:
@@ -382,7 +430,7 @@ def plot_particles_by_scatter(
     scat = ax.scatter(par_x, par_y, s=s, c=par_color, linewidths=0)
 
     if IN_PARAMS.svg_flag:
-        scat.set_gid(f"particle group{group_index}")
+        scat.set_gid(f"particle_group{group_index}")
         scat.set_clip_on(False)
 
     return
@@ -659,10 +707,15 @@ def make_snap_physics_contour(
                 group_index=group_index,
             )
 
+    save_file_name_without_extension = f"snap{snap_time_ms:05}_{physics_name}"
     extension = "svg" if IN_PARAMS.svg_flag else "jpeg"
-    fig.savefig(
-        save_dir_snap_path / f"snap{snap_time_ms:05}_{physics_name}.{extension}"
+    save_file_path = save_dir_snap_path / Path(
+        f"{save_file_name_without_extension}.{extension}"
     )
+    fig.savefig(save_file_path)
+
+    if IN_PARAMS.svg_flag:
+        set_clippath(svg_file_path=save_file_path)
 
     plt.cla()
 

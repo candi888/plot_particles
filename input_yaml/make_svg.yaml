@@ -150,7 +150,7 @@ speed_movedummy_particle_color: "#000000"
 speed_movedummy_particle_alpha: 1.0
 
 #* move関連　これらは何も設定しないでもいい感じの配色でプロットしてくれる．流速ベクトルだけ注意
-move_is_plot_velocity_vector: False
+# move_is_plot_velocity_vector: False
 
 # move_water_particle_color: "#00FFFF" # 16進数カラーコードで指定
 # move_water_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
