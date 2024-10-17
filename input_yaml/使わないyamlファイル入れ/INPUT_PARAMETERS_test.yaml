@@ -1,28 +1,24 @@
 #* スナップやアニメーションを保存するディレクトリ名
-save_dir_name: "plot_output_results_svg"
+save_dir_name: "plot_output_results"
 
 #* プロットの順序．上から順番にプロットを行う．いらないものはコメントアウトすればプロットされない．ラベル名は変更してはならない．
 plot_order_list:
-  - "pressure"
   - "move" # 特別扱い1
+  - "pressure"
   # - "density"
   # - "speed"
   # - "vorticity"
   # - "Q_signed"
   # - "div_U"
 
-#* svg出力用．これをTrueにした場合，ここで指定した時刻のsvgのみを作成する．jpegの画像やアニメーションの作成は行わないので注意．
-svg_flag: True
-svg_snap_time_ms: 50
-
 #* プロット関連
 timestep_ms: 10 # datファイルの00050のとこ.　SNAPの出力時間間隔が違う場合に注意
-snap_start_time_ms: 40
+snap_start_time_ms: 10
 snap_end_time_ms: 50
-xlim_min: &xlim_min -0.02
-xlim_max: &xlim_max 1.2
-ylim_min: &ylim_min -0.006
-ylim_max: &ylim_max 0.06
+xlim_min: &xlim_min -0.06
+xlim_max: &xlim_max 1.25
+ylim_min: &ylim_min -0.06
+ylim_max: &ylim_max 0.4
 snapshot_dpi: 900
 
 #* アニメーション関連
@@ -32,8 +28,8 @@ crf_num: 35 # CRF値を設定．lowqualityの動画を作成するときに使�
 #* 圧力コンター作成関係
 pressure_label: "Pressure (Pa)" # colorbarのlegendに使用
 pressure_col_index: 4
-pressure_min_value_contour: -100
-pressure_max_value_contour: 100
+pressure_min_value_contour: 0
+pressure_max_value_contour: 1000
 pressure_cmap: "rainbow"
 pressure_is_plot_velocity_vector: False
 
@@ -150,7 +146,7 @@ speed_movedummy_particle_color: "#000000"
 speed_movedummy_particle_alpha: 1.0
 
 #* move関連　これらは何も設定しないでもいい感じの配色でプロットしてくれる．流速ベクトルだけ注意
-# move_is_plot_velocity_vector: False
+# move_is_plot_velocity_vector: True
 
 # move_water_particle_color: "#00FFFF" # 16進数カラーコードで指定
 # move_water_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
@@ -166,26 +162,6 @@ speed_movedummy_particle_alpha: 1.0
 
 # move_movedummy_particle_color: "#ff69b4"
 # move_movedummy_particle_alpha: 1.0
-
-#* 渦動粘性係数コンター作成関係
-eddy_viscos_label: "Eddy Viscosity (m^2/s)" # colorbarのlegendに使用
-eddy_viscos_col_index: 13
-eddy_viscos_min_value_contour: 0.0
-eddy_viscos_max_value_contour: 1.0e-5
-eddy_viscos_cmap: "small rainbow"
-eddy_viscos_is_plot_velocity_vector: False
-
-# eddy_viscos_wall_particle_color: "#000000" # 16進数カラーコードで指定
-# eddy_viscos_wall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
-
-eddy_viscos_dummy_particle_color: "#000000"
-eddy_viscos_dummy_particle_alpha: 1.0
-
-# eddy_viscos_movewall_particle_color: "#000000" # 16進数カラーコードで指定
-# eddy_viscos_movewall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
-
-eddy_viscos_movedummy_particle_color: "#000000"
-eddy_viscos_movedummy_particle_alpha: 1.0
 
 #* 流速ベクトル図関連
 scaler_length_vector: 0.5 # ベクトルの長さの調整用．nに設定 -> ベクトルの長さをn倍
