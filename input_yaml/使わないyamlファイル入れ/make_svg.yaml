@@ -150,7 +150,7 @@ speed_movedummy_particle_color: "#000000"
 speed_movedummy_particle_alpha: 1.0
 
 #* move関連　これらは何も設定しないでもいい感じの配色でプロットしてくれる．流速ベクトルだけ注意
-# move_is_plot_velocity_vector: True
+# move_is_plot_velocity_vector: False
 
 # move_water_particle_color: "#00FFFF" # 16進数カラーコードで指定
 # move_water_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
@@ -166,6 +166,26 @@ speed_movedummy_particle_alpha: 1.0
 
 # move_movedummy_particle_color: "#ff69b4"
 # move_movedummy_particle_alpha: 1.0
+
+#* 渦動粘性係数コンター作成関係
+eddy_viscos_label: "Eddy Viscosity (m^2/s)" # colorbarのlegendに使用
+eddy_viscos_col_index: 13
+eddy_viscos_min_value_contour: 0.0
+eddy_viscos_max_value_contour: 1.0e-5
+eddy_viscos_cmap: "small rainbow"
+eddy_viscos_is_plot_velocity_vector: False
+
+# eddy_viscos_wall_particle_color: "#000000" # 16進数カラーコードで指定
+# eddy_viscos_wall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+eddy_viscos_dummy_particle_color: "#000000"
+eddy_viscos_dummy_particle_alpha: 1.0
+
+# eddy_viscos_movewall_particle_color: "#000000" # 16進数カラーコードで指定
+# eddy_viscos_movewall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+eddy_viscos_movedummy_particle_color: "#000000"
+eddy_viscos_movedummy_particle_alpha: 1.0
 
 #* 流速ベクトル図関連
 scaler_length_vector: 0.5 # ベクトルの長さの調整用．nに設定 -> ベクトルの長さをn倍

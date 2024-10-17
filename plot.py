@@ -335,6 +335,7 @@ def get_move_index_array(
     return masked_move_index
 
 
+# TODO revise
 def postprocess_svg_setclippath(
     svg_file_path: Path, particle_group_id_prefix: str, vector_group_id_prefix: str
 ) -> None:
@@ -351,7 +352,7 @@ def postprocess_svg_setclippath(
     tree = ET.parse(svg_file_path)
     root = tree.getroot()
 
-    # クリッピングパスが定義されていない場合は、<defs>セクションに追加
+    # # クリッピングパスが定義されていない場合は、<defs>セクションに追加
     defs = root.find("{http://www.w3.org/2000/svg}defs")
     if defs is None:
         defs = ET.Element("{http://www.w3.org/2000/svg}defs")
@@ -359,6 +360,7 @@ def postprocess_svg_setclippath(
 
     # クリッピングパスを定義
     clip_path = ET.Element("{http://www.w3.org/2000/svg}clipPath", {"id": "clip-axis"})
+    # TODO 一般性を
     clip_rect = ET.Element(
         "{http://www.w3.org/2000/svg}rect",
         {
@@ -371,10 +373,12 @@ def postprocess_svg_setclippath(
     clip_path.append(clip_rect)
     defs.append(clip_path)
 
-    # 'particle_group'または'vector_group'を含むIDを持つグループに対してクリッピングマスクを適用
+    # '{particle_group_id_prefix}'または'{vector_group_id_prefix}'という文字列を含むIDを持つグループに対してクリッピングマスクを適用
     for group in root.findall(".//{http://www.w3.org/2000/svg}g"):
         group_id = group.attrib.get("id", "")
-        if ("particle_group" in group_id) or ("vector_group" in group_id):
+        if (particle_group_id_prefix in group_id) or (
+            vector_group_id_prefix in group_id
+        ):
             group.set("clip-path", "url(#clip-axis)")
 
     # 修正内容を元のファイルに上書き保存
@@ -514,6 +518,7 @@ def plot_colorbar(
 
 
 def plot_velocity_vector(
+    fig: plt.Figure,
     ax: plt.Axes,
     snap_time_ms: int,
     is_plot_reference_vector: bool,
@@ -547,15 +552,28 @@ def plot_velocity_vector(
         scale=scale,
         scale_units="x",
         width=width,
+        # width=0 if IN_PARAMS.svg_flag else width,
+        # headwidth=0 if IN_PARAMS.svg_flag else 3.0,
         gid=f"{group_id_prefix}{group_index}",
         clip_on=not IN_PARAMS.svg_flag,
     )
 
     if is_plot_reference_vector:
+        title = ax.title
+        # タイトルのバウンディングボックスを取得
+        renderer = fig.canvas.get_renderer()
+        bbox = title.get_window_extent(renderer=renderer)
+
+        # テキストのバウンディングボックスのY方向中央の座標を計算（axes系）
+        y_center_display = bbox.y0 + bbox.height / 2
+
+        # 表示座標系から軸座標系への変換
+        y_center_axes = ax.transAxes.inverted().transform((0, y_center_display))[1]
+
         ax.quiverkey(
             Q=q,
             X=0.8,
-            Y=1.1,
+            Y=y_center_axes,
             U=IN_PARAMS.length_reference_vector,
             label=rf"{IN_PARAMS.length_reference_vector} m/s",
             labelpos="E",
@@ -588,7 +606,12 @@ def set_ax_title(ax: plt.Axes, snap_time_ms: int) -> None:
     # mathtextを使用するとIllustratorでsvgを読み込んだ時にテキストの編集がしづらくなってしまうので以下のように対応
     title_text = f"t= {time_text}" if IN_PARAMS.svg_flag else rf"$t=$ {time_text}"
 
-    ax.set_title(title_text, pad=10, loc="left")
+    ax.set_title(
+        title_text,
+        pad=10,
+        loc="left",
+    )
+
     return
 
 
@@ -671,10 +694,11 @@ def make_snap_physics_contour(
 
     particle_group_id_prefix = "particle_group"
     vector_group_id_prefix = "vector_group"
+
     # TODO if physics_name == "splash" else get_splash...
 
-    # TODO リファクタリング
-    for iter, group_index in enumerate(np.unique(par_group_index)[::-1]):
+    is_plot_reference_vector = True
+    for group_index in np.unique(par_group_index)[::-1]:
         mask_array_by_group: NDArray[np.bool_] = par_group_index == group_index
 
         par_x, par_y, par_disa = load_par_data_masked_by_plot_region(
@@ -713,18 +737,23 @@ def make_snap_physics_contour(
             group_index=group_index,
         )
 
-        if getattr(IN_PARAMS, f"{physics_name}_is_plot_velocity_vector"):
+        if getattr(IN_PARAMS, f"{physics_name}_is_plot_velocity_vector") and (
+            group_index not in {1, 2}
+        ):
             plot_velocity_vector(
+                fig=fig,
                 ax=ax,
                 snap_time_ms=snap_time_ms,
                 mask_array=mask_array,
-                is_plot_reference_vector=iter
-                == 0,  # 最初の一回のみreference vectorをプロットする
+                is_plot_reference_vector=is_plot_reference_vector,
                 mask_array_by_group=mask_array_by_group,
                 group_id_prefix=vector_group_id_prefix,
                 group_index=group_index,
             )
+            # 初回のみreference vectorをプロット
+            is_plot_reference_vector = False
 
+    # 以下，画像の保存処理
     save_file_name_without_extension = f"snap{snap_time_ms:05}_{physics_name}"
     extension = "svg" if IN_PARAMS.svg_flag else "jpeg"
     save_file_path = save_dir_snap_path / Path(
@@ -732,12 +761,13 @@ def make_snap_physics_contour(
     )
     fig.savefig(save_file_path)
 
-    if IN_PARAMS.svg_flag:
-        postprocess_svg_setclippath(
-            svg_file_path=save_file_path,
-            particle_group_id_prefix=particle_group_id_prefix,
-            vector_group_id_prefix=vector_group_id_prefix,
-        )
+    # TODO revise
+    # if IN_PARAMS.svg_flag:
+    #     postprocess_svg_setclippath(
+    #         svg_file_path=save_file_path,
+    #         particle_group_id_prefix=particle_group_id_prefix,
+    #         vector_group_id_prefix=vector_group_id_prefix,
+    #     )
 
     plt.cla()
 
@@ -782,7 +812,6 @@ def make_snap_physics_contour_all_snap_time(
     return
 
 
-# TODO subporocessのとこリファクタリング
 def make_animation_from_snap(
     snap_time_array_ms: NDArray[np.int64], save_dir_sub_path: Path, physics_name: str
 ) -> None:
