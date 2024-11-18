@@ -507,10 +507,15 @@ def plot_colorbar(
         mappable,
         ax=ax,
         ticks=ticks,
-        shrink=0.5,
+        shrink=0.3,
         orientation="horizontal",
-        pad=0.12,
+        # pad=0.12,
+        location="top",
+        anchor=(0.5, 0.0),
+        ticklocation="bottom",
     )
+    cbar.ax.xaxis.set_ticks_position("bottom")
+    # cbar.ax.xaxis.set_label_position("bottom") # スナップの方に貫通するので注意
     cbar.set_label(f"{getattr(IN_PARAMS,f"{physics_name}_label")}")
     cbar.minorticks_off()
 
@@ -562,21 +567,21 @@ def plot_velocity_vector(
         title = ax.title
         # タイトルのバウンディングボックスを取得
         renderer = fig.canvas.get_renderer()
-        bbox = title.get_window_extent(renderer=renderer)
+        bbox_title = title.get_window_extent(renderer=renderer)
 
         # テキストのバウンディングボックスのY方向中央の座標を計算（axes系）
-        y_center_display = bbox.y0 + bbox.height / 2
+        y_center_display = bbox_title.y0 + bbox_title.height / 2
 
         # 表示座標系から軸座標系への変換
         y_center_axes = ax.transAxes.inverted().transform((0, y_center_display))[1]
 
         ax.quiverkey(
             Q=q,
-            X=0.8,
+            X=0.9,
             Y=y_center_axes,
             U=IN_PARAMS.length_reference_vector,
             label=rf"{IN_PARAMS.length_reference_vector} m/s",
-            labelpos="E",
+            labelpos="N",
         )
 
     return

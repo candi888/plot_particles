@@ -1,5 +1,5 @@
 #* スナップやアニメーションを保存するディレクトリ名
-save_dir_name: "plot_output_results_allregion"
+save_dir_name: "plot_output_results_halfregion"
 #* プロットの順序．上から順番にプロットを行う．いらないものはコメントアウトすればプロットされない．ラベル名は変更してはならない．
 plot_order_list:
   - "vorticity"
@@ -13,13 +13,13 @@ plot_order_list:
 
 #* プロット関連
 timestep_ms: 10 # datファイルの00050のとこ.　SNAPの出力時間間隔が違う場合に注意
-snap_start_time_ms: 10
-snap_end_time_ms: 1500
+snap_start_time_ms: 1000
+snap_end_time_ms: 1000
 xlim_min: &xlim_min -0.06
-xlim_max: &xlim_max 1.24
+xlim_max: &xlim_max 0.3
 ylim_min: &ylim_min -0.06
 ylim_max: &ylim_max 0.41
-snapshot_dpi: 150
+snapshot_dpi: 100
 
 #* アニメーション関連
 framerate: 100
