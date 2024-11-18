@@ -509,10 +509,8 @@ def plot_colorbar(
         ticks=ticks,
         shrink=0.3,
         orientation="horizontal",
-        # pad=0.12,
         location="top",
         anchor=(0.5, 0.0),
-        ticklocation="bottom",
     )
     cbar.ax.xaxis.set_ticks_position("bottom")
     # cbar.ax.xaxis.set_label_position("bottom") # スナップの方に貫通するので注意
