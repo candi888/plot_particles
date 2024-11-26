@@ -507,7 +507,7 @@ def plot_colorbar(
         mappable,
         ax=ax,
         ticks=ticks,
-        shrink=0.3,
+        shrink=0.28,
         orientation="horizontal",
         # pad=0.12,
         location="top",
@@ -569,8 +569,7 @@ def plot_velocity_vector(
         renderer = fig.canvas.get_renderer()
         bbox_title = title.get_window_extent(renderer=renderer)
 
-        # テキストのバウンディングボックスのY方向中央の座標を計算（axes系）
-        y_center_display = bbox_title.y0 + bbox_title.height / 2
+        y_center_display = bbox_title.y0
 
         # 表示座標系から軸座標系への変換
         y_center_axes = ax.transAxes.inverted().transform((0, y_center_display))[1]
@@ -580,7 +579,7 @@ def plot_velocity_vector(
             X=0.9,
             Y=y_center_axes,
             U=IN_PARAMS.length_reference_vector,
-            label=rf"{IN_PARAMS.length_reference_vector} m/s",
+            label=f"Velocity $\\mathbfit{{u}}$\n{IN_PARAMS.length_reference_vector} m/s",
             labelpos="N",
         )
 
@@ -613,7 +612,7 @@ def set_ax_title(ax: plt.Axes, snap_time_ms: int) -> None:
 
     ax.set_title(
         title_text,
-        pad=10,
+        pad=7,
         loc="left",
     )
 

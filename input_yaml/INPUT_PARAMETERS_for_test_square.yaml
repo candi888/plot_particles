@@ -1,5 +1,5 @@
 #* スナップやアニメーションを保存するディレクトリ名
-save_dir_name: "plot_output_results_allregion"
+save_dir_name: "plot_output_results_halfregion"
 #* プロットの順序．上から順番にプロットを行う．いらないものはコメントアウトすればプロットされない．ラベル名は変更してはならない．
 plot_order_list:
   - "move" # 特別扱い1
@@ -15,10 +15,10 @@ plot_order_list:
 timestep_ms: 10 # datファイルの00050のとこ.　SNAPの出力時間間隔が違う場合に注意
 snap_start_time_ms: 10
 snap_end_time_ms: 20
-xlim_min: &xlim_min -0.06
-xlim_max: &xlim_max 1.24
-ylim_min: &ylim_min -0.06
-ylim_max: &ylim_max 0.41
+xlim_min: &xlim_min 0.0
+xlim_max: &xlim_max 0.6
+ylim_min: &ylim_min 0.0
+ylim_max: &ylim_max 0.6
 snapshot_dpi: 200
 
 #* アニメーション関連
