@@ -6,11 +6,15 @@ from pathlib import Path
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.style as mplstyle
 import numpy as np
 import yaml
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import Colormap, LinearSegmentedColormap, Normalize, to_rgba
 from numpy.typing import NDArray
+
+# 描画高速化
+mplstyle.use("fast")
 
 # 以下はイラレで編集可能なsvgを出力するために必要
 mpl.use("Agg")
@@ -509,8 +513,10 @@ def plot_colorbar(
         ticks=ticks,
         shrink=0.28,
         orientation="horizontal",
+        # pad=0.12,
         location="top",
         anchor=(0.5, 0.0),
+        ticklocation="bottom",
     )
     cbar.ax.xaxis.set_ticks_position("bottom")
     # cbar.ax.xaxis.set_label_position("bottom") # スナップの方に貫通するので注意
