@@ -2,31 +2,31 @@
 save_dir_name: "plot_output_results_allregion"
 #* プロットの順序．上から順番にプロットを行う．いらないものはコメントアウトすればプロットされない．ラベル名は変更してはならない．
 plot_order_list:
+  - "move" # 特別扱い1
+  - "speed"
+  - "div_U"
+  - "density"
   - "vorticity"
   - "pressure"
-  - "move" # 特別扱い1
-  # - "density"
   # - "Q_signed"
   # - "eddy_viscos"
-  # - "speed"
-  # - "div_U"
 
 #* プロット関連
 timestep_ms: 10 # datファイルの00050のとこ.　SNAPの出力時間間隔が違う場合に注意
 snap_start_time_ms: 10
-snap_end_time_ms: 1500
+snap_end_time_ms: 20
 xlim_min: &xlim_min -0.06
 xlim_max: &xlim_max 1.24
 ylim_min: &ylim_min -0.06
 ylim_max: &ylim_max 0.41
-snapshot_dpi: 150
+snapshot_dpi: 200
 
 #* アニメーション関連
 framerate: 100
 crf_num: 35 # CRF値を設定．lowqualityの動画を作成するときに使用する．大きいほどクオリティが下がる．35くらいでちょうど良さそう．
 
 #* 圧力コンター作成関係
-pressure_label: "Pressure (Pa)" # colorbarのlegendに使用
+pressure_label: "Pressure $\\mathrm{(kN/m^2)}$" # colorbarのlegendに使用
 pressure_col_index: 4
 pressure_min_value_contour: 0
 pressure_max_value_contour: 1000
@@ -46,7 +46,7 @@ pressure_movedummy_particle_color: "#000000"
 pressure_movedummy_particle_alpha: 1.0
 
 #* 渦度コンター作成関係
-vorticity_label: "Vorticity (/s)" # colorbarのlegendに使用
+vorticity_label: "Vorticity $\\nabla \\times \\mathbfit{u}   \\mathrm{(/s)}$" # colorbarのlegendに使用
 vorticity_col_index: 6
 vorticity_min_value_contour: -40
 vorticity_max_value_contour: 40
@@ -86,7 +86,7 @@ Q_signed_movedummy_particle_color: "#000000"
 Q_signed_movedummy_particle_alpha: 1.0
 
 #* densityコンター作成関係
-density_label: "Density" # colorbarのlegendに使用
+density_label: "$\\rho / \\rho_{0}$" # colorbarのlegendに使用
 density_col_index: 7
 density_min_value_contour: 0.95
 density_max_value_contour: 1.0
@@ -106,9 +106,9 @@ density_is_plot_velocity_vector: False
 # density_movedummy_particle_alpha: 1.0
 
 #* div_Uコンター作成関係
-div_U_label: "div_U" # colorbarのlegendに使用
+div_U_label: "$\\nabla \\cdot \\mathbfit{u} \\mathrm{(/s)} $" # colorbarのlegendに使用
 div_U_col_index: 8
-div_U_min_value_contour: 0.0
+div_U_min_value_contour: -1.0
 div_U_max_value_contour: 1.0
 div_U_cmap: "small rainbow"
 div_U_is_plot_velocity_vector: False
@@ -126,7 +126,7 @@ div_U_is_plot_velocity_vector: False
 # div_U_movedummy_particle_alpha: 1.0
 
 #* speedコンター作成関係
-speed_label: "Speed (m/s)" # colorbarのlegendに使用
+speed_label: "Speed $| \\mathbfit{u} | \\mathrm{(m/s)}$" # colorbarのlegendに使用
 speed_col_index: 10
 speed_min_value_contour: 0.0
 speed_max_value_contour: 1.0
