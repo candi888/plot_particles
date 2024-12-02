@@ -6,11 +6,14 @@ from pathlib import Path
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.style as mplstyle
 import numpy as np
 import yaml
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import Colormap, LinearSegmentedColormap, Normalize, to_rgba
 from numpy.typing import NDArray
+
+mplstyle.use("fast")
 
 # 以下はイラレで編集可能なsvgを出力するために必要
 mpl.use("Agg")
@@ -440,7 +443,7 @@ def plot_particles_by_scatter(
         c=par_color,
         linewidths=0,
         gid=f"{group_id_prefix}{group_index}",
-        clip_on=not IN_PARAMS.svg_flag,
+        # clip_on=not IN_PARAMS.svg_flag,
     )
 
     return
@@ -560,7 +563,7 @@ def plot_velocity_vector(
         # width=0 if IN_PARAMS.svg_flag else width,
         # headwidth=0 if IN_PARAMS.svg_flag else 3.0,
         gid=f"{group_id_prefix}{group_index}",
-        clip_on=not IN_PARAMS.svg_flag,
+        # clip_on=not IN_PARAMS.svg_flag,
     )
 
     if is_plot_reference_vector:
@@ -988,3 +991,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+#

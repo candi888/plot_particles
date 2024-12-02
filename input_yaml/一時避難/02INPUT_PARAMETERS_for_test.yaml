@@ -2,24 +2,24 @@
 save_dir_name: "plot_output_results_allregion"
 #* プロットの順序．上から順番にプロットを行う．いらないものはコメントアウトすればプロットされない．ラベル名は変更してはならない．
 plot_order_list:
-  - "move" # 特別扱い1
-  - "speed"
-  - "div_U"
-  - "density"
   - "vorticity"
+  - "move" # 特別扱い1
   - "pressure"
+  # - "speed"
+  # - "div_U"
+  # - "density"
   # - "Q_signed"
   # - "eddy_viscos"
 
 #* プロット関連
 timestep_ms: 10 # datファイルの00050のとこ.　SNAPの出力時間間隔が違う場合に注意
 snap_start_time_ms: 10
-snap_end_time_ms: 20
+snap_end_time_ms: 200000
 xlim_min: &xlim_min -0.06
 xlim_max: &xlim_max 1.24
 ylim_min: &ylim_min -0.06
 ylim_max: &ylim_max 0.41
-snapshot_dpi: 200
+snapshot_dpi: 300
 
 #* アニメーション関連
 framerate: 100
@@ -30,7 +30,7 @@ pressure_label: "Pressure $\\mathrm{(kN/m^2)}$" # colorbarのlegendに使用
 pressure_col_index: 4
 pressure_min_value_contour: 0
 pressure_max_value_contour: 1000
-pressure_cmap: "viridis"
+pressure_cmap: "small rainbow"
 pressure_is_plot_velocity_vector: False
 
 pressure_wall_particle_color: "000000" # 以下2*4はコメントアウトでコンターの色そのまま出力
@@ -50,7 +50,7 @@ vorticity_label: "Vorticity $\\nabla \\times \\mathbfit{u}   \\mathrm{(/s)}$" # 
 vorticity_col_index: 6
 vorticity_min_value_contour: -40
 vorticity_max_value_contour: 40
-vorticity_cmap: "seismic"
+vorticity_cmap: "coolwarm"
 vorticity_is_plot_velocity_vector: True
 
 vorticity_wall_particle_color: "#000000" # 16進数カラーコードで指定
@@ -168,13 +168,13 @@ eddy_viscos_movedummy_particle_alpha: 1.0
 #* move関連　これらは何も設定しないでもいい感じの配色でプロットしてくれる．流速ベクトルだけ注意
 move_is_plot_velocity_vector: False
 
-move_water_particle_color: "#1f77b4" # 16進数カラーコードで指定
+move_water_particle_color: "#00FFFF" # 16進数カラーコードで指定
 move_water_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
 
-move_wall_particle_color: "#6c2735" # 16進数カラーコードで指定
+move_wall_particle_color: "#BC8F8F" # 16進数カラーコードで指定
 move_wall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
 
-move_dummy_particle_color: "#6c2735"
+move_dummy_particle_color: "#A52A2A"
 move_dummy_particle_alpha: 1.0
 
 # move_movewall_particle_color: "#ff1493" # 16進数カラーコードで指定
@@ -185,7 +185,7 @@ move_dummy_particle_alpha: 1.0
 
 #* 流速ベクトル図関連
 scaler_length_vector: 0.6 # ベクトルの長さの調整用．nに設定 -> ベクトルの長さをn倍
-scaler_width_vector: 0.6 # ベクトルの太さの調整用．nに設定 -> ベクトルの太さをn倍
+scaler_width_vector: 0.8 # ベクトルの太さの調整用．nに設定 -> ベクトルの太さをn倍
 length_reference_vector: 1
 
 #* 物理量が素データのどの軸か．0-index
