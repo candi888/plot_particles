@@ -8,7 +8,7 @@ def main() -> None:
     input_yaml_file_list.sort()
 
     for input_yaml_file in input_yaml_file_list:
-        cmd = f"python plot.py {input_yaml_file.name}"
+        cmd = f"python {str(Path(__file__).parent/"plot.py")} {input_yaml_file.name}"
         subprocess.run(cmd, shell=True)
 
 
