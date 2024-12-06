@@ -10,8 +10,10 @@ import matplotlib.pyplot as plt
 import matplotlib.style as mplstyle
 import numpy as np
 import yaml
+from matplotlib.axes import Axes
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import Colormap, LinearSegmentedColormap, Normalize, to_rgba
+from matplotlib.figure import Figure
 from numpy.typing import NDArray
 
 # 描画高速化
@@ -31,27 +33,7 @@ plt.rcParams["xtick.direction"] = "out"  # x軸の目盛りの向き
 plt.rcParams["ytick.direction"] = "out"  # y軸の目盛りの向き
 plt.rcParams["xtick.minor.visible"] = True  # x軸補助目盛りの追加
 plt.rcParams["ytick.minor.visible"] = True  # y軸補助目盛りの追加
-# plt.rcParams["xtick.top"] = True  # x軸の上部目盛り
-# plt.rcParams["ytick.right"] = True  # y軸の右部目盛り
-# plt.rcParams["xtick.major.pad"] = 4  # distance to major tick label in points
-# plt.rcParams["ytick.major.pad"] = 3  # distance to major tick label in points
-# plt.rcParams["axes.spines.top"] = False  # 上側の軸を表示するか
-# plt.rcParams["axes.spines.right"] = False  # 右側の軸を表示するか
-# plt.rcParams['axes.grid'] = True # グリッドの作成
-# plt.rcParams['grid.linestyle']='--' #グリッドの線種
 
-# 軸大きさ
-# plt.rcParams["xtick.major.width"] = 1.0  # x軸主目盛り線の線幅
-# plt.rcParams["ytick.major.width"] = 1.0  # y軸主目盛り線の線幅
-# plt.rcParams["xtick.minor.width"] = 1.0  # x軸補助目盛り線の線幅
-# plt.rcParams["ytick.minor.width"] = 1.0  # y軸補助目盛り線の線幅
-# plt.rcParams["xtick.major.size"] = 5  # x軸主目盛り線の長さ
-# plt.rcParams["ytick.major.size"] = 5  # y軸主目盛り線の長さ
-# plt.rcParams["xtick.labelsize"] = 20.0  # 軸目盛のフォントサイズ変更
-# plt.rcParams["ytick.labelsize"] = 20.0  # 軸目盛のフォントサイズ変更
-# plt.rcParams["xtick.minor.size"] = 5  # x軸補助目盛り線の長さ
-# plt.rcParams["ytick.minor.size"] = 5  # y軸補助目盛り線の長さ
-# plt.rcParams["axes.linewidth"] = 1.0
 
 # 画像保存時の余白調整など
 plt.rcParams["savefig.bbox"] = "tight"
@@ -302,7 +284,7 @@ def postprocess_svg_setclippath(
 
 
 def data_unit_to_points_size(
-    diameter_in_data_units: NDArray[np.float64], fig: plt.Figure, axis: plt.Axes
+    diameter_in_data_units: NDArray[np.float64], fig: Figure, axis: Axes
 ) -> NDArray[np.float64]:
     """
     データ単位で指定した直径を、matplotlib の scatter プロットで使用する s パラメータ（ポイントの面積）に変換します。
@@ -337,8 +319,8 @@ def data_unit_to_points_size(
 
 
 def plot_particles_by_scatter(
-    fig: plt.Figure,
-    ax: plt.Axes,
+    fig: Figure,
+    ax: Axes,
     par_x: NDArray[np.float64],
     par_y: NDArray[np.float64],
     par_disa: NDArray[np.float64],
@@ -410,8 +392,8 @@ def get_facecolor_by_physics_contour(
 
 
 def plot_colorbar(
-    fig: plt.Figure,
-    ax: plt.Axes,
+    fig: Figure,
+    ax: Axes,
 ) -> None:
     assert CUR_CONTOUR_PARAMS is not None
 
@@ -442,8 +424,8 @@ def plot_colorbar(
 
 
 def plot_velocity_vector(
-    fig: plt.Figure,
-    ax: plt.Axes,
+    fig: Figure,
+    ax: Axes,
     snap_time_ms: int,
     is_plot_reference_vector: bool,
     mask_array: NDArray[np.bool_],
@@ -505,14 +487,14 @@ def plot_velocity_vector(
     return
 
 
-def set_ax_ticks(ax: plt.Axes) -> None:
+def set_ax_ticks(ax: Axes) -> None:
     ax.set_xlim(IN_PARAMS.xlim_min, IN_PARAMS.xlim_max)
     ax.set_ylim(IN_PARAMS.ylim_min, IN_PARAMS.ylim_max)
 
     return
 
 
-def set_ax_labels(ax: plt.Axes) -> None:
+def set_ax_labels(ax: Axes) -> None:
     # mathtextを使用するとIllustratorでsvgを読み込んだ時にテキストの編集がしづらくなってしまうので以下のように対応
     xlabel = "x (m)" if IN_PARAMS.svg_flag else r"$x \mathrm{(m)}$"
     ylabel = "y (m)" if IN_PARAMS.svg_flag else r"$y \mathrm{(m)}$"
@@ -523,7 +505,7 @@ def set_ax_labels(ax: plt.Axes) -> None:
     return
 
 
-def set_ax_title(ax: plt.Axes, snap_time_ms: int) -> None:
+def set_ax_title(ax: Axes, snap_time_ms: int) -> None:
     time_text = f"{snap_time_ms/1000:.03f}s"
 
     # mathtextを使用するとIllustratorでsvgを読み込んだ時にテキストの編集がしづらくなってしまうので以下のように対応
@@ -597,8 +579,8 @@ def get_facecolor_array_for_move_or_physics_contour(
 
 
 def make_snap_physics_contour(
-    fig: plt.Figure,
-    ax: plt.Axes,
+    fig: Figure,
+    ax: Axes,
     snap_time_ms: int,
     save_dir_snap_path: Path,
     physics_name: str,
