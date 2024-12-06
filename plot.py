@@ -3,6 +3,7 @@ import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from typing import Dict
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -85,158 +86,18 @@ class DataclassInputParameters:
     ylim_max: float
     snapshot_dpi: int
 
+    # * アニメーション関連
     framerate: int
-
-    # * 圧力コンター作成関係
-    pressure_label: str
-    pressure_col_index: int
-    pressure_min_value_contour: int
-    pressure_max_value_contour: int
-    pressure_cmap: str
-    pressure_is_plot_velocity_vector: bool
-
-    # * 渦度コンター作成関係
-    vorticity_label: str
-    vorticity_col_index: int
-    vorticity_min_value_contour: int
-    vorticity_max_value_contour: int
-    vorticity_cmap: str
-    vorticity_is_plot_velocity_vector: bool
-
-    # * Q_signedコンター作成関係
-    Q_signed_label: str
-    Q_signed_col_index: int
-    Q_signed_min_value_contour: int
-    Q_signed_max_value_contour: int
-    Q_signed_cmap: str
-    Q_signed_is_plot_velocity_vector: bool
-
-    # * densityコンター作成関係
-    density_label: str
-    density_col_index: int
-    density_min_value_contour: float
-    density_max_value_contour: float
-    density_cmap: str
-    density_is_plot_velocity_vector: bool
-
-    # * div_Uコンター作成関係
-    div_U_label: str
-    div_U_col_index: int
-    div_U_min_value_contour: float
-    div_U_max_value_contour: float
-    div_U_cmap: str
-    div_U_is_plot_velocity_vector: bool
-
-    # * speedコンター作成関係
-    speed_label: str
-    speed_col_index: int
-    speed_min_value_contour: float
-    speed_max_value_contour: float
-    speed_cmap: str
-    speed_is_plot_velocity_vector: bool
-
-    # * 渦動粘性係数コンター作成関係
-    eddy_viscos_label: str
-    eddy_viscos_col_index: int
-    eddy_viscos_min_value_contour: float
-    eddy_viscos_max_value_contour: float
-    eddy_viscos_cmap: str
-    eddy_viscos_is_plot_velocity_vector: bool
-
-    #!　以下，デフォルト値あり
+    crf_num: int
 
     # * svg出力用．これをTrueにした場合，ここで指定した時刻のsvgのみを作成する．jpegの画像やアニメーションの作成は行わないので注意．
-    svg_flag: bool = False
-    svg_snap_time_ms: int | None = None
+    svg_flag: bool
+    svg_snap_time_ms: int | None
 
-    # * 圧力コンター作成関係
-    pressure_wall_particle_color: str | None = None
-    pressure_wall_particle_alpha: float = 1.0
-    pressure_dummy_particle_color: str | None = None
-    pressure_dummy_particle_alpha: float = 1.0
-    pressure_movewall_particle_color: str | None = None
-    pressure_movewall_particle_alpha: float = 1.0
-    pressure_movedummy_particle_color: str | None = None
-    pressure_movedummy_particle_alpha: float = 1.0
-
-    # * 渦度コンター作成関係
-    vorticity_wall_particle_color: str | None = None
-    vorticity_wall_particle_alpha: float = 1.0
-    vorticity_dummy_particle_color: str | None = None
-    vorticity_dummy_particle_alpha: float = 1.0
-    vorticity_movewall_particle_color: str | None = None
-    vorticity_movewall_particle_alpha: float = 1.0
-    vorticity_movedummy_particle_color: str | None = None
-    vorticity_movedummy_particle_alpha: float = 1.0
-
-    # * Q_signedコンター作成関係
-    Q_signed_wall_particle_color: str | None = None
-    Q_signed_wall_particle_alpha: float = 1.0
-    Q_signed_dummy_particle_color: str | None = None
-    Q_signed_dummy_particle_alpha: float = 1.0
-    Q_signed_movewall_particle_color: str | None = None
-    Q_signed_movewall_particle_alpha: float = 1.0
-    Q_signed_movedummy_particle_color: str | None = None
-    Q_signed_movedummy_particle_alpha: float = 1.0
-
-    # * densityコンター作成関係
-    density_wall_particle_color: str | None = None
-    density_wall_particle_alpha: float = 1.0
-    density_dummy_particle_color: str | None = None
-    density_dummy_particle_alpha: float = 1.0
-    density_movewall_particle_color: str | None = None
-    density_movewall_particle_alpha: float = 1.0
-    density_movedummy_particle_color: str | None = None
-    density_movedummy_particle_alpha: float = 1.0
-
-    # * div_Uコンター作成関係
-    div_U_wall_particle_color: str | None = None
-    div_U_wall_particle_alpha: float = 1.0
-    div_U_dummy_particle_color: str | None = None
-    div_U_dummy_particle_alpha: float = 1.0
-    div_U_movewall_particle_color: str | None = None
-    div_U_movewall_particle_alpha: float = 1.0
-    div_U_movedummy_particle_color: str | None = None
-    div_U_movedummy_particle_alpha: float = 1.0
-
-    # * speedコンター作成関係
-    speed_wall_particle_color: str | None = None
-    speed_wall_particle_alpha: float = 1.0
-    speed_dummy_particle_color: str | None = None
-    speed_dummy_particle_alpha: float = 1.0
-    speed_movewall_particle_color: str | None = None
-    speed_movewall_particle_alpha: float = 1.0
-    speed_movedummy_particle_color: str | None = None
-    speed_movedummy_particle_alpha: float = 1.0
-
-    # * speedコンター作成関係
-    eddy_viscos_wall_particle_color: str | None = None
-    eddy_viscos_wall_particle_alpha: float = 1.0
-    eddy_viscos_dummy_particle_color: str | None = None
-    eddy_viscos_dummy_particle_alpha: float = 1.0
-    eddy_viscos_movewall_particle_color: str | None = None
-    eddy_viscos_movewall_particle_alpha: float = 1.0
-    eddy_viscos_movedummy_particle_color: str | None = None
-    eddy_viscos_movedummy_particle_alpha: float = 1.0
-
-    # * move関連
-    move_is_plot_velocity_vector: bool = True
-    move_water_particle_color: str = "#00FFFF"
-    move_water_particle_alpha: float = 1.0
-    move_wall_particle_color: str = "#BC8F8F"
-    move_wall_particle_alpha: float = 1.0
-    move_dummy_particle_color: str = "#A52A2A"
-    move_dummy_particle_alpha: float = 1.0
-    move_movewall_particle_color: str = "#ff1493"
-    move_movewall_particle_alpha: float = 1.0
-    move_movedummy_particle_color: str = "#ff69b4"
-    move_movedummy_particle_alpha: float = 1.0
-
-    crf_num: int = 35
-
-    scaler_length_vector: float = 1.0
-    scaler_width_vector: float = 1.0
-    length_reference_vector: int = 1
+    # * ベクトル図関連
+    scaler_length_vector: float
+    scaler_width_vector: float
+    length_reference_vector: int
 
     def __post_init__(self) -> None:
         class_dict = dataclasses.asdict(self)
@@ -268,8 +129,39 @@ class DataclassInputParameters:
         return
 
 
-def construct_input_parameters_dataclass() -> DataclassInputParameters:
-    # print("Please input file name(with extension):")
+@dataclasses.dataclass(frozen=True)
+class DataclassContour:
+    label: str
+    col_index: int
+    min_value_contour: float
+    max_value_contour: float
+    cmap: str
+    is_plot_vector: bool
+
+    wall_particle_color: str | None
+    wall_particle_alpha: float | None
+
+    dummy_particle_color: str | None
+    dummy_particle_alpha: float | None
+
+    movewall_particle_color: str | None
+    movewall_particle_alpha: float | None
+
+    movedummy_particle_color: str | None
+    movedummy_particle_alpha: float | None
+
+    def __post_init__(self) -> None:
+        class_dict = dataclasses.asdict(self)
+        # * 1. 型チェック
+        # self.__annotations__は {引数の名前:指定する型}
+        for class_arg_name, class_arg_expected_type in self.__annotations__.items():
+            if not isinstance(class_dict[class_arg_name], class_arg_expected_type):
+                raise ValueError(
+                    f"{class_arg_name}の型が一致しません．\n{class_arg_name}の型は現在は{type(class_dict[class_arg_name])}ですが，{class_arg_expected_type}である必要があります．"
+                )
+
+
+def read_inparam_yaml_as_dict() -> Dict:
     input_yaml_name = sys.argv[1]
 
     with open(
@@ -277,8 +169,26 @@ def construct_input_parameters_dataclass() -> DataclassInputParameters:
         mode="r",
         encoding="utf-8",
     ) as f:
-        print(f"plot execute by {input_yaml_name}\n")
-        return DataclassInputParameters(**yaml.safe_load(f))
+        return yaml.safe_load(f)
+
+
+def construct_input_parameters_dataclass() -> DataclassInputParameters:
+    inparam_dict = read_inparam_yaml_as_dict()
+
+    del inparam_dict["contour"]
+
+    return DataclassInputParameters(**inparam_dict)
+
+
+def construct_contour_dataclass(
+    contour_name: str | None = None,
+) -> DataclassContour | None:
+    if contour_name is None:
+        return None
+
+    inparam_dict = read_inparam_yaml_as_dict()
+
+    return DataclassContour(**inparam_dict["contour"][contour_name])
 
 
 def get_mask_array_by_plot_region(snap_time_ms: int) -> NDArray[np.bool_]:
@@ -309,7 +219,7 @@ def get_mask_array_by_plot_region(snap_time_ms: int) -> NDArray[np.bool_]:
 
 def load_par_data_masked_by_plot_region(
     snap_time_ms: int,
-    usecols: tuple[int, ...],
+    usecols: tuple[int, ...] | int,
     mask_array: NDArray[np.bool_],
     mask_array_by_group: NDArray[np.bool_] | None = None,
 ) -> NDArray[np.float64]:
@@ -450,15 +360,17 @@ def plot_particles_by_scatter(
     return
 
 
-def get_norm_for_color_contour(physics_name: str) -> Normalize:
+def get_norm_for_color_contour() -> Normalize:
+    assert CUR_CONTOUR_PARAMS is not None
     return Normalize(
-        vmin=getattr(IN_PARAMS, f"{physics_name}_min_value_contour"),
-        vmax=getattr(IN_PARAMS, f"{physics_name}_max_value_contour"),
+        vmin=CUR_CONTOUR_PARAMS.min_value_contour,
+        vmax=CUR_CONTOUR_PARAMS.max_value_contour,
     )
 
 
-def get_cmap_for_color_contour(physics_name: str) -> Colormap:
-    cmap_name = getattr(IN_PARAMS, f"{physics_name}_cmap")
+def get_cmap_for_color_contour() -> Colormap:
+    assert CUR_CONTOUR_PARAMS is not None
+    cmap_name = CUR_CONTOUR_PARAMS.cmap
 
     try:
         return (
@@ -470,7 +382,7 @@ def get_cmap_for_color_contour(physics_name: str) -> Colormap:
         )
     except ValueError:
         raise ValueError(
-            f'{physics_name}_cmap で設定されているcolormap名は存在しません．\nhttps://matplotlib.org/stable/users/explain/colors/colormaps.html に載っているcolormap名，もしくは"small rainbow"を設定してください．'
+            f'cmap で設定されているcolormap名（{cmap_name}）は存在しません．\nhttps://matplotlib.org/stable/users/explain/colors/colormaps.html に載っているcolormap名，もしくは"small rainbow"を設定してください．'
         )
 
 
@@ -480,13 +392,15 @@ def get_facecolor_by_physics_contour(
     mask_array: NDArray[np.bool_],
     mask_array_by_group: NDArray[np.bool_] | None = None,
 ) -> NDArray[np.float64]:
-    cmap = get_cmap_for_color_contour(physics_name=physics_name)
-    norm = get_norm_for_color_contour(physics_name=physics_name)
+    assert CUR_CONTOUR_PARAMS is not None
+
+    cmap = get_cmap_for_color_contour()
+    norm = get_norm_for_color_contour()
 
     par_physics = load_par_data_masked_by_plot_region(
         snap_time_ms=snap_time_ms,
         mask_array=mask_array,
-        usecols=getattr(IN_PARAMS, f"{physics_name}_col_index"),
+        usecols=CUR_CONTOUR_PARAMS.col_index,
         mask_array_by_group=mask_array_by_group,
     )
 
@@ -498,10 +412,11 @@ def get_facecolor_by_physics_contour(
 def plot_colorbar(
     fig: plt.Figure,
     ax: plt.Axes,
-    physics_name: str,
 ) -> None:
-    cmap = get_cmap_for_color_contour(physics_name=physics_name)
-    norm = get_norm_for_color_contour(physics_name=physics_name)
+    assert CUR_CONTOUR_PARAMS is not None
+
+    cmap = get_cmap_for_color_contour()
+    norm = get_norm_for_color_contour()
     mappable = ScalarMappable(cmap=cmap, norm=norm)
 
     assert norm.vmin is not None and norm.vmax is not None
@@ -520,7 +435,7 @@ def plot_colorbar(
     )
     cbar.ax.xaxis.set_ticks_position("bottom")
     # cbar.ax.xaxis.set_label_position("bottom") # スナップの方に貫通するので注意
-    cbar.set_label(f"{getattr(IN_PARAMS,f"{physics_name}_label")}")
+    cbar.set_label(CUR_CONTOUR_PARAMS.label)
     cbar.minorticks_off()
 
     return
@@ -628,8 +543,10 @@ def change_facecolor_by_move(
     physics_name: str,
     move_label: str,
 ) -> NDArray[np.float64]:
-    input_color = getattr(IN_PARAMS, f"{physics_name}_{move_label}_particle_color")
-    input_alpha = getattr(IN_PARAMS, f"{physics_name}_{move_label}_particle_alpha")
+    assert CUR_CONTOUR_PARAMS is not None
+
+    input_color = getattr(CUR_CONTOUR_PARAMS, f"{move_label}_particle_color")
+    input_alpha = getattr(CUR_CONTOUR_PARAMS, f"{move_label}_particle_alpha")
 
     if input_color is None:
         par_color_masked_by_move[:, 3] = input_alpha  # ４列目がrgbaのa
@@ -686,6 +603,8 @@ def make_snap_physics_contour(
     save_dir_snap_path: Path,
     physics_name: str,
 ) -> None:
+    assert CUR_CONTOUR_PARAMS is not None
+
     set_ax_ticks(ax=ax)
     set_ax_labels(ax=ax)
     set_ax_title(ax=ax, snap_time_ms=snap_time_ms)
@@ -703,8 +622,6 @@ def make_snap_physics_contour(
     particle_group_id_prefix = "particle_group"
     vector_group_id_prefix = "vector_group"
 
-    # TODO if physics_name == "splash" else get_splash...
-
     is_plot_reference_vector = True
     for group_index in np.unique(par_group_index)[::-1]:
         mask_array_by_group: NDArray[np.bool_] = par_group_index == group_index
@@ -720,19 +637,16 @@ def make_snap_physics_contour(
             mask_array_by_group=mask_array_by_group,
         )
 
-        if physics_name == "splash":
-            pass  # TODO
-        else:
-            is_move: bool = physics_name == "move"
-            par_color = get_facecolor_array_for_move_or_physics_contour(
-                is_move=is_move,
-                move_index=group_index,
-                physics_name=physics_name,
-                snap_time_ms=snap_time_ms,
-                num_par_cur_group=par_x.shape[0],
-                mask_array=mask_array,
-                mask_array_by_group=mask_array_by_group,
-            )
+        is_move: bool = physics_name == "move"
+        par_color = get_facecolor_array_for_move_or_physics_contour(
+            is_move=is_move,
+            move_index=group_index,
+            physics_name=physics_name,
+            snap_time_ms=snap_time_ms,
+            num_par_cur_group=par_x.shape[0],
+            mask_array=mask_array,
+            mask_array_by_group=mask_array_by_group,
+        )
 
         plot_particles_by_scatter(
             fig=fig,
@@ -745,9 +659,7 @@ def make_snap_physics_contour(
             group_index=group_index,
         )
 
-        if getattr(IN_PARAMS, f"{physics_name}_is_plot_velocity_vector") and (
-            group_index not in {1, 2}
-        ):
+        if CUR_CONTOUR_PARAMS.is_plot_vector and (group_index not in {1, 2}):
             plot_velocity_vector(
                 fig=fig,
                 ax=ax,
@@ -788,6 +700,10 @@ def make_snap_physics_contour_all_snap_time(
     physics_name: str,
     is_move_or_splash: bool,
 ) -> None:
+    global CUR_CONTOUR_PARAMS
+    CUR_CONTOUR_PARAMS = construct_contour_dataclass(contour_name=physics_name)
+    assert CUR_CONTOUR_PARAMS is not None
+
     save_dir_snap_path = save_dir_physics_path / "snap_shot"
     save_dir_snap_path.mkdir(exist_ok=True, parents=True)
 
@@ -797,7 +713,7 @@ def make_snap_physics_contour_all_snap_time(
     fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
 
     if not is_move_or_splash:
-        plot_colorbar(fig=fig, ax=ax, physics_name=physics_name)
+        plot_colorbar(fig=fig, ax=ax)
 
     for snap_time_ms in snap_time_array_ms:
         try:
@@ -913,7 +829,7 @@ def make_snap_physics_contour_svg(
     fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
 
     if not is_move_or_splash:
-        plot_colorbar(fig=fig, ax=ax, physics_name=physics_name)
+        plot_colorbar(fig=fig, ax=ax)
 
     try:
         print(
@@ -938,9 +854,15 @@ def make_snap_physics_contour_svg(
 
 
 IN_PARAMS = construct_input_parameters_dataclass()
+CUR_CONTOUR_PARAMS = construct_contour_dataclass()
+
+
+# TODO　最初に型チェックやる関数も必要
 
 
 def main() -> None:
+    print(f"plot execute by {sys.argv[1]}\n")
+
     # 指定したスナップ作成時間のデータが存在しないときは処理を止める
     if IN_PARAMS.plot_order_list is None:
         exit()
