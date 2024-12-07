@@ -1,21 +1,30 @@
 #* スナップやアニメーションを保存するディレクトリ名
 save_dir_name: "plot_output_results_allregion"
 
-#* プロットの順序．上から順番にプロットを行う．いらないものはコメントアウトすればプロットされない．ラベル名は結果の保存ディレクトリ名となる．
-plot_order_list:
-  - &id_pressure "pressure"
+#* contourプロットの順序．上から順番にプロットを行う．いらないものはNOT_PLOT_BELOWの下へ移動．ラベル名は結果の保存ディレクトリ名と同じになる．
+plot_order_list_contour:
+  - &id_pressure "Pressure"
+  - &id_density "Density"
+  - "NOT_PLOT_BELOW"
+  # - "speed"
+  # - "div_U"
+  # - "vorticity"
+  # - "Q_signed"
+  # - "eddy_viscos"
+
+#* groupプロットの順序．上から順番にプロットを行う．いらないものはNOT_PLOT_BELOWの下へ移動．ラベル名は結果の保存ディレクトリ名と同じになる．
+plot_order_list_group:
   - &id_move "move"
-    # - "speed"
-    # - "div_U"
-    # - "density"
-    # - "vorticity"
-    # - "Q_signed"
-    # - "eddy_viscos"
+  - "NOT_PLOT_BELOW"
+
+# *出力画像の大きさ [cm]
+# （参考）A4用紙の縦向きサイズ（縦 × 横）は 29.7 × 21.0[cm]
+# fig_horizontal_cm: 18.0 # 横方向のみ設定．縦方向は自動で調節される
 
 #* プロット関連
 timestep_ms: 50 # datファイルの00050のとこ.　SNAPの出力時間間隔が違う場合に注意
 snap_start_time_ms: 10
-snap_end_time_ms: 1000
+snap_end_time_ms: 60
 xlim_min: &xlim_min -0.06
 xlim_max: &xlim_max 1.24
 ylim_min: &ylim_min -0.06
@@ -23,14 +32,14 @@ ylim_max: &ylim_max 0.41
 snapshot_dpi: 200
 
 #* アニメーション関連
-framerate: 100
+framerate: 20
 crf_num: 35 # CRF値を設定．lowqualityの動画を作成するときに使用する．大きいほどクオリティが下がる．35くらいでちょうど良さそう．
 
 # * svg出力用．これをTrueにした場合，ここで指定した時刻のsvgのみを作成する．jpegの画像やアニメーションの作成は行わないので注意．
 svg_flag: False
 svg_snap_time_ms: null
 
-#* pythonファイルからの各相対パス．数字の部分は"xxxxx"を入れる．
+#* pythonファイルからの各相対パス．数字の部分は"xxxxx"を入れる．（コード内部で直接使用することはない）
 path_list:
   - &xud_path "OUTPUT/SNAP/XUDxxxxx.DAT"
   - &tmd_path "OUTPUT/SNAP/TMDxxxxx.DAT"
@@ -42,6 +51,7 @@ col_index_x: 0
 col_index_y: 1
 col_index_disa: 5
 
+#* group設定
 group:
   *id_move :
     config:
@@ -103,12 +113,13 @@ group:
 #* contourプロットでのグループ分けの選択
 grouping_id: *id_move
 
+#* contourプロット設定
 contour:
-  #* 他のcontourで参照する用のベースの設定
+  #他のcontourで参照する用のベースの設定（コード内部で直接使用することはない）
   base_config:
     cmap: &contourbase_cmap "small rainbow"
 
-  #* 圧力コンター作成関係
+  #圧力コンター作成関係
   *id_pressure :
     label: "Pressure $\\mathrm{(kN/m^2)}$" # colorbarのlegendのラベル
     data_file_path: *xud_path # データがあるファイルのpythonファイルからの相対パス
@@ -116,9 +127,19 @@ contour:
     min_value_contour: 0.0 #コンターの最小値
     max_value_contour: 1000.0 # コンターの最大値
     cmap: *contourbase_cmap # matplotlibのカラーマップ or "small rainbow"
-    is_plot_vector: True # Trueの場合，group内のbasecontourで設定したis_plot_vectorが反映される
+    is_plot_vector: False # Trueの場合，group内のbasecontourで設定したis_plot_vectorが反映される
 
-#* ベクトルプロットのid振り
+  #densityコンター作成関係
+  *id_density :
+    label: "Density $\\rho / \\rho_0$" # colorbarのlegendのラベル
+    data_file_path: *xud_path # データがあるファイルのpythonファイルからの相対パス
+    col_index: 7 # データが何列目にあるか　（0-index）
+    min_value_contour: 0.97 #コンターの最小値
+    max_value_contour: 1.03 # コンターの最大値
+    cmap: *contourbase_cmap # matplotlibのカラーマップ or "small rainbow"
+    is_plot_vector: False # Trueの場合，group内のbasecontourで設定したis_plot_vectorが反映される
+
+#* ベクトルプロットのid振り用（コード内部で直接使用することはない）
 vector_list:
   - &id_velocity_vector "velocity"
 
@@ -127,7 +148,7 @@ vector_id: *id_velocity_vector
 
 #*　ベクトル図関連
 vector:
-  #* 他のcontourで参照する用のベースの設定
+  #他のvectorで参照する用のベースの設定（コード内部で直接使用することはない）
   base_config:
     scaler_length_vector: &vectorbase_length 0.6 # ベクトルの長さの調整用．nに設定 -> ベクトルの長さをn倍
     scaler_width_vector: &vectorbase_width 0.6 # ベクトルの太さの調整用．nに設定 -> ベクトルの太さをn倍

@@ -36,8 +36,8 @@ plt.rcParams["ytick.minor.visible"] = True  # y軸補助目盛りの追加
 
 
 # 画像保存時の余白調整など
-plt.rcParams["savefig.bbox"] = "tight"
-plt.rcParams["savefig.pad_inches"] = 0.05
+# plt.rcParams["savefig.bbox"] = "tight"
+# plt.rcParams["savefig.pad_inches"] = 0.05
 
 
 @dataclasses.dataclass(frozen=True)
@@ -45,10 +45,11 @@ class DataclassInputParameters:
     # * スナップやアニメーションを保存するディレクトリ名
     save_dir_name: str
 
-    # * プロットの順序．上から順番にプロットを行う．いらないものはコメントアウトすればプロットされない．
-    plot_order_list: (
-        list | None
-    )  # リストの要素がゼロのときはNoneになる．List[str]であるが，後の__post_init__でチェック
+    # * contourプロットの順序．上から順番にプロットを行う．
+    plot_order_list_contour: list  # List[str]であるが，後の__post_init__でチェック
+
+    # * groupプロットの順序．上から順番にプロットを行う．
+    plot_order_list_group: list  # List[str]であるが，後の__post_init__でチェック
 
     # * 必須の物理量（x, y, disa）がどの素データのどの列か．0-index
     xydisa_file_path: str
@@ -81,7 +82,7 @@ class DataclassInputParameters:
     # * contourプロットでのグループ分けの選択
     grouping_id: str
 
-    # * ベクトルプロットのid振り
+    # * ベクトルプロットのid振り用（コード内部で直接使用することはない）
     vector_list: list
 
     # * ベクトルプロットの選択
@@ -89,6 +90,7 @@ class DataclassInputParameters:
 
     def __post_init__(self) -> None:
         class_dict = dataclasses.asdict(self)
+
         # * 1. 型チェック
         # self.__annotations__は {引数の名前:指定する型}
         for class_arg_name, class_arg_expected_type in self.__annotations__.items():
@@ -103,12 +105,17 @@ class DataclassInputParameters:
                 f"path_listの要素の型が一致しません．\npath_listの中身の型は全て{str}である必要があります．"
             )
 
-        # plot_order_listの処理
-        if self.plot_order_list is not None:
-            if not all([isinstance(name, str) for name in self.plot_order_list]):
-                raise ValueError(
-                    f"plot_order_listの要素の型が一致しません．\nplot_order_listの中身の型は全て{str}である必要があります．"
-                )
+        # plot_order_list_contourの処理
+        if not all([isinstance(name, str) for name in self.plot_order_list_contour]):
+            raise ValueError(
+                f"plot_order_list_contourの要素の型が一致しません．\nplot_order_list_contourの中身の型は全て{str}である必要があります．"
+            )
+
+        # plot_order_list_groupの処理
+        if not all([isinstance(name, str) for name in self.plot_order_list_group]):
+            raise ValueError(
+                f"plot_order_list_groupの要素の型が一致しません．\nplot_order_list_groupの中身の型は全て{str}である必要があります．"
+            )
 
         # vector_listの処理
         if not all([isinstance(name, str) for name in self.vector_list]):
@@ -125,8 +132,18 @@ class DataclassInputParameters:
             )
 
         # * 2.諸々のエラー処理
+        # plot_order_list_contourの処理
+        if "NOT_PLOT_BELOW" not in self.plot_order_list_contour:
+            raise ValueError(
+                "plot_order_list_contour内に'NOT_PLOT_BELOW'という文字列を含めてください"
+            )
+        # plot_order_list_groupの処理
+        if "NOT_PLOT_BELOW" not in self.plot_order_list_group:
+            raise ValueError(
+                "plot_order_list_group内に'NOT_PLOT_BELOW'という文字列を含めてください"
+            )
 
-        print("IN_PARAMS construct OK\n")
+        print("IN_PARAMS construct OK")
         return
 
 
@@ -150,6 +167,8 @@ class DataclassContour:
                     f"{class_arg_name}の型が一致しません．\n{class_arg_name}の型は現在は{type(class_dict[class_arg_name])}ですが，{class_arg_expected_type}である必要があります．"
                 )
 
+        print("CUR_CONTOUR_PARAMS construct OK")
+
 
 @dataclasses.dataclass(frozen=True)
 class DataclassVector:
@@ -169,6 +188,8 @@ class DataclassVector:
                     f"{class_arg_name}の型が一致しません．\n{class_arg_name}の型は現在は{type(class_dict[class_arg_name])}ですが，{class_arg_expected_type}である必要があります．"
                 )
 
+        print("VECTOR_PARAMS construct OK")
+
 
 @dataclasses.dataclass(frozen=True)
 class DataclassGroupConfig:
@@ -184,6 +205,8 @@ class DataclassGroupConfig:
                 raise ValueError(
                     f"{class_arg_name}の型が一致しません．\n{class_arg_name}の型は現在は{type(class_dict[class_arg_name])}ですが，{class_arg_expected_type}である必要があります．"
                 )
+
+        print("GROUP_CONFIG_PARAMS construct OK")
 
 
 @dataclasses.dataclass(frozen=True)
@@ -207,6 +230,8 @@ class DataclassGroupEachIndex:
                 raise ValueError(
                     f"{class_arg_name}の型が一致しません．\n{class_arg_name}の型は現在は{type(class_dict[class_arg_name])}ですが，{class_arg_expected_type}である必要があります．"
                 )
+
+        print(f"GROUPIDX_PARAMS construct OK({self.label})")
 
 
 def read_inparam_yaml_as_dict() -> Dict:
@@ -326,10 +351,10 @@ def load_par_data_masked_by_plot_region(
     return masked_data.T
 
 
-def get_move_index_array(
+def get_group_index_array(
     snap_time_ms: int, mask_array: NDArray[np.bool_]
 ) -> NDArray[np.int8]:
-    masked_move_index = np.loadtxt(
+    masked_group_index = np.loadtxt(
         Path(__file__).parent
         / Path(
             GROUP_CONFIG_PARAMS.data_file_path.replace(
@@ -341,7 +366,7 @@ def get_move_index_array(
         usecols=GROUP_CONFIG_PARAMS.col_index,
     )[mask_array]
 
-    return masked_move_index
+    return masked_group_index
 
 
 # TODO revise
@@ -482,7 +507,7 @@ def get_cmap_for_color_contour() -> Colormap:
 
 
 def get_facecolor_by_physics_contour(
-    physics_name: str,
+    plot_name: str,
     snap_time_ms: int,
     mask_array: NDArray[np.bool_],
     mask_array_by_group: NDArray[np.bool_] | None = None,
@@ -523,16 +548,53 @@ def plot_colorbar(
         ticks=ticks,
         shrink=0.28,
         orientation="horizontal",
-        # pad=0.12,
+        pad=0,
         location="top",
         anchor=(0.5, 0.0),
-        ticklocation="bottom",
+        panchor=(0, 1.0),
+        ticks_position="bottom",
     )
-    cbar.ax.xaxis.set_ticks_position("bottom")
-    # cbar.ax.xaxis.set_label_position("bottom") # スナップの方に貫通するので注意
-    cbar.set_label(rf"{CUR_CONTOUR_PARAMS.label}")
+    # cbar.ax.xaxis.set_ticks_position("bottom")
+
+    cbar.set_label(f"{CUR_CONTOUR_PARAMS.label}")
     cbar.minorticks_off()
 
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    tight_bbox = cbar.ax.get_tightbbox(renderer)
+
+    # figure座標系への変換
+    inv = fig.transFigure.inverted()
+    tmp_x, tmp_y = inv.transform(
+        ax.transData.transform((IN_PARAMS.xlim_min, IN_PARAMS.ylim_max))
+    )
+    tmp_x2, tmp_y2 = inv.transform((tight_bbox.x0, tight_bbox.y0))
+
+    caxpos = cbar.ax.get_position()
+
+    print(tmp_y, caxpos.y0, tmp_y2)
+
+    # cbar.ax.set_position(
+    #     (caxpos.x0, tmp_y + caxpos.y0 - tmp_y2, caxpos.width, caxpos.height)
+    # )
+
+    # fig.canvas.draw()
+
+    # axpos = ax.get_position()
+    # print(axpos)
+    # print(caxpos)
+
+    # cbar.ax.set_anchor((0.5, axpos.y1 - caxpos.y0))
+    # print(axpos.y1 - caxpos.y0)
+    # fig.canvas.draw()
+
+    # axpos = ax.get_position()
+    # caxpos = cbar.ax.get_position()
+    # print(axpos)
+    # print(caxpos)
+
+    # caxpos = cbar.ax.get_position()
+    # print(caxpos)
     return
 
 
@@ -544,14 +606,14 @@ def plot_velocity_vector(
     mask_array: NDArray[np.bool_],
     group_id_prefix: str,
     group_index: int,
+    par_x: NDArray[np.float64],
+    par_y: NDArray[np.float64],
     mask_array_by_group: NDArray[np.bool_] | None = None,
 ) -> None:
-    par_x, par_y, par_u, par_v = load_par_data_masked_by_plot_region(
+    par_u, par_v = load_par_data_masked_by_plot_region(
         snap_time_ms=snap_time_ms,
         mask_array=mask_array,
         usecols=(
-            IN_PARAMS.col_index_x,
-            IN_PARAMS.col_index_y,
             VECTOR_PARAMS.col_index_vectorx,
             VECTOR_PARAMS.col_index_vectory,
         ),
@@ -633,62 +695,82 @@ def set_ax_title(ax: Axes, snap_time_ms: int) -> None:
     return
 
 
-def change_facecolor_by_move(
-    par_color_masked_by_move: NDArray[np.float64],
-    move_index: int,
+def change_facecolor_and_alpha_by_groupidxparams(
+    par_color_masked_by_group: NDArray[np.float64],
+    group_index: int,
 ) -> NDArray[np.float64]:
     assert CUR_CONTOUR_PARAMS is not None
 
-    input_color = GROUPIDX_PARAMS[move_index].contour_color
-    input_alpha = GROUPIDX_PARAMS[move_index].contour_alpha
+    change_contour_color = GROUPIDX_PARAMS[group_index].contour_color
+    change_contour_alpha = GROUPIDX_PARAMS[group_index].contour_alpha
 
-    if input_color is None:
-        par_color_masked_by_move[:, 3] = input_alpha  # ４列目がrgbaのa
+    if change_contour_color is None:
+        par_color_masked_by_group[:, 3] = change_contour_alpha  # ４列目がrgbaのa
     else:
-        par_color_masked_by_move = np.full(
-            par_color_masked_by_move.shape, to_rgba(c=input_color, alpha=input_alpha)
+        par_color_masked_by_group = np.full_like(
+            par_color_masked_by_group,
+            to_rgba(c=change_contour_color, alpha=change_contour_alpha),
         )
 
-    return par_color_masked_by_move
+    return par_color_masked_by_group
 
 
-def get_facecolor_array_for_move_or_physics_contour(
-    is_move: bool,
-    move_index: int,
-    physics_name: str,
+def get_facecolor_array_for_contour(
+    group_index: int,
+    plot_name: str,
     snap_time_ms: int,
-    num_par_cur_group: int,
     mask_array: NDArray[np.bool_],
     mask_array_by_group: NDArray[np.bool_],
 ) -> NDArray[np.float64]:
-    if is_move:
-        par_color = np.full((num_par_cur_group, 4), -1, dtype=np.float64)
-    else:
-        par_color = get_facecolor_by_physics_contour(
-            physics_name=physics_name,
-            snap_time_ms=snap_time_ms,
-            mask_array=mask_array,
-            mask_array_by_group=mask_array_by_group,
-        )
+    par_color = get_facecolor_by_physics_contour(
+        plot_name=plot_name,
+        snap_time_ms=snap_time_ms,
+        mask_array=mask_array,
+        mask_array_by_group=mask_array_by_group,
+    )
 
-    # contourcolorがNone　-> 色を変えずそのまま
-    if GROUPIDX_PARAMS[move_index].contour_color is None:
-        return par_color
-
-    return change_facecolor_by_move(
-        par_color_masked_by_move=par_color,
-        move_index=move_index,
+    return change_facecolor_and_alpha_by_groupidxparams(
+        par_color_masked_by_group=par_color,
+        group_index=group_index,
     )
 
 
-def make_snap_physics_contour(
+def get_facecolor_array_for_group(
+    group_index: int,
+    num_par_cur_group: int,
+) -> NDArray[np.float64]:
+    return np.full(
+        (num_par_cur_group, 4),
+        to_rgba(
+            c=GROUPIDX_PARAMS[group_index].group_color,
+            alpha=GROUPIDX_PARAMS[group_index].group_alpha,
+        ),
+    )
+
+
+def get_cur_is_plot_vector(is_group_plot: bool, group_index: int) -> bool:
+    if is_group_plot:
+        return GROUPIDX_PARAMS[group_index].group_is_plot_vector
+
+    else:
+        assert CUR_CONTOUR_PARAMS is not None
+
+        return (
+            GROUPIDX_PARAMS[group_index].contour_is_plot_vector
+            and CUR_CONTOUR_PARAMS.is_plot_vector
+        )
+
+
+def make_snap_each_snap_time(
     fig: Figure,
     ax: Axes,
     snap_time_ms: int,
     save_dir_snap_path: Path,
-    physics_name: str,
+    plot_name: str,
+    is_group_plot: bool,
 ) -> None:
-    assert CUR_CONTOUR_PARAMS is not None
+    if not is_group_plot:
+        assert CUR_CONTOUR_PARAMS is not None
 
     set_ax_ticks(ax=ax)
     set_ax_labels(ax=ax)
@@ -700,17 +782,18 @@ def make_snap_physics_contour(
 
     mask_array = get_mask_array_by_plot_region(snap_time_ms=snap_time_ms)
 
-    par_group_index = get_move_index_array(
+    par_group_index = get_group_index_array(
         snap_time_ms=snap_time_ms, mask_array=mask_array
     )
 
-    particle_group_id_prefix = "particle_group"
-    vector_group_id_prefix = "vector_group"
+    particle_group_id_prefix = "particle"
+    vector_group_id_prefix = "vector"
 
     is_plot_reference_vector = True
     for group_index in np.unique(par_group_index)[::-1]:
         mask_array_by_group: NDArray[np.bool_] = par_group_index == group_index
 
+        # x, y, disaの取得
         par_x, par_y, par_disa = load_par_data_masked_by_plot_region(
             snap_time_ms=snap_time_ms,
             mask_array=mask_array,
@@ -722,17 +805,21 @@ def make_snap_physics_contour(
             mask_array_by_group=mask_array_by_group,
         )
 
-        is_move: bool = physics_name == "move"
-        par_color = get_facecolor_array_for_move_or_physics_contour(
-            is_move=is_move,
-            move_index=group_index,
-            physics_name=physics_name,
-            snap_time_ms=snap_time_ms,
-            num_par_cur_group=par_x.shape[0],
-            mask_array=mask_array,
-            mask_array_by_group=mask_array_by_group,
-        )
+        # 粒子の色の取得
+        if is_group_plot:
+            par_color = get_facecolor_array_for_group(
+                group_index=group_index, num_par_cur_group=par_x.shape[0]
+            )
+        else:
+            par_color = get_facecolor_array_for_contour(
+                group_index=group_index,
+                plot_name=plot_name,
+                snap_time_ms=snap_time_ms,
+                mask_array=mask_array,
+                mask_array_by_group=mask_array_by_group,
+            )
 
+        # 粒子のプロット
         plot_particles_by_scatter(
             fig=fig,
             ax=ax,
@@ -744,90 +831,87 @@ def make_snap_physics_contour(
             group_index=group_index,
         )
 
-        if (not CUR_CONTOUR_PARAMS.is_plot_vector) or (
-            not GROUPIDX_PARAMS[group_index].contour_is_plot_vector
-        ):
-            continue
-
-        plot_velocity_vector(
-            fig=fig,
-            ax=ax,
-            snap_time_ms=snap_time_ms,
-            mask_array=mask_array,
-            is_plot_reference_vector=is_plot_reference_vector,
-            mask_array_by_group=mask_array_by_group,
-            group_id_prefix=vector_group_id_prefix,
-            group_index=group_index,
-        )
-        # 初回のみreference vectorをプロット
-        is_plot_reference_vector = False
+        # ベクトルのプロット
+        if get_cur_is_plot_vector(is_group_plot=is_group_plot, group_index=group_index):
+            plot_velocity_vector(
+                fig=fig,
+                ax=ax,
+                snap_time_ms=snap_time_ms,
+                mask_array=mask_array,
+                is_plot_reference_vector=is_plot_reference_vector,
+                mask_array_by_group=mask_array_by_group,
+                par_x=par_x,
+                par_y=par_y,
+                group_id_prefix=vector_group_id_prefix,
+                group_index=group_index,
+            )
+            # 初回のみreference vectorをプロット
+            is_plot_reference_vector = False
 
     # 以下，画像の保存処理
-    save_file_name_without_extension = f"snap{snap_time_ms:05}_{physics_name}"
+    save_file_name_without_extension = f"snap{snap_time_ms:05}_{plot_name}"
     extension = "svg" if IN_PARAMS.svg_flag else "jpeg"
     save_file_path = save_dir_snap_path / Path(
         f"{save_file_name_without_extension}.{extension}"
     )
     fig.savefig(save_file_path)
 
-    # TODO revise
-    # if IN_PARAMS.svg_flag:
-    #     postprocess_svg_setclippath(
-    #         svg_file_path=save_file_path,
-    #         particle_group_id_prefix=particle_group_id_prefix,
-    #         vector_group_id_prefix=vector_group_id_prefix,
-    #     )
-
     plt.cla()
 
     return
 
 
-def make_snap_physics_contour_all_snap_time(
+def make_snap_all_snap_time(
     snap_time_array_ms: NDArray[np.int64],
-    save_dir_physics_path: Path,
-    physics_name: str,
-    is_move_or_splash: bool,
+    save_dir_sub_path: Path,
+    plot_name: str,
+    is_group_plot: bool,
 ) -> None:
-    # CUR_CONTOUR_PARAMSを現在のcontourプロット用の情報に更新
-    global CUR_CONTOUR_PARAMS
-    CUR_CONTOUR_PARAMS = construct_contour_dataclass(contour_name=physics_name)
-    assert CUR_CONTOUR_PARAMS is not None
+    if not is_group_plot:
+        # CUR_CONTOUR_PARAMSを現在のcontourプロット用の情報に更新
+        global CUR_CONTOUR_PARAMS
+        CUR_CONTOUR_PARAMS = construct_contour_dataclass(contour_name=plot_name)
+        assert CUR_CONTOUR_PARAMS is not None
 
-    save_dir_snap_path = save_dir_physics_path / "snap_shot"
+    save_dir_snap_path = save_dir_sub_path / "snap_shot"
     save_dir_snap_path.mkdir(exist_ok=True, parents=True)
 
-    fig = plt.figure(dpi=IN_PARAMS.snapshot_dpi)
+    scaler_cm_to_inch = 1 / 2.54
+    fig = plt.figure(
+        figsize=(25.4 * scaler_cm_to_inch, 18 * scaler_cm_to_inch),
+        dpi=IN_PARAMS.snapshot_dpi,
+        layout="tight",
+    )
     ax = fig.add_subplot(1, 1, 1, aspect="equal")
 
-    fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
-
-    if not is_move_or_splash:
+    # カラーバーのプロット
+    if not is_group_plot:
         plot_colorbar(fig=fig, ax=ax)
 
     for snap_time_ms in snap_time_array_ms:
         try:
-            make_snap_physics_contour(
+            make_snap_each_snap_time(
                 fig=fig,
                 ax=ax,
                 snap_time_ms=snap_time_ms,
                 save_dir_snap_path=save_dir_snap_path,
-                physics_name=physics_name,
+                plot_name=plot_name,
+                is_group_plot=is_group_plot,
             )
-            print(f"{snap_time_ms/1000:.03f} s contour:{physics_name} plot finished")
+            print(f"{snap_time_ms/1000:.03f} s {plot_name} plot finished")
         except FileNotFoundError:
             print(
                 f"{snap_time_ms/1000:.03f} s時点の計算データがありません．スナップショットの作成を終了します．\n"
             )
             break
 
-    print(f"{snap_time_ms/1000:.03f} s contour:{physics_name} all make snap finished\n")
+    print(f"{snap_time_ms/1000:.03f} s {plot_name} all make snap finished\n")
     plt.close()
     return
 
 
 def make_animation_from_snap(
-    snap_time_array_ms: NDArray[np.int64], save_dir_sub_path: Path, physics_name: str
+    snap_time_array_ms: NDArray[np.int64], save_dir_sub_path: Path, plot_name: str
 ) -> None:
     save_dir_animation_path = save_dir_sub_path / "animation"
     save_dir_animation_path.mkdir(exist_ok=True)
@@ -836,14 +920,12 @@ def make_animation_from_snap(
     for_ffmpeg = []
     for snap_time_ms in snap_time_array_ms:
         cur_snap_path = (
-            save_dir_sub_path
-            / "snap_shot"
-            / f"snap{snap_time_ms:05}_{physics_name}.jpeg"
+            save_dir_sub_path / "snap_shot" / f"snap{snap_time_ms:05}_{plot_name}.jpeg"
         )
         # アニメーション作成で使うsnapが存在するかの確認
         if not cur_snap_path.exists():
             break
-        for_ffmpeg.append(f"file 'snap{snap_time_ms:05}_{physics_name}.jpeg'")
+        for_ffmpeg.append(f"file 'snap{snap_time_ms:05}_{plot_name}.jpeg'")
 
     if for_ffmpeg == []:
         print(
@@ -879,14 +961,14 @@ def make_animation_from_snap(
     ]
     cmd_list2 = ["-pix_fmt", "yuv420p"]
 
-    cur_save_file_name = f"{physics_name}.mp4"
+    cur_save_file_name = f"{plot_name}.mp4"
     subprocess.run(
         cmd_list1 + cmd_list2 + [str(save_dir_animation_path / cur_save_file_name)],
         cwd=str(save_dir_sub_path / "snap_shot"),
     )
 
     # 以下は低画質用
-    cur_save_file_name = f"{physics_name}_lowquality.mp4"
+    cur_save_file_name = f"{plot_name}_lowquality.mp4"
     subprocess.run(
         cmd_list1
         + ["-crf", f"{IN_PARAMS.crf_num}"]  # ここで動画の品質を調整
@@ -898,70 +980,12 @@ def make_animation_from_snap(
     # tmp_for_ffmpeg.txtを削除
     save_file_forffmpeg_path.unlink()
 
-    print(f"{physics_name} animation finished\n")
+    print(f"{plot_name} animation finished\n")
 
     return
 
 
-def make_snap_physics_contour_svg(
-    save_dir_path: Path, physics_name: str, is_move_or_splash: bool
-) -> None:
-    save_dir_path.mkdir(exist_ok=True, parents=True)
-
-    snap_time_ms = IN_PARAMS.svg_snap_time_ms
-    assert (
-        snap_time_ms is not None
-    )  # __post_init__でチェック済みだががwarningをなくすために記述
-
-    fig = plt.figure(dpi=IN_PARAMS.snapshot_dpi)
-    ax = fig.add_subplot(1, 1, 1, aspect="equal")
-
-    fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
-
-    if not is_move_or_splash:
-        plot_colorbar(fig=fig, ax=ax)
-
-    try:
-        print(
-            f"時刻{snap_time_ms/1000:.03f} sのsvgを作成します．jpegのsnapやアニメーションはここでは作成されません．"
-        )
-        make_snap_physics_contour(
-            fig=fig,
-            ax=ax,
-            snap_time_ms=snap_time_ms,
-            save_dir_snap_path=save_dir_path,
-            physics_name=physics_name,
-        )
-    except FileNotFoundError:
-        raise FileNotFoundError(
-            f"{snap_time_ms/1000:.03f} s時点の計算データがありません．\n"
-        )
-
-    print(f"{snap_time_ms/1000:.03f} s contour:{physics_name} make svg finished\n")
-    plt.close()
-
-    return
-
-
-IN_PARAMS = construct_input_parameters_dataclass()
-CUR_CONTOUR_PARAMS = construct_contour_dataclass()
-VECTOR_PARAMS = construct_vector_dataclass()
-GROUP_CONFIG_PARAMS = construct_group_config_dataclass(group_name=IN_PARAMS.grouping_id)
-GROUPIDX_PARAMS = construct_dict_groupindex_to_groupeachidxdataclass(
-    group_name=IN_PARAMS.grouping_id
-)
-
-
-# TODO　最初に型チェックやる関数も必要
-
-
-def main() -> None:
-    print(f"plot execute by {sys.argv[1]}\n")
-
-    # 指定したスナップ作成時間のデータが存在しないときは処理を止める
-    if IN_PARAMS.plot_order_list is None:
-        exit()
-
+def execute_plot_contour_all() -> None:
     # スナップやアニメーションを保存するディレクトリ名
     save_dir_path: Path = Path(__file__).parent / IN_PARAMS.save_dir_name
 
@@ -972,35 +996,85 @@ def main() -> None:
         IN_PARAMS.timestep_ms,
     )
 
-    # * コンター図を作成
-    for cur_physics_name in IN_PARAMS.plot_order_list:
-        save_dir_physics_path = save_dir_path / cur_physics_name
-        is_move_or_splash: bool = (
-            cur_physics_name == "move" or cur_physics_name == "splash"
-        )
+    for cur_contour_name in IN_PARAMS.plot_order_list_contour:
+        if cur_contour_name == "NOT_PLOT_BELOW":
+            break
 
-        # svg出力
-        if IN_PARAMS.svg_flag:
-            make_snap_physics_contour_svg(
-                save_dir_path=save_dir_path,
-                physics_name=cur_physics_name,
-                is_move_or_splash=is_move_or_splash,
-            )
-            continue
+        save_dir_sub_path = save_dir_path / cur_contour_name
 
-        # * moveとsplashのみは物理量によるコンター図にはしない
-        make_snap_physics_contour_all_snap_time(
+        make_snap_all_snap_time(
             snap_time_array_ms=snap_time_array_ms,
-            save_dir_physics_path=save_dir_physics_path,
-            physics_name=cur_physics_name,
-            is_move_or_splash=is_move_or_splash,
+            save_dir_sub_path=save_dir_sub_path,
+            plot_name=cur_contour_name,
+            is_group_plot=False,
         )
         make_animation_from_snap(
             snap_time_array_ms=snap_time_array_ms,
-            save_dir_sub_path=save_dir_physics_path,
-            physics_name=cur_physics_name,
+            save_dir_sub_path=save_dir_sub_path,
+            plot_name=cur_contour_name,
         )
-        print(f"contour:{cur_physics_name} finished\n")
+        print(f"contour:{cur_contour_name} finished\n")
+
+    return
+
+
+def execute_plot_group_all() -> None:
+    # スナップやアニメーションを保存するディレクトリ名
+    save_dir_path: Path = Path(__file__).parent / IN_PARAMS.save_dir_name
+
+    # スナップショットを出力する時間[ms]のarray
+    snap_time_array_ms: NDArray[np.int64] = np.arange(
+        IN_PARAMS.snap_start_time_ms,
+        IN_PARAMS.snap_end_time_ms + IN_PARAMS.timestep_ms,
+        IN_PARAMS.timestep_ms,
+    )
+
+    for cur_group_name in IN_PARAMS.plot_order_list_group:
+        if cur_group_name == "NOT_PLOT_BELOW":
+            break
+
+        save_dir_sub_path = save_dir_path / cur_group_name
+
+        make_snap_all_snap_time(
+            snap_time_array_ms=snap_time_array_ms,
+            save_dir_sub_path=save_dir_sub_path,
+            plot_name=cur_group_name,
+            is_group_plot=True,
+        )
+        make_animation_from_snap(
+            snap_time_array_ms=snap_time_array_ms,
+            save_dir_sub_path=save_dir_sub_path,
+            plot_name=cur_group_name,
+        )
+        print(f"group:{cur_group_name} finished\n")
+
+    return
+
+
+# ---グローバル変数群---
+# contour, vector, group以外のすべてのyamlの設定を格納
+IN_PARAMS = construct_input_parameters_dataclass()
+# contourの設定を保持（contourプロットの最初で更新する）
+CUR_CONTOUR_PARAMS = construct_contour_dataclass()
+# vectorの設定を格納（vector_idで指定したもの）
+VECTOR_PARAMS = construct_vector_dataclass()
+# groupのうち，configの設定を格納
+GROUP_CONFIG_PARAMS = construct_group_config_dataclass(group_name=IN_PARAMS.grouping_id)
+# groupのうち，each_idx全ての「idx -> そのidx内の設定」の辞書
+GROUPIDX_PARAMS = construct_dict_groupindex_to_groupeachidxdataclass(
+    group_name=IN_PARAMS.grouping_id
+)
+# ---グローバル変数群---
+
+
+def main() -> None:
+    print(f"plot execute by {sys.argv[1]}\n")
+
+    # contourプロット
+    execute_plot_contour_all()
+
+    # groupプロット
+    execute_plot_group_all()
 
     print("all finished")
 
