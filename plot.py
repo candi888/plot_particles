@@ -552,49 +552,12 @@ def plot_colorbar(
         location="top",
         anchor=(0.5, 0.0),
         panchor=(0, 1.0),
-        ticks_position="bottom",
     )
-    # cbar.ax.xaxis.set_ticks_position("bottom")
+    cbar.ax.xaxis.set_ticks_position("bottom")
 
     cbar.set_label(f"{CUR_CONTOUR_PARAMS.label}")
     cbar.minorticks_off()
 
-    fig.canvas.draw()
-    renderer = fig.canvas.get_renderer()
-    tight_bbox = cbar.ax.get_tightbbox(renderer)
-
-    # figure座標系への変換
-    inv = fig.transFigure.inverted()
-    tmp_x, tmp_y = inv.transform(
-        ax.transData.transform((IN_PARAMS.xlim_min, IN_PARAMS.ylim_max))
-    )
-    tmp_x2, tmp_y2 = inv.transform((tight_bbox.x0, tight_bbox.y0))
-
-    caxpos = cbar.ax.get_position()
-
-    print(tmp_y, caxpos.y0, tmp_y2)
-
-    # cbar.ax.set_position(
-    #     (caxpos.x0, tmp_y + caxpos.y0 - tmp_y2, caxpos.width, caxpos.height)
-    # )
-
-    # fig.canvas.draw()
-
-    # axpos = ax.get_position()
-    # print(axpos)
-    # print(caxpos)
-
-    # cbar.ax.set_anchor((0.5, axpos.y1 - caxpos.y0))
-    # print(axpos.y1 - caxpos.y0)
-    # fig.canvas.draw()
-
-    # axpos = ax.get_position()
-    # caxpos = cbar.ax.get_position()
-    # print(axpos)
-    # print(caxpos)
-
-    # caxpos = cbar.ax.get_position()
-    # print(caxpos)
     return
 
 
@@ -878,9 +841,9 @@ def make_snap_all_snap_time(
 
     scaler_cm_to_inch = 1 / 2.54
     fig = plt.figure(
-        figsize=(25.4 * scaler_cm_to_inch, 18 * scaler_cm_to_inch),
+        figsize=(25.4 * scaler_cm_to_inch, 13 * scaler_cm_to_inch),
         dpi=IN_PARAMS.snapshot_dpi,
-        layout="tight",
+        layout="constrained",
     )
     ax = fig.add_subplot(1, 1, 1, aspect="equal")
 
