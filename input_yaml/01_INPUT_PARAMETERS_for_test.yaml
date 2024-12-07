@@ -1,21 +1,21 @@
 #* スナップやアニメーションを保存するディレクトリ名
 save_dir_name: "plot_output_results_allregion"
 
-#* プロットの順序．上から順番にプロットを行う．いらないものはコメントアウトすればプロットされない．ラベル名は変更してはならない．
+#* プロットの順序．上から順番にプロットを行う．いらないものはコメントアウトすればプロットされない．ラベル名は結果の保存ディレクトリ名となる．
 plot_order_list:
-  - "pressure"
-  # - "move" # 特別扱い1
-  # - "speed"
-  # - "div_U"
-  # - "density"
-  # - "vorticity"
-  # - "Q_signed"
-  # - "eddy_viscos"
+  - &id_pressure "pressure"
+  - &id_move "move"
+    # - "speed"
+    # - "div_U"
+    # - "density"
+    # - "vorticity"
+    # - "Q_signed"
+    # - "eddy_viscos"
 
 #* プロット関連
-timestep_ms: 10 # datファイルの00050のとこ.　SNAPの出力時間間隔が違う場合に注意
+timestep_ms: 50 # datファイルの00050のとこ.　SNAPの出力時間間隔が違う場合に注意
 snap_start_time_ms: 10
-snap_end_time_ms: 20
+snap_end_time_ms: 1000
 xlim_min: &xlim_min -0.06
 xlim_max: &xlim_max 1.24
 ylim_min: &ylim_min -0.06
@@ -30,39 +30,115 @@ crf_num: 35 # CRF値を設定．lowqualityの動画を作成するときに使�
 svg_flag: False
 svg_snap_time_ms: null
 
+#* pythonファイルからの各相対パス．数字の部分は"xxxxx"を入れる．
+path_list:
+  - &xud_path "OUTPUT/SNAP/XUDxxxxx.DAT"
+  - &tmd_path "OUTPUT/SNAP/TMDxxxxx.DAT"
+num_x_in_pathstr: 5 # 数字の部分の"xx..."でxがいくつあるか
+
+#* 必須の物理量（x, y, disa）がどの素データのどの列か．0-index
+xydisa_file_path: *xud_path
+col_index_x: 0
+col_index_y: 1
+col_index_disa: 5
+
+group:
+  *id_move :
+    config:
+      data_file_path: *tmd_path # データがあるファイルのpythonファイルからの相対パス
+      col_index: 1 # データが何列目にあるか　（0-index）
+
+    each_idx:
+      0:
+        label: "fluid"
+        group_color: "#1f77b4" # groupプロットの色（16進数カラーコードで指定）
+        group_alpha: 1.0 # groupプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        group_is_plot_vector: True # groupプロットでベクトルをプロットするか
+        contour_color: null # contourプロットの色（nullでコンターの色でそのままプロット）
+        contour_alpha: 1.0 # contourプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        contour_is_plot_vector: True # contourプロットでベクトルをプロットするか
+        particle_zorder: 2.91 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+        vector_zorder: 2.92 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+      1:
+        label: "wall"
+        group_color: "#6c2735" # groupプロットの色（16進数カラーコードで指定）
+        group_alpha: 1.0 # groupプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        group_is_plot_vector: False # groupプロットでベクトルをプロットするか
+        contour_color: "#000000" # contourプロットの色（nullでコンターの色でそのままプロット）
+        contour_alpha: 1.0 # contourプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        contour_is_plot_vector: False # contourプロットでベクトルをプロットするか
+        particle_zorder: 2.21 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+        vector_zorder: 2.22 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+      2:
+        label: "walldummy"
+        group_color: "#6c2735" # groupプロットの色（16進数カラーコードで指定）
+        group_alpha: 1.0 # groupプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        group_is_plot_vector: False # groupプロットでベクトルをプロットするか
+        contour_color: "#000000" # contourプロットの色（nullでコンターの色でそのままプロット）
+        contour_alpha: 1.0 # contourプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        contour_is_plot_vector: False # contourプロットでベクトルをプロットするか
+        particle_zorder: 2.11 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+        vector_zorder: 2.12 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+      4:
+        label: "wallmove"
+        group_color: "#ff1493" # groupプロットの色（16進数カラーコードで指定）
+        group_alpha: 1.0 # groupプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        group_is_plot_vector: False # groupプロットでベクトルをプロットするか
+        contour_color: "#000000" # contourプロットの色（nullでコンターの色でそのままプロット）
+        contour_alpha: 1.0 # contourプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        contour_is_plot_vector: False # contourプロットでベクトルをプロットするか
+        particle_zorder: 2.41 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+        vector_zorder: 2.42 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+      5:
+        label: "wallmovedummy"
+        group_color: "#ff1493" # groupプロットの色（16進数カラーコードで指定）
+        group_alpha: 1.0 # groupプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        group_is_plot_vector: False # groupプロットでベクトルをプロットするか
+        contour_color: "#000000" # contourプロットの色（nullでコンターの色でそのままプロット）
+        contour_alpha: 1.0 # contourプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        contour_is_plot_vector: False # contourプロットでベクトルをプロットするか
+        particle_zorder: 2.31 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+        vector_zorder: 2.32 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+
+#* contourプロットでのグループ分けの選択
+grouping_id: *id_move
+
 contour:
   #* 他のcontourで参照する用のベースの設定
   base_config:
     cmap: &contourbase_cmap "small rainbow"
-    is_plot_vector: &contourbase_is_plot_vector False
-    # 以下は粒子グループごとの色などの設定（nullでコンターの色そのまま出力）
-    wall_particle_color: &contourbase_wall_particle_color "#000000" # 16進数カラーコードで指定
-    wall_particle_alpha: &contourbase_wall_particle_alpha 1.0 # 透明度の指定（0で完全透明，1で不透明）．rgbaのaの部分．
-    dummy_particle_color: &contourbase_dummy_particle_color "#000000"
-    dummy_particle_alpha: &contourbase_dummy_particle_alpha 1.0
-    movewall_particle_color: &contourbase_movewall_particle_color "#000000"
-    movewall_particle_alpha: &contourbase_movewall_particle_alpha 1.0
-    movedummy_particle_color: &contourbase_movedummy_particle_color "#000000"
-    movedummy_particle_alpha: &contourbase_movedummy_particle_alpha 1.0
 
   #* 圧力コンター作成関係
-  pressure:
-    label: "Pressure $\\mathrm{(kN/m^2)}$" # colorbarのlegendに使用
-    col_index: 4
-    min_value_contour: 0.0
-    max_value_contour: 1000.0
+  *id_pressure :
+    label: "Pressure $\\mathrm{(kN/m^2)}$" # colorbarのlegendのラベル
+    data_file_path: *xud_path # データがあるファイルのpythonファイルからの相対パス
+    col_index: 4 # データが何列目にあるか　（0-index）
+    min_value_contour: 0.0 #コンターの最小値
+    max_value_contour: 1000.0 # コンターの最大値
     cmap: *contourbase_cmap # matplotlibのカラーマップ or "small rainbow"
-    is_plot_vector: *contourbase_is_plot_vector
-    # 以下は粒子グループごとの色などの設定（nullでコンターの色そのまま出力）
-    wall_particle_color: *contourbase_wall_particle_color # 16進数カラーコードで指定
-    wall_particle_alpha: *contourbase_wall_particle_alpha # 透明度の指定（0で完全透明，1で不透明）．rgbaのaの部分．
-    dummy_particle_color: *contourbase_dummy_particle_color
-    dummy_particle_alpha: *contourbase_dummy_particle_alpha
-    movewall_particle_color: *contourbase_movewall_particle_color
-    movewall_particle_alpha: *contourbase_movewall_particle_alpha
-    movedummy_particle_color: *contourbase_movedummy_particle_color
-    movedummy_particle_alpha: *contourbase_movedummy_particle_alpha
+    is_plot_vector: True # Trueの場合，group内のbasecontourで設定したis_plot_vectorが反映される
 
+#* ベクトルプロットのid振り
+vector_list:
+  - &id_velocity_vector "velocity"
+
+#* ベクトルプロットの選択
+vector_id: *id_velocity_vector
+
+#*　ベクトル図関連
+vector:
+  #* 他のcontourで参照する用のベースの設定
+  base_config:
+    scaler_length_vector: &vectorbase_length 0.6 # ベクトルの長さの調整用．nに設定 -> ベクトルの長さをn倍
+    scaler_width_vector: &vectorbase_width 0.6 # ベクトルの太さの調整用．nに設定 -> ベクトルの太さをn倍
+    length_reference_vector: &vectorbase_length_reference 1
+
+  *id_velocity_vector :
+    col_index_vectorx: 2
+    col_index_vectory: 3
+    scaler_length_vector: 0.6 # ベクトルの長さの調整用．nに設定 -> ベクトルの長さをn倍
+    scaler_width_vector: 0.6 # ベクトルの太さの調整用．nに設定 -> ベクトルの太さをn倍
+    length_reference_vector: 1.0
 # #* 渦度コンター作成関係
 # vorticity_label: "Vorticity $\\nabla \\times \\mathbfit{u}   \\mathrm{(/s)}$" # colorbarのlegendに使用
 # vorticity_col_index: 6
@@ -201,16 +277,3 @@ contour:
 # # move_movedummy_particle_color: "#ff69b4"
 # # move_movedummy_particle_alpha: 1.0
 
-#TODOここを別の流速ベクトルにするときは別の設定に置き換えるという事をするか．プロットするベクトルが変わるなんてことは殆どないと思われるのでここはyamlファイルを分けてもらうのがよいか
-#*　ベクトル図関連
-scaler_length_vector: 0.6 # ベクトルの長さの調整用．nに設定 -> ベクトルの長さをn倍
-scaler_width_vector: 0.6 # ベクトルの太さの調整用．nに設定 -> ベクトルの太さをn倍
-length_reference_vector: 1
-
-#* 物理量が素データのどの軸か．0-index
-XUD_x_col_index: 0
-XUD_y_col_index: 1
-XUD_u_col_index: 2
-XUD_v_col_index: 3
-XUD_disa_col_index: 5
-TMD_move_col_index: 1

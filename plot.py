@@ -3,7 +3,7 @@ import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import Dict
+from typing import Any, Dict
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -50,13 +50,15 @@ class DataclassInputParameters:
         list | None
     )  # リストの要素がゼロのときはNoneになる．List[str]であるが，後の__post_init__でチェック
 
-    # * 物理量が素データのどの軸か．0-index
-    XUD_x_col_index: int
-    XUD_y_col_index: int
-    XUD_u_col_index: int
-    XUD_v_col_index: int
-    XUD_disa_col_index: int
-    TMD_move_col_index: int
+    # * 必須の物理量（x, y, disa）がどの素データのどの列か．0-index
+    xydisa_file_path: str
+    col_index_x: int
+    col_index_y: int
+    col_index_disa: int
+
+    # * このファイルからの各相対パス
+    path_list: list
+    num_x_in_pathstr: int
 
     # * プロット関連
     timestep_ms: int
@@ -76,10 +78,14 @@ class DataclassInputParameters:
     svg_flag: bool
     svg_snap_time_ms: int | None
 
-    # * ベクトル図関連
-    scaler_length_vector: float
-    scaler_width_vector: float
-    length_reference_vector: int
+    # * contourプロットでのグループ分けの選択
+    grouping_id: str
+
+    # * ベクトルプロットのid振り
+    vector_list: list
+
+    # * ベクトルプロットの選択
+    vector_id: str
 
     def __post_init__(self) -> None:
         class_dict = dataclasses.asdict(self)
@@ -91,12 +97,25 @@ class DataclassInputParameters:
                     f"{class_arg_name}の型が一致しません．\n{class_arg_name}の型は現在は{type(class_dict[class_arg_name])}ですが，{class_arg_expected_type}である必要があります．"
                 )
 
+        # path_listの処理
+        if not all([isinstance(name, str) for name in self.path_list]):
+            raise ValueError(
+                f"path_listの要素の型が一致しません．\npath_listの中身の型は全て{str}である必要があります．"
+            )
+
         # plot_order_listの処理
         if self.plot_order_list is not None:
             if not all([isinstance(name, str) for name in self.plot_order_list]):
                 raise ValueError(
                     f"plot_order_listの要素の型が一致しません．\nplot_order_listの中身の型は全て{str}である必要があります．"
                 )
+
+        # vector_listの処理
+        if not all([isinstance(name, str) for name in self.vector_list]):
+            raise ValueError(
+                f"vector_listの要素の型が一致しません．\nvector_listの中身の型は全て{str}である必要があります．"
+            )
+
         print("1. 型チェック OK")
 
         # svg関連の処理
@@ -114,23 +133,70 @@ class DataclassInputParameters:
 @dataclasses.dataclass(frozen=True)
 class DataclassContour:
     label: str
+    data_file_path: str
     col_index: int
     min_value_contour: float
     max_value_contour: float
     cmap: str
     is_plot_vector: bool
 
-    wall_particle_color: str | None
-    wall_particle_alpha: float | None
+    def __post_init__(self) -> None:
+        class_dict = dataclasses.asdict(self)
+        # * 1. 型チェック
+        # self.__annotations__は {引数の名前:指定する型}
+        for class_arg_name, class_arg_expected_type in self.__annotations__.items():
+            if not isinstance(class_dict[class_arg_name], class_arg_expected_type):
+                raise ValueError(
+                    f"{class_arg_name}の型が一致しません．\n{class_arg_name}の型は現在は{type(class_dict[class_arg_name])}ですが，{class_arg_expected_type}である必要があります．"
+                )
 
-    dummy_particle_color: str | None
-    dummy_particle_alpha: float | None
 
-    movewall_particle_color: str | None
-    movewall_particle_alpha: float | None
+@dataclasses.dataclass(frozen=True)
+class DataclassVector:
+    col_index_vectorx: int
+    col_index_vectory: int
+    scaler_length_vector: float
+    scaler_width_vector: float
+    length_reference_vector: float
 
-    movedummy_particle_color: str | None
-    movedummy_particle_alpha: float | None
+    def __post_init__(self) -> None:
+        class_dict = dataclasses.asdict(self)
+        # * 1. 型チェック
+        # self.__annotations__は {引数の名前:指定する型}
+        for class_arg_name, class_arg_expected_type in self.__annotations__.items():
+            if not isinstance(class_dict[class_arg_name], class_arg_expected_type):
+                raise ValueError(
+                    f"{class_arg_name}の型が一致しません．\n{class_arg_name}の型は現在は{type(class_dict[class_arg_name])}ですが，{class_arg_expected_type}である必要があります．"
+                )
+
+
+@dataclasses.dataclass(frozen=True)
+class DataclassGroupConfig:
+    data_file_path: str  # データがあるファイルのpythonファイルからの相対パス
+    col_index: int  # データが何列目にあるか　（0-index）
+
+    def __post_init__(self) -> None:
+        class_dict = dataclasses.asdict(self)
+        # * 1. 型チェック
+        # self.__annotations__は {引数の名前:指定する型}
+        for class_arg_name, class_arg_expected_type in self.__annotations__.items():
+            if not isinstance(class_dict[class_arg_name], class_arg_expected_type):
+                raise ValueError(
+                    f"{class_arg_name}の型が一致しません．\n{class_arg_name}の型は現在は{type(class_dict[class_arg_name])}ですが，{class_arg_expected_type}である必要があります．"
+                )
+
+
+@dataclasses.dataclass(frozen=True)
+class DataclassGroupEachIndex:
+    label: str
+    group_color: str
+    group_alpha: float
+    group_is_plot_vector: bool
+    contour_color: str | None
+    contour_alpha: float
+    contour_is_plot_vector: bool
+    particle_zorder: float
+    vector_zorder: float
 
     def __post_init__(self) -> None:
         class_dict = dataclasses.asdict(self)
@@ -158,6 +224,8 @@ def construct_input_parameters_dataclass() -> DataclassInputParameters:
     inparam_dict = read_inparam_yaml_as_dict()
 
     del inparam_dict["contour"]
+    del inparam_dict["group"]
+    del inparam_dict["vector"]
 
     return DataclassInputParameters(**inparam_dict)
 
@@ -173,13 +241,46 @@ def construct_contour_dataclass(
     return DataclassContour(**inparam_dict["contour"][contour_name])
 
 
+def construct_vector_dataclass() -> DataclassVector:
+    inparam_dict = read_inparam_yaml_as_dict()
+
+    return DataclassVector(**inparam_dict["vector"][IN_PARAMS.vector_id])
+
+
+def construct_group_config_dataclass(group_name: str) -> DataclassGroupConfig:
+    inparam_dict = read_inparam_yaml_as_dict()
+
+    return DataclassGroupConfig(**inparam_dict["group"][group_name]["config"])
+
+
+def construct_dict_groupindex_to_groupeachidxdataclass(
+    group_name: str,
+) -> Dict[int, DataclassGroupEachIndex]:
+    inparam_dict = read_inparam_yaml_as_dict()
+    groupidx_to_paramsdict: Dict[int, Dict[str, Any]] = inparam_dict["group"][
+        group_name
+    ]["each_idx"]
+
+    res_dict = dict()
+    for group_idx, data_dict in groupidx_to_paramsdict.items():
+        res_dict[group_idx] = DataclassGroupEachIndex(**data_dict)
+
+    return res_dict
+
+
 def get_mask_array_by_plot_region(snap_time_ms: int) -> NDArray[np.bool_]:
     original_data = np.loadtxt(
-        Path(__file__).parent / "OUTPUT" / "SNAP" / f"XUD{snap_time_ms:05}.DAT",
+        Path(__file__).parent
+        / Path(
+            IN_PARAMS.xydisa_file_path.replace(
+                "x" * IN_PARAMS.num_x_in_pathstr,
+                f"{snap_time_ms:0{IN_PARAMS.num_x_in_pathstr}}",
+            )
+        ),
         usecols=(
-            IN_PARAMS.XUD_x_col_index,
-            IN_PARAMS.XUD_y_col_index,
-            IN_PARAMS.XUD_disa_col_index,
+            IN_PARAMS.col_index_x,
+            IN_PARAMS.col_index_y,
+            IN_PARAMS.col_index_disa,
         ),
         dtype=np.float64,
     )
@@ -206,7 +307,13 @@ def load_par_data_masked_by_plot_region(
     mask_array_by_group: NDArray[np.bool_] | None = None,
 ) -> NDArray[np.float64]:
     original_data = np.loadtxt(
-        Path(__file__).parent / "OUTPUT" / "SNAP" / f"XUD{snap_time_ms:05}.DAT",
+        Path(__file__).parent
+        / Path(
+            IN_PARAMS.xydisa_file_path.replace(
+                "x" * IN_PARAMS.num_x_in_pathstr,
+                f"{snap_time_ms:0{IN_PARAMS.num_x_in_pathstr}}",
+            )
+        ),
         usecols=usecols,
         dtype=np.float64,
     )
@@ -223,9 +330,15 @@ def get_move_index_array(
     snap_time_ms: int, mask_array: NDArray[np.bool_]
 ) -> NDArray[np.int8]:
     masked_move_index = np.loadtxt(
-        Path(__file__).parent / "OUTPUT" / "SNAP" / f"TMD{snap_time_ms:05}.DAT",
+        Path(__file__).parent
+        / Path(
+            GROUP_CONFIG_PARAMS.data_file_path.replace(
+                "x" * IN_PARAMS.num_x_in_pathstr,
+                f"{snap_time_ms:0{IN_PARAMS.num_x_in_pathstr}}",
+            )
+        ),
         dtype=np.int8,
-        usecols=IN_PARAMS.TMD_move_col_index,
+        usecols=GROUP_CONFIG_PARAMS.col_index,
     )[mask_array]
 
     return masked_move_index
@@ -417,7 +530,7 @@ def plot_colorbar(
     )
     cbar.ax.xaxis.set_ticks_position("bottom")
     # cbar.ax.xaxis.set_label_position("bottom") # スナップの方に貫通するので注意
-    cbar.set_label(CUR_CONTOUR_PARAMS.label)
+    cbar.set_label(rf"{CUR_CONTOUR_PARAMS.label}")
     cbar.minorticks_off()
 
     return
@@ -437,10 +550,10 @@ def plot_velocity_vector(
         snap_time_ms=snap_time_ms,
         mask_array=mask_array,
         usecols=(
-            IN_PARAMS.XUD_x_col_index,
-            IN_PARAMS.XUD_y_col_index,
-            IN_PARAMS.XUD_u_col_index,
-            IN_PARAMS.XUD_v_col_index,
+            IN_PARAMS.col_index_x,
+            IN_PARAMS.col_index_y,
+            VECTOR_PARAMS.col_index_vectorx,
+            VECTOR_PARAMS.col_index_vectory,
         ),
         mask_array_by_group=mask_array_by_group,
     )
@@ -448,8 +561,8 @@ def plot_velocity_vector(
     # scale_units="x"で軸の長さが基準
     # scale=10で，軸単位で0.1の長さが大きさ1のベクトルの長さに対応する
     original_scale = 10 / (IN_PARAMS.xlim_max - IN_PARAMS.xlim_min)
-    scale = original_scale / IN_PARAMS.scaler_length_vector
-    width = original_scale / 5000 * IN_PARAMS.scaler_width_vector
+    scale = original_scale / VECTOR_PARAMS.scaler_length_vector
+    width = original_scale / 5000 * VECTOR_PARAMS.scaler_width_vector
     q = ax.quiver(
         par_x,
         par_y,
@@ -479,8 +592,8 @@ def plot_velocity_vector(
             Q=q,
             X=0.9,
             Y=y_center_axes,
-            U=IN_PARAMS.length_reference_vector,
-            label=f"Velocity $\\mathbfit{{u}}$\n{IN_PARAMS.length_reference_vector} m/s",
+            U=VECTOR_PARAMS.length_reference_vector,
+            label=f"Velocity $\\mathbfit{{u}}$\n{VECTOR_PARAMS.length_reference_vector} m/s",
             labelpos="N",
         )
 
@@ -522,13 +635,12 @@ def set_ax_title(ax: Axes, snap_time_ms: int) -> None:
 
 def change_facecolor_by_move(
     par_color_masked_by_move: NDArray[np.float64],
-    physics_name: str,
-    move_label: str,
+    move_index: int,
 ) -> NDArray[np.float64]:
     assert CUR_CONTOUR_PARAMS is not None
 
-    input_color = getattr(CUR_CONTOUR_PARAMS, f"{move_label}_particle_color")
-    input_alpha = getattr(CUR_CONTOUR_PARAMS, f"{move_label}_particle_alpha")
+    input_color = GROUPIDX_PARAMS[move_index].contour_color
+    input_alpha = GROUPIDX_PARAMS[move_index].contour_alpha
 
     if input_color is None:
         par_color_masked_by_move[:, 3] = input_alpha  # ４列目がrgbaのa
@@ -549,14 +661,6 @@ def get_facecolor_array_for_move_or_physics_contour(
     mask_array: NDArray[np.bool_],
     mask_array_by_group: NDArray[np.bool_],
 ) -> NDArray[np.float64]:
-    move_to_movelabel = {
-        0: "water",
-        1: "wall",
-        2: "dummy",
-        4: "movewall",
-        5: "movedummy",
-    }
-
     if is_move:
         par_color = np.full((num_par_cur_group, 4), -1, dtype=np.float64)
     else:
@@ -567,14 +671,13 @@ def get_facecolor_array_for_move_or_physics_contour(
             mask_array_by_group=mask_array_by_group,
         )
 
-    # move以外のコンター図 かつ 水粒子　-> 色を変えずそのまま
-    if (not is_move) and move_index % 3 == 0:
+    # contourcolorがNone　-> 色を変えずそのまま
+    if GROUPIDX_PARAMS[move_index].contour_color is None:
         return par_color
 
     return change_facecolor_by_move(
         par_color_masked_by_move=par_color,
-        physics_name=physics_name,
-        move_label=move_to_movelabel[move_index],
+        move_index=move_index,
     )
 
 
@@ -612,9 +715,9 @@ def make_snap_physics_contour(
             snap_time_ms=snap_time_ms,
             mask_array=mask_array,
             usecols=(
-                IN_PARAMS.XUD_x_col_index,
-                IN_PARAMS.XUD_y_col_index,
-                IN_PARAMS.XUD_disa_col_index,
+                IN_PARAMS.col_index_x,
+                IN_PARAMS.col_index_y,
+                IN_PARAMS.col_index_disa,
             ),
             mask_array_by_group=mask_array_by_group,
         )
@@ -641,19 +744,23 @@ def make_snap_physics_contour(
             group_index=group_index,
         )
 
-        if CUR_CONTOUR_PARAMS.is_plot_vector and (group_index not in {1, 2}):
-            plot_velocity_vector(
-                fig=fig,
-                ax=ax,
-                snap_time_ms=snap_time_ms,
-                mask_array=mask_array,
-                is_plot_reference_vector=is_plot_reference_vector,
-                mask_array_by_group=mask_array_by_group,
-                group_id_prefix=vector_group_id_prefix,
-                group_index=group_index,
-            )
-            # 初回のみreference vectorをプロット
-            is_plot_reference_vector = False
+        if (not CUR_CONTOUR_PARAMS.is_plot_vector) or (
+            not GROUPIDX_PARAMS[group_index].contour_is_plot_vector
+        ):
+            continue
+
+        plot_velocity_vector(
+            fig=fig,
+            ax=ax,
+            snap_time_ms=snap_time_ms,
+            mask_array=mask_array,
+            is_plot_reference_vector=is_plot_reference_vector,
+            mask_array_by_group=mask_array_by_group,
+            group_id_prefix=vector_group_id_prefix,
+            group_index=group_index,
+        )
+        # 初回のみreference vectorをプロット
+        is_plot_reference_vector = False
 
     # 以下，画像の保存処理
     save_file_name_without_extension = f"snap{snap_time_ms:05}_{physics_name}"
@@ -682,6 +789,7 @@ def make_snap_physics_contour_all_snap_time(
     physics_name: str,
     is_move_or_splash: bool,
 ) -> None:
+    # CUR_CONTOUR_PARAMSを現在のcontourプロット用の情報に更新
     global CUR_CONTOUR_PARAMS
     CUR_CONTOUR_PARAMS = construct_contour_dataclass(contour_name=physics_name)
     assert CUR_CONTOUR_PARAMS is not None
@@ -837,6 +945,11 @@ def make_snap_physics_contour_svg(
 
 IN_PARAMS = construct_input_parameters_dataclass()
 CUR_CONTOUR_PARAMS = construct_contour_dataclass()
+VECTOR_PARAMS = construct_vector_dataclass()
+GROUP_CONFIG_PARAMS = construct_group_config_dataclass(group_name=IN_PARAMS.grouping_id)
+GROUPIDX_PARAMS = construct_dict_groupindex_to_groupeachidxdataclass(
+    group_name=IN_PARAMS.grouping_id
+)
 
 
 # TODO　最初に型チェックやる関数も必要
