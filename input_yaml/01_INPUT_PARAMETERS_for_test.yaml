@@ -20,7 +20,7 @@ plot_order_list_group:
 #* プロットするデータの時刻
 timestep_ms: 10 # datファイルの00050のところ.　SNAPの出力時間間隔が違う場合に注意
 snap_start_time_ms: 10
-snap_end_time_ms: 300
+snap_end_time_ms: 30
 
 # * 画像保存時の設定
 snapshot_dpi: 200
@@ -28,7 +28,7 @@ snapshot_dpi: 200
 # *出力画像の大きさ [cm]
 # （参考）A4用紙の縦向きサイズ（縦 × 横）は 29.7 × 21.0[cm]
 fig_horizontal_cm: 25.4 # 横方向のみ設定．縦方向は自動で調節される
-tooning_for_fig: 0.9 # 現時点，↑で指定したサイズより少し大きくなるのでこれで調節（1未満である必要．0.9付近が良いか．）
+tooning_for_fig: 0.9 # 現時点，↑で指定したサイズより少し大きくなるのでこれで調節（0より大きく1以下である必要．0.9付近が良いか．）
 
 #* アニメーション関連
 framerate: 100
@@ -52,6 +52,8 @@ ylabel_font_size: *base_font_size # y軸 タイトルのフォントサイズ
 xticks_font_size: *base_font_size # x軸目盛りの値のフォントサイズ
 yticks_font_size: *base_font_size # y軸目盛りの値のフォントサイズ
 timetext_font_size: 17.0 # 時刻テキストのフォントサイズ
+colorbar_title_font_size: *base_font_size # カラーバーのタイトルのサイズ
+colorbar_ticks_font_size: *base_font_size # カラーバーの目盛りの値のサイズ
 is_use_TimesNewRoman_in_mathtext: True # 数式で可能な限りTimes New Romanを使うか（FalseでTeXっぽいフォントを使う）
 
 # * グラフの表示範囲の設定
@@ -106,7 +108,28 @@ strformatter_timetext: ".03f" # 時刻テキストの書式（小数点以下の
 time_text_pos_x: *xlim_min # 時刻テキストの左端のx座標（データの単位）
 time_text_pos_y: *ylim_max # 時刻テキストの下端のy座標（データの単位）
 
+#TODO 位置調整（horizontalなら水平方向）
+#TODO 位置調整（ラベルの位置）
+#TODO カラーバーの向き（vertical）
 #* カラーバー関連の設定
+is_horizontal_colorbar: True # カラーバーを横向きにするか
+colorbar_pad: 0.005 #TODO  カラーバーがプロットのボックスからどれだけ離すか（チューニング）
+colorbar_shrink: 0.28 # カラーバーをどれくらい縮めるか（0より大きく1以下の値）
+colorbar_aspect: 40.0 # カラーバーのアスペクト比（shrinkを先に調整してからがよさそう）
+axis_lw_colorbar: &axis_lw_colorbar 0.0 # カラーバーの枠線の太さ
+num_edges_colorbar: 512 # カラーバーの区切りの数
+is_drawedges_colorbar: False # カラーバーの区切り線を描画するか
+# -主目盛り-
+num_colorbar_ticks: 3 # 主目盛りの数
+strformatter_colorbar: null # 主目盛りの値の書式等を変更したいときにいじる（変更しない場合はnullにする）．
+colorbar_tickslabel_pad: 4.0 # 主目盛りから目盛りラベルをどれだけ離すか
+colorbar_ticks_length: 3.0 # 主目盛り線の長さ
+colorbar_ticks_width: 0.5 # 主目盛り線の線幅
+# -副目盛り-
+is_plot_mticks_colorbar: False # 副目盛りをプロットするか
+num_colorbar_mtick: 3 # 副目盛りの数
+colorbar_mticks_length: 3.0 # 補助目盛り線の長さ
+colorbar_mticks_width: 0.75 # 補助目盛り線の線幅
 
 # * svg出力用．これをTrueにした場合，ここで指定した時刻のsvgのみを作成する．jpegの画像やアニメーションの作成は行わないので注意．
 svg_flag: False

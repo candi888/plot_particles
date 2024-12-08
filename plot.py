@@ -76,6 +76,8 @@ class DataclassInputParameters:
     xticks_font_size: float  # x軸目盛りの値のフォントサイズ
     yticks_font_size: float  # y軸目盛りの値のフォントサイズ
     timetext_font_size: float  # 時刻テキストのフォントサイズ
+    colorbar_title_font_size: float  # カラーバーのタイトルのサイズ
+    colorbar_ticks_font_size: float  # カラーバーの目盛りの値のサイズ
     is_use_TimesNewRoman_in_mathtext: bool  # 数式で可能な限りTimes New Romanを使うか（FalseでTeXっぽいフォントを使う）
 
     # *目盛りの設定（x軸）
@@ -129,6 +131,30 @@ class DataclassInputParameters:
     strformatter_timetext: str  # 時刻テキストの書式（小数点以下のゼロ埋めの調節で使用）
     time_text_pos_x: float  # 時刻テキストの左端のx座標（データの単位）
     time_text_pos_y: float  # 時刻テキストの下端のy座標（データの単位）
+
+    # * カラーバー関連の設定
+    is_horizontal_colorbar: bool  # カラーバーを横向きにするか
+    colorbar_pad: float  # TODO  カラーバーがプロットのボックスからどれだけ離れているか（チューニング）
+    colorbar_shrink: float  # カラーバーをどれくらい縮めるか（0より大きく1以下の値）
+    colorbar_aspect: (
+        float  # カラーバーのアスペクト比（shrinkを先に調整してからがよさそう）
+    )
+    axis_lw_colorbar: float  # カラーバーの枠線の太さ
+    num_edges_colorbar: int  # カラーバーの区切りの数
+    is_drawedges_colorbar: bool  # カラーバーの区切り線を描画するか
+    # -主目盛り-
+    num_colorbar_ticks: int  # 主目盛りの数
+    strformatter_colorbar: (
+        str | None
+    )  # 主目盛りの値の書式等を変更したいときにいじる（変更しない場合はnullにする）．
+    colorbar_tickslabel_pad: float  # x軸主目盛りから目盛りラベルをどれだけ離すか
+    colorbar_ticks_length: float  # x軸主目盛り線の長さ
+    colorbar_ticks_width: float  # x軸主目盛り線の線幅
+    # -副目盛り-
+    is_plot_mticks_colorbar: bool  # 副目盛りをプロットするか
+    num_colorbar_mtick: int  # 副目盛りの数
+    colorbar_mticks_length: float  # x軸補助目盛り線の長さ
+    colorbar_mticks_width: float  # x軸補助目盛り線の線幅
 
     # * svg出力用．これをTrueにした場合，ここで指定した時刻のsvgのみを作成する．jpegの画像やアニメーションの作成は行わないので注意．
     svg_flag: bool
@@ -615,13 +641,15 @@ def get_cmap_for_color_contour() -> Colormap:
     cmap_name = CUR_CONTOUR_PARAMS.cmap
 
     try:
-        return (
-            LinearSegmentedColormap.from_list(
-                "custom", ["blue", "cyan", "lime", "yellow", "red"], N=512
+        if cmap_name == "small rainbow":
+            return LinearSegmentedColormap.from_list(
+                "custom",
+                ["blue", "cyan", "lime", "yellow", "red"],
+                N=IN_PARAMS.num_edges_colorbar,
             )
-            if cmap_name == "small rainbow"
-            else mpl.colormaps.get_cmap(cmap_name)
-        )
+        else:
+            return plt.get_cmap(cmap_name, IN_PARAMS.num_edges_colorbar)
+
     except ValueError:
         raise ValueError(
             f'cmap で設定されているcolormap名（{cmap_name}）は存在しません．\nhttps://matplotlib.org/stable/users/explain/colors/colormaps.html に載っているcolormap名，もしくは"small rainbow"を設定してください．'
@@ -651,10 +679,7 @@ def get_facecolor_by_physics_contour(
     return par_color
 
 
-def plot_colorbar(
-    fig: Figure,
-    ax: Axes,
-) -> None:
+def plot_colorbar(fig: Figure, ax: Axes, plot_name: str) -> None:
     assert CUR_CONTOUR_PARAMS is not None
 
     cmap = get_cmap_for_color_contour()
@@ -662,23 +687,55 @@ def plot_colorbar(
     mappable = ScalarMappable(cmap=cmap, norm=norm)
 
     assert norm.vmin is not None and norm.vmax is not None
-    ticks = np.linspace(norm.vmin, norm.vmax, 5)
 
     cbar = fig.colorbar(
         mappable,
         ax=ax,
-        ticks=ticks,
-        shrink=0.28,
-        orientation="horizontal",
-        pad=1 / 50,
+        shrink=IN_PARAMS.colorbar_shrink,
+        aspect=IN_PARAMS.colorbar_aspect,
+        orientation="horizontal" if IN_PARAMS.is_horizontal_colorbar else "vertical",
+        pad=IN_PARAMS.colorbar_pad,
         location="top",
         anchor=(0.5, 0.0),
         panchor=(0, 1.0),
+        ticks=ticker.LinearLocator(numticks=IN_PARAMS.num_colorbar_ticks),
+        format=IN_PARAMS.strformatter_colorbar,
+        drawedges=IN_PARAMS.is_drawedges_colorbar,
     )
+
+    # ラベルと目盛りの位置
     cbar.ax.xaxis.set_ticks_position("bottom")
 
-    cbar.set_label(f"{CUR_CONTOUR_PARAMS.label}")
-    cbar.minorticks_off()
+    # ラベルの大きさ
+    cbar.set_label(
+        f"{CUR_CONTOUR_PARAMS.label}", fontsize=IN_PARAMS.colorbar_title_font_size
+    )
+
+    # カラーバーの枠線の太さ
+    cbar.outline.set_linewidth(IN_PARAMS.axis_lw_colorbar)
+
+    # 主目盛り
+    cbar.ax.tick_params(
+        which="major",
+        labelsize=IN_PARAMS.colorbar_ticks_font_size,
+        pad=IN_PARAMS.colorbar_tickslabel_pad,
+        length=IN_PARAMS.colorbar_ticks_length,
+        width=IN_PARAMS.colorbar_ticks_width,
+    )
+    # 副目盛り
+    if IN_PARAMS.is_plot_mticks_colorbar:
+        cbar.minorticks_on()
+        cbar.ax.tick_params(
+            which="minor",
+            length=IN_PARAMS.colorbar_mticks_length,
+            width=IN_PARAMS.colorbar_mticks_width,
+        )
+        ax.xaxis.set_minor_locator(
+            ticker.AutoMinorLocator(n=IN_PARAMS.num_colorbar_mtick + 1)
+        )
+
+    else:
+        cbar.minorticks_off()
 
     return
 
@@ -1093,7 +1150,7 @@ def make_snap_all_snap_time(
     )
 
     if not is_group_plot:
-        plot_colorbar(fig=fig, ax=ax)
+        plot_colorbar(fig=fig, ax=ax, plot_name=plot_name)
 
     # 本番プロット（調整のため最初だけ一回多くプロットしている）
     for snap_time_ms in np.insert(
