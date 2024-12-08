@@ -1,0 +1,299 @@
+#* スナップやアニメーションを保存するディレクトリ名
+save_dir_name: "plot_output_results_halfregion"
+
+#* contourプロットの順序．上から順番にプロットを行う．いらないものはNOT_PLOT_BELOWの下へ移動．ラベル名は結果の保存ディレクトリ名と同じになる．
+plot_order_list_contour:
+  - &id_pressure "Pressure"
+  - "NOT_PLOT_BELOW"
+  - &id_density "Density"
+  # - "speed"
+  # - "div_U"
+  # - "vorticity"
+  # - "Q_signed"
+  # - "eddy_viscos"
+
+#* groupプロットの順序．上から順番にプロットを行う．いらないものはNOT_PLOT_BELOWの下へ移動．ラベル名は結果の保存ディレクトリ名と同じになる．
+plot_order_list_group:
+  - &id_move "move"
+  - "NOT_PLOT_BELOW"
+
+# *出力画像の大きさ [cm]
+# （参考）A4用紙の縦向きサイズ（縦 × 横）は 29.7 × 21.0[cm]
+fig_horizontal_cm: 12.7 # 横方向のみ設定．縦方向は自動で調節される
+
+#* プロット関連
+timestep_ms: 50 # datファイルの00050のとこ.　SNAPの出力時間間隔が違う場合に注意
+snap_start_time_ms: 10
+snap_end_time_ms: 60
+xlim_min: &xlim_min -0.06
+xlim_max: &xlim_max 0.4
+ylim_min: &ylim_min -0.06
+ylim_max: &ylim_max 0.41
+snapshot_dpi: 200
+
+#* アニメーション関連
+framerate: 20
+crf_num: 35 # CRF値を設定．lowqualityの動画を作成するときに使用する．大きいほどクオリティが下がる．35くらいでちょうど良さそう．
+
+# * svg出力用．これをTrueにした場合，ここで指定した時刻のsvgのみを作成する．jpegの画像やアニメーションの作成は行わないので注意．
+svg_flag: False
+svg_snap_time_ms: null
+
+#* pythonファイルからの各相対パス．数字の部分は"xxxxx"を入れる．（コード内部で直接使用することはない）
+path_list:
+  - &xud_path "OUTPUT/SNAP/XUDxxxxx.DAT"
+  - &tmd_path "OUTPUT/SNAP/TMDxxxxx.DAT"
+num_x_in_pathstr: 5 # 数字の部分の"xx..."でxがいくつあるか
+
+#* 必須の物理量（x, y, disa）がどの素データのどの列か．0-index
+xydisa_file_path: *xud_path
+col_index_x: 0
+col_index_y: 1
+col_index_disa: 5
+
+#* group設定
+group:
+  *id_move :
+    config:
+      data_file_path: *tmd_path # データがあるファイルのpythonファイルからの相対パス
+      col_index: 1 # データが何列目にあるか　（0-index）
+
+    each_idx:
+      0:
+        label: "fluid"
+        group_color: "#1f77b4" # groupプロットの色（16進数カラーコードで指定）
+        group_alpha: 1.0 # groupプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        group_is_plot_vector: True # groupプロットでベクトルをプロットするか
+        contour_color: null # contourプロットの色（nullでコンターの色でそのままプロット）
+        contour_alpha: 1.0 # contourプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        contour_is_plot_vector: True # contourプロットでベクトルをプロットするか
+        particle_zorder: 2.91 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+        vector_zorder: 2.92 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+      1:
+        label: "wall"
+        group_color: "#6c2735" # groupプロットの色（16進数カラーコードで指定）
+        group_alpha: 1.0 # groupプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        group_is_plot_vector: False # groupプロットでベクトルをプロットするか
+        contour_color: "#000000" # contourプロットの色（nullでコンターの色でそのままプロット）
+        contour_alpha: 1.0 # contourプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        contour_is_plot_vector: False # contourプロットでベクトルをプロットするか
+        particle_zorder: 2.21 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+        vector_zorder: 2.22 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+      2:
+        label: "walldummy"
+        group_color: "#6c2735" # groupプロットの色（16進数カラーコードで指定）
+        group_alpha: 1.0 # groupプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        group_is_plot_vector: False # groupプロットでベクトルをプロットするか
+        contour_color: "#000000" # contourプロットの色（nullでコンターの色でそのままプロット）
+        contour_alpha: 1.0 # contourプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        contour_is_plot_vector: False # contourプロットでベクトルをプロットするか
+        particle_zorder: 2.11 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+        vector_zorder: 2.12 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+      4:
+        label: "wallmove"
+        group_color: "#ff1493" # groupプロットの色（16進数カラーコードで指定）
+        group_alpha: 1.0 # groupプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        group_is_plot_vector: False # groupプロットでベクトルをプロットするか
+        contour_color: "#000000" # contourプロットの色（nullでコンターの色でそのままプロット）
+        contour_alpha: 1.0 # contourプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        contour_is_plot_vector: False # contourプロットでベクトルをプロットするか
+        particle_zorder: 2.41 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+        vector_zorder: 2.42 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+      5:
+        label: "wallmovedummy"
+        group_color: "#ff1493" # groupプロットの色（16進数カラーコードで指定）
+        group_alpha: 1.0 # groupプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        group_is_plot_vector: False # groupプロットでベクトルをプロットするか
+        contour_color: "#000000" # contourプロットの色（nullでコンターの色でそのままプロット）
+        contour_alpha: 1.0 # contourプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        contour_is_plot_vector: False # contourプロットでベクトルをプロットするか
+        particle_zorder: 2.31 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+        vector_zorder: 2.32 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+
+#* contourプロットでのグループ分けの選択
+grouping_id: *id_move
+
+#* contourプロット設定
+contour:
+  #他のcontourで参照する用のベースの設定（コード内部で直接使用することはない）
+  base_config:
+    cmap: &contourbase_cmap "small rainbow"
+
+  #圧力コンター作成関係
+  *id_pressure :
+    label: "Pressure $\\mathrm{(kN/m^2)}$" # colorbarのlegendのラベル
+    data_file_path: *xud_path # データがあるファイルのpythonファイルからの相対パス
+    col_index: 4 # データが何列目にあるか　（0-index）
+    min_value_contour: 0.0 #コンターの最小値
+    max_value_contour: 1000.0 # コンターの最大値
+    cmap: *contourbase_cmap # matplotlibのカラーマップ or "small rainbow"
+    is_plot_vector: False # Trueの場合，group内のbasecontourで設定したis_plot_vectorが反映される
+
+  #densityコンター作成関係
+  *id_density :
+    label: "Density $\\rho / \\rho_0$" # colorbarのlegendのラベル
+    data_file_path: *xud_path # データがあるファイルのpythonファイルからの相対パス
+    col_index: 7 # データが何列目にあるか　（0-index）
+    min_value_contour: 0.97 #コンターの最小値
+    max_value_contour: 1.03 # コンターの最大値
+    cmap: *contourbase_cmap # matplotlibのカラーマップ or "small rainbow"
+    is_plot_vector: False # Trueの場合，group内のbasecontourで設定したis_plot_vectorが反映される
+
+#* ベクトルプロットのid振り用（コード内部で直接使用することはない）
+vector_list:
+  - &id_velocity_vector "velocity"
+#* ベクトルプロットの選択
+vector_id: *id_velocity_vector
+
+#*　ベクトル図関連
+vector:
+  #他のvectorで参照する用のベースの設定（コード内部で直接使用することはない）
+  base_config:
+    scaler_length_vector: &vectorbase_length 0.6 # ベクトルの長さの調整用．nに設定 -> ベクトルの長さをn倍
+    scaler_width_vector: &vectorbase_width 0.6 # ベクトルの太さの調整用．nに設定 -> ベクトルの太さをn倍
+    length_reference_vector: &vectorbase_length_reference 1
+
+  *id_velocity_vector :
+    col_index_vectorx: 2
+    col_index_vectory: 3
+    scaler_length_vector: 0.6 # ベクトルの長さの調整用．nに設定 -> ベクトルの長さをn倍
+    scaler_width_vector: 0.6 # ベクトルの太さの調整用．nに設定 -> ベクトルの太さをn倍
+    length_reference_vector: 1.0
+# #* 渦度コンター作成関係
+# vorticity_label: "Vorticity $\\nabla \\times \\mathbfit{u}   \\mathrm{(/s)}$" # colorbarのlegendに使用
+# vorticity_col_index: 6
+# vorticity_min_value_contour: -40
+# vorticity_max_value_contour: 40
+# vorticity_cmap: "seismic"
+# vorticity_is_plot_velocity_vector: True
+
+# vorticity_wall_particle_color: "#000000" # 16進数カラーコードで指定
+# vorticity_wall_particle_alpha: 0.0 # 透明度の指定．rgbaのaの部分
+
+# vorticity_dummy_particle_color: "#000000"
+# vorticity_dummy_particle_alpha: 0.0
+
+# vorticity_movewall_particle_color: "#000000" # 16進数カラーコードで指定
+# vorticity_movewall_particle_alpha: 0.0 # 透明度の指定．rgbaのaの部分
+
+# vorticity_movedummy_particle_color: "#000000"
+# vorticity_movedummy_particle_alpha: 0.0
+
+# #* Q_signedコンター作成関係
+# Q_signed_label: "Q_signed" # colorbarのlegendに使用
+# Q_signed_col_index: 9
+# Q_signed_min_value_contour: -50
+# Q_signed_max_value_contour: 50
+# Q_signed_cmap: "bwr"
+# Q_signed_is_plot_velocity_vector: False
+
+# Q_signed_wall_particle_color: "#000000" # 16進数カラーコードで指定
+# Q_signed_wall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+# Q_signed_dummy_particle_color: "#000000"
+# Q_signed_dummy_particle_alpha: 1.0
+
+# Q_signed_movewall_particle_color: "#000000" # 16進数カラーコードで指定
+# Q_signed_movewall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+# Q_signed_movedummy_particle_color: "#000000"
+# Q_signed_movedummy_particle_alpha: 1.0
+
+# #* densityコンター作成関係
+# density_label: "$\\rho / \\rho_{0}$" # colorbarのlegendに使用
+# density_col_index: 7
+# density_min_value_contour: 0.95
+# density_max_value_contour: 1.0
+# density_cmap: "small rainbow"
+# density_is_plot_velocity_vector: False
+
+# # density_wall_particle_color: "#000000" # 16進数カラーコードで指定
+# # density_wall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+# # density_dummy_particle_color: "#000000"
+# # density_dummy_particle_alpha: 1.0
+
+# # density_movewall_particle_color: "#000000" # 16進数カラーコードで指定
+# # density_movewall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+# # density_movedummy_particle_color: "#000000"
+# # density_movedummy_particle_alpha: 1.0
+
+# #* div_Uコンター作成関係
+# div_U_label: "$\\nabla \\cdot \\mathbfit{u} \\mathrm{(/s)} $" # colorbarのlegendに使用
+# div_U_col_index: 8
+# div_U_min_value_contour: -1.0
+# div_U_max_value_contour: 1.0
+# div_U_cmap: "small rainbow"
+# div_U_is_plot_velocity_vector: False
+
+# # div_U_wall_particle_color: "#000000" # 16進数カラーコードで指定
+# # div_U_wall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+# # div_U_dummy_particle_color: "#000000"
+# # div_U_dummy_particle_alpha: 1.0
+
+# # div_U_movewall_particle_color: "#000000" # 16進数カラーコードで指定
+# # div_U_movewall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+# # div_U_movedummy_particle_color: "#000000"
+# # div_U_movedummy_particle_alpha: 1.0
+
+# #* speedコンター作成関係
+# speed_label: "Speed $| \\mathbfit{u} | \\mathrm{(m/s)}$" # colorbarのlegendに使用
+# speed_col_index: 10
+# speed_min_value_contour: 0.0
+# speed_max_value_contour: 1.0
+# speed_cmap: "small rainbow"
+# speed_is_plot_velocity_vector: False
+
+# speed_wall_particle_color: "#000000" # 16進数カラーコードで指定
+# speed_wall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+# speed_dummy_particle_color: "#000000"
+# speed_dummy_particle_alpha: 1.0
+
+# speed_movewall_particle_color: "#000000" # 16進数カラーコードで指定
+# speed_movewall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+# speed_movedummy_particle_color: "#000000"
+# speed_movedummy_particle_alpha: 1.0
+
+# #* 渦動粘性係数コンター作成関係
+# eddy_viscos_label: "Eddy Viscosity (m^2/s)" # colorbarのlegendに使用
+# eddy_viscos_col_index: 13
+# eddy_viscos_min_value_contour: 0.0
+# eddy_viscos_max_value_contour: 1.0e-5
+# eddy_viscos_cmap: "small rainbow"
+# eddy_viscos_is_plot_velocity_vector: False
+
+# # eddy_viscos_wall_particle_color: "#000000" # 16進数カラーコードで指定
+# # eddy_viscos_wall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+# eddy_viscos_dummy_particle_color: "#000000"
+# eddy_viscos_dummy_particle_alpha: 1.0
+
+# # eddy_viscos_movewall_particle_color: "#000000" # 16進数カラーコードで指定
+# # eddy_viscos_movewall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+# eddy_viscos_movedummy_particle_color: "#000000"
+# eddy_viscos_movedummy_particle_alpha: 1.0
+
+# #* move関連　これらは何も設定しないでもいい感じの配色でプロットしてくれる．流速ベクトルだけ注意
+# move_is_plot_velocity_vector: False
+
+# move_water_particle_color: "#1f77b4" # 16進数カラーコードで指定
+# move_water_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+# move_wall_particle_color: "#6c2735" # 16進数カラーコードで指定
+# move_wall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+# move_dummy_particle_color: "#6c2735"
+# move_dummy_particle_alpha: 1.0
+
+# # move_movewall_particle_color: "#ff1493" # 16進数カラーコードで指定
+# # move_movewall_particle_alpha: 1.0 # 透明度の指定．rgbaのaの部分
+
+# # move_movedummy_particle_color: "#ff69b4"
+# # move_movedummy_particle_alpha: 1.0
+

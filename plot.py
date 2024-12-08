@@ -8,6 +8,7 @@ from typing import Any, Dict
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.style as mplstyle
+import matplotlib.ticker as ticker
 import numpy as np
 import yaml
 from matplotlib.axes import Axes
@@ -15,29 +16,6 @@ from matplotlib.cm import ScalarMappable
 from matplotlib.colors import Colormap, LinearSegmentedColormap, Normalize, to_rgba
 from matplotlib.figure import Figure
 from numpy.typing import NDArray
-
-# 描画高速化
-mplstyle.use("fast")
-
-# 以下はイラレで編集可能なsvgを出力するために必要
-mpl.use("Agg")
-plt.rcParams["svg.fonttype"] = "none"
-
-# フォント設定
-plt.rcParams["font.family"] = "Times New Roman", "Arial"  # font familyの設定
-plt.rcParams["mathtext.fontset"] = "cm"  # math fontの設定
-# plt.rcParams["font.size"] = 12  # 全体のフォントサイズを変更
-
-# 軸設定
-plt.rcParams["xtick.direction"] = "out"  # x軸の目盛りの向き
-plt.rcParams["ytick.direction"] = "out"  # y軸の目盛りの向き
-plt.rcParams["xtick.minor.visible"] = True  # x軸補助目盛りの追加
-plt.rcParams["ytick.minor.visible"] = True  # y軸補助目盛りの追加
-
-
-# 画像保存時の余白調整など
-# plt.rcParams["savefig.bbox"] = "tight"
-# plt.rcParams["savefig.pad_inches"] = 0.05
 
 
 @dataclasses.dataclass(frozen=True)
@@ -50,6 +28,11 @@ class DataclassInputParameters:
 
     # * groupプロットの順序．上から順番にプロットを行う．
     plot_order_list_group: list  # List[str]であるが，後の__post_init__でチェック
+
+    # *出力画像の大きさ [cm]
+    # （参考）A4用紙の縦向きサイズ（縦 × 横）は 29.7 × 21.0[cm]
+    fig_horizontal_cm: float  # 横方向のみ設定．縦方向は自動で調節される
+    tooning_for_fig: float
 
     # * 必須の物理量（x, y, disa）がどの素データのどの列か．0-index
     xydisa_file_path: str
@@ -74,6 +57,78 @@ class DataclassInputParameters:
     # * アニメーション関連
     framerate: int
     crf_num: int
+
+    # *全体の見た目の設定
+    axis_lw: float  # 軸線の太さ
+    is_plot_axis_bottom: bool  # 下側の軸を表示するか
+    is_plot_axis_left: bool  # 左側の軸を表示するか
+    is_plot_axis_top: bool  # 上側の軸を表示するか
+    is_plot_axis_right: bool  # 右側の軸を表示するか
+    is_plot_ticks_bottom: bool  # 下側のx軸の目盛りを表示
+    is_plot_ticks_left: bool  # 左側のy軸の目盛りを表示
+    is_plot_ticks_top: bool  # 上側のx軸の目盛りを非表示
+    is_plot_ticks_right: bool  # 右側のy軸の目盛りを非表示
+
+    # *フォント関連
+    base_font_size: float  # 基準フォントサイズ
+    xlabel_font_size: float  # x軸タイトルのフォントサイズ
+    ylabel_font_size: float  # y軸 タイトルのフォントサイズ
+    xticks_font_size: float  # x軸目盛りの値のフォントサイズ
+    yticks_font_size: float  # y軸目盛りの値のフォントサイズ
+    timetext_font_size: float  # 時刻テキストのフォントサイズ
+    is_use_TimesNewRoman_in_mathtext: bool  # 数式で可能な限りTimes New Romanを使うか（FalseでTeXっぽいフォントを使う）
+
+    # *目盛りの設定（x軸）
+    # -主目盛り-
+    anchor_x_ticks: float  # 主目盛りで必ず表示する座標
+    space_x_ticks: float  # 主目盛りの間隔
+    strformatter_x: (
+        str | None
+    )  # 主目盛りの値の書式等を変更したいときにいじる（変更しない場合はNoneにする）．
+    x_tickslabel_pad: float  # x軸主目盛りから目盛りラベルをどれだけ離すか
+    x_ticks_length: float  # x軸主目盛り線の長さ
+    x_ticks_width: float  # x軸主目盛り線の線幅
+    # -副目盛り-
+    is_plot_mticks_x: bool  # 副目盛りをプロットするか
+    num_x_mtick: int  # 副目盛りの数
+    x_mticks_length: float  # x軸補助目盛り線の長さ
+    x_mticks_width: float  # x軸補助目盛り線の線幅
+
+    # *目盛りの設定（y軸）
+    # -主目盛り-
+    anchor_y_ticks: float  # 主目盛りで必ず表示する座標
+    space_y_ticks: float  # 主目盛りの間隔
+    strformatter_y: (
+        str | None
+    )  # 主目盛りの値の書式等を変更したいときにいじる（変更しない場合はNoneにする）．
+    y_tickslabel_pad: float  # y軸主目盛りから目盛りラベルをどれだけ離すか
+    y_ticks_length: float  # y軸主目盛り線の長さ
+    y_ticks_width: float  # y軸主目盛り線の線幅
+    # -副目盛り-
+    is_plot_mticks_y: bool  # 副目盛りをプロットするか
+    num_y_mtick: int  # 副目盛りの数
+    y_mticks_length: float  # y軸補助目盛り線の長さ
+    y_mticks_width: float  # y軸補助目盛り線の線幅
+
+    # *軸ラベルの設定（x軸）
+    xlabel_text: str  # ラベルのテキスト
+    xlabel_pos: float  # テキストの中心のx座標（データの単位）
+    xlabel_offset: float
+
+    # *軸ラベルの設定（y軸）
+    ylabel_text: str  # ラベルのテキスト
+    ylabel_pos: float  # テキストの中心のy座標（データ単位）
+    y_horizontalalignment: (
+        str  # テキストのx方向の配置の基準（基本は"center" or "right"）
+    )
+    ylabel_offset: float
+    is_horizontal_ylabel: bool  # ラベルを横向きにするか
+
+    # * 時刻のテキストの設定
+    time_text: str  # 時刻テキスト（xxxxxの部分に時刻が挿入される）
+    strformatter_timetext: str  # 時刻テキストの書式（小数点以下のゼロ埋めの調節で使用）
+    time_text_pos_x: float  # 時刻テキストの左端のx座標（データの単位）
+    time_text_pos_y: float  # 時刻テキストの下端のy座標（データの単位）
 
     # * svg出力用．これをTrueにした場合，ここで指定した時刻のsvgのみを作成する．jpegの画像やアニメーションの作成は行わないので注意．
     svg_flag: bool
@@ -291,6 +346,73 @@ def construct_dict_groupindex_to_groupeachidxdataclass(
         res_dict[group_idx] = DataclassGroupEachIndex(**data_dict)
 
     return res_dict
+
+
+def set_mplparams_init() -> None:
+    # 描画高速化
+    mplstyle.use("fast")
+
+    # 以下はイラレで編集可能なsvgを出力するために必要
+    mpl.use("Agg")
+    plt.rcParams["svg.fonttype"] = "none"
+
+    # 軸設定
+    plt.rcParams["xtick.direction"] = "out"  # x軸の目盛りの向き
+    plt.rcParams["ytick.direction"] = "out"  # y軸の目盛りの向き
+    plt.rcParams["xtick.minor.visible"] = True  # x軸補助目盛りの追加
+    plt.rcParams["ytick.minor.visible"] = True  # y軸補助目盛りの追加
+
+    # 余白の自動調整
+    plt.rcParams["savefig.bbox"] = "tight"
+    plt.rcParams["savefig.pad_inches"] = 0.05
+
+    # MatplotlibのデフォルトフォントをTimes New Romanに設定
+    plt.rcParams["font.family"] = "Times New Roman"
+
+    # mathtext関連
+    if IN_PARAMS.is_use_TimesNewRoman_in_mathtext:
+        plt.rcParams["mathtext.fontset"] = "custom"
+        plt.rcParams["mathtext.it"] = "Times New Roman:italic"
+        plt.rcParams["mathtext.bf"] = "Times New Roman:bold"
+        plt.rcParams["mathtext.bfit"] = "Times New Roman:italic:bold"
+        plt.rcParams["mathtext.rm"] = "Times New Roman"
+        plt.rcParams["mathtext.fallback"] = "cm"
+    else:
+        plt.rcParams["mathtext.fontset"] = "cm"
+
+    # 全体の見た目の設定（軸と目盛りの表示）
+    plt.rcParams["axes.spines.bottom"] = (
+        IN_PARAMS.is_plot_axis_bottom
+    )  # 下側の軸を表示するか
+    plt.rcParams["axes.spines.left"] = (
+        IN_PARAMS.is_plot_axis_left
+    )  # 左側の軸を表示するか
+    plt.rcParams["axes.spines.top"] = IN_PARAMS.is_plot_axis_top  # 上側の軸を表示するか
+    plt.rcParams["axes.spines.right"] = (
+        IN_PARAMS.is_plot_axis_right
+    )  # 右側の軸を表示するか
+    plt.rcParams["xtick.bottom"] = (
+        IN_PARAMS.is_plot_ticks_bottom
+    )  # 下側のx軸の目盛りを表示
+    plt.rcParams["ytick.left"] = IN_PARAMS.is_plot_ticks_left  # 左側のy軸の目盛りを表示
+    plt.rcParams["xtick.top"] = IN_PARAMS.is_plot_ticks_top  # 上側のx軸の目盛りを非表示
+    plt.rcParams["ytick.right"] = (
+        IN_PARAMS.is_plot_ticks_right
+    )  # 右側のy軸の目盛りを非表示
+
+    # 目盛り関係
+    plt.rcParams["xtick.direction"] = "out"
+    plt.rcParams["ytick.direction"] = "out"
+
+    # 軸関係
+    plt.rcParams["axes.linewidth"] = IN_PARAMS.axis_lw
+    plt.rcParams["xtick.minor.visible"] = IN_PARAMS.is_plot_mticks_x
+    plt.rcParams["ytick.minor.visible"] = IN_PARAMS.is_plot_mticks_y
+
+    # 凡例の見た目設定（今は使用なし）
+    plt.rcParams["legend.fancybox"] = False  # 丸角OFF
+    plt.rcParams["legend.framealpha"] = 1  # 透明度の指定、0で塗りつぶしなし
+    plt.rcParams["legend.edgecolor"] = "black"  # edgeの色を変更
 
 
 def get_mask_array_by_plot_region(snap_time_ms: int) -> NDArray[np.bool_]:
@@ -548,7 +670,7 @@ def plot_colorbar(
         ticks=ticks,
         shrink=0.28,
         orientation="horizontal",
-        pad=0,
+        pad=1 / 50,
         location="top",
         anchor=(0.5, 0.0),
         panchor=(0, 1.0),
@@ -573,6 +695,7 @@ def plot_velocity_vector(
     par_y: NDArray[np.float64],
     mask_array_by_group: NDArray[np.bool_] | None = None,
 ) -> None:
+    global list_extra_artists
     par_u, par_v = load_par_data_masked_by_plot_region(
         snap_time_ms=snap_time_ms,
         mask_array=mask_array,
@@ -617,42 +740,149 @@ def plot_velocity_vector(
             Q=q,
             X=0.9,
             Y=y_center_axes,
+            # X=IN_PARAMS.xlim_min * 0.1 + IN_PARAMS.xlim_max * 0.9,
+            # Y=0.5,
             U=VECTOR_PARAMS.length_reference_vector,
             label=f"Velocity $\\mathbfit{{u}}$\n{VECTOR_PARAMS.length_reference_vector} m/s",
             labelpos="N",
+            # coordinates="figure",
+        )
+
+        # これで右上を確実に捉えれば勝ち？
+        ax.text(
+            s="A",
+            x=0.9,
+            y=y_center_axes + 0.2,
+            transform=ax.transAxes,
+            horizontalalignment="center",
+            verticalalignment="center",
+            # alpha=0,
+            gid="This is dummy text.",
         )
 
     return
 
 
-def set_ax_ticks(ax: Axes) -> None:
+def set_ax_lim(ax: Axes) -> None:
     ax.set_xlim(IN_PARAMS.xlim_min, IN_PARAMS.xlim_max)
     ax.set_ylim(IN_PARAMS.ylim_min, IN_PARAMS.ylim_max)
 
     return
 
 
-def set_ax_labels(ax: Axes) -> None:
-    # mathtextを使用するとIllustratorでsvgを読み込んだ時にテキストの編集がしづらくなってしまうので以下のように対応
-    xlabel = "x (m)" if IN_PARAMS.svg_flag else r"$x \mathrm{(m)}$"
-    ylabel = "y (m)" if IN_PARAMS.svg_flag else r"$y \mathrm{(m)}$"
+def set_ax_xticks(ax: Axes) -> None:
+    ax.xaxis.set_major_locator(
+        ticker.MultipleLocator(
+            base=IN_PARAMS.space_x_ticks, offset=IN_PARAMS.anchor_x_ticks
+        )
+    )
 
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
+    if IN_PARAMS.strformatter_x is not None:
+        ax.xaxis.set_major_formatter(
+            ticker.FormatStrFormatter(IN_PARAMS.strformatter_x)
+        )
+
+    if IN_PARAMS.is_plot_mticks_x:
+        ax.xaxis.set_minor_locator(ticker.AutoMinorLocator(n=IN_PARAMS.num_x_mtick + 1))
+
+    # 主目盛り
+    ax.tick_params(
+        axis="x",
+        which="major",
+        labelsize=IN_PARAMS.xticks_font_size,
+        pad=IN_PARAMS.x_tickslabel_pad,
+        length=IN_PARAMS.x_ticks_length,
+        width=IN_PARAMS.x_ticks_width,
+    )
+
+    # 副目盛り
+    ax.tick_params(
+        axis="x",
+        which="minor",
+        length=IN_PARAMS.x_mticks_length,
+        width=IN_PARAMS.x_mticks_width,
+    )
 
     return
 
 
-def set_ax_title(ax: Axes, snap_time_ms: int) -> None:
-    time_text = f"{snap_time_ms/1000:.03f}s"
+def set_ax_yticks(ax: Axes) -> None:
+    ax.yaxis.set_major_locator(
+        ticker.MultipleLocator(
+            base=IN_PARAMS.space_y_ticks, offset=IN_PARAMS.anchor_y_ticks
+        )
+    )
 
-    # mathtextを使用するとIllustratorでsvgを読み込んだ時にテキストの編集がしづらくなってしまうので以下のように対応
-    title_text = f"t= {time_text}" if IN_PARAMS.svg_flag else rf"$t=$ {time_text}"
+    if IN_PARAMS.strformatter_y is not None:
+        ax.yaxis.set_major_formatter(
+            ticker.FormatStrFormatter(IN_PARAMS.strformatter_y)
+        )
 
-    ax.set_title(
-        title_text,
-        pad=7,
-        loc="left",
+    if IN_PARAMS.is_plot_mticks_y:
+        ax.yaxis.set_minor_locator(ticker.AutoMinorLocator(n=IN_PARAMS.num_y_mtick + 1))
+
+    # 主目盛り
+    ax.tick_params(
+        axis="y",
+        which="major",
+        labelsize=IN_PARAMS.yticks_font_size,
+        pad=IN_PARAMS.y_tickslabel_pad,
+        length=IN_PARAMS.y_ticks_length,
+        width=IN_PARAMS.y_ticks_width,
+    )
+
+    # 副目盛り
+    ax.tick_params(
+        axis="y",
+        which="minor",
+        length=IN_PARAMS.y_mticks_length,
+        width=IN_PARAMS.y_mticks_width,
+    )
+
+    return
+
+
+def set_xlabel(ax: Axes) -> None:
+    ax.text(
+        s=IN_PARAMS.xlabel_text,
+        x=IN_PARAMS.xlabel_pos,
+        y=IN_PARAMS.ylim_min + IN_PARAMS.xlabel_offset,
+        horizontalalignment="center",
+        verticalalignment="center",
+        fontsize=IN_PARAMS.xlabel_font_size,
+        gid="x_title_text",
+    )
+    return
+
+
+def set_ylabel(ax: Axes) -> None:
+    tmp = ax.text(
+        s=IN_PARAMS.ylabel_text,
+        y=IN_PARAMS.ylabel_pos,
+        x=IN_PARAMS.xlim_min + IN_PARAMS.ylabel_offset,
+        verticalalignment="center",
+        horizontalalignment=IN_PARAMS.y_horizontalalignment,
+        fontsize=IN_PARAMS.ylabel_font_size,
+        gid="y_title_text",
+    )
+
+    if not IN_PARAMS.is_horizontal_ylabel:
+        tmp.set_rotation(90.0)
+
+    return
+
+
+def set_ax_time_text(ax: Axes, snap_time_ms: int) -> None:
+    ax.text(
+        s=IN_PARAMS.time_text.replace(
+            "xxxxx", f"{snap_time_ms/1000:{IN_PARAMS.strformatter_timetext}}"
+        ),
+        x=IN_PARAMS.time_text_pos_x,
+        y=IN_PARAMS.time_text_pos_y,
+        horizontalalignment="left",
+        verticalalignment="bottom",
+        fontsize=IN_PARAMS.timetext_font_size,
+        gid="time_text",
     )
 
     return
@@ -735,9 +965,12 @@ def make_snap_each_snap_time(
     if not is_group_plot:
         assert CUR_CONTOUR_PARAMS is not None
 
-    set_ax_ticks(ax=ax)
-    set_ax_labels(ax=ax)
-    set_ax_title(ax=ax, snap_time_ms=snap_time_ms)
+    set_ax_lim(ax=ax)
+    set_ax_xticks(ax=ax)
+    set_ax_yticks(ax=ax)
+    set_xlabel(ax=ax)
+    set_ylabel(ax=ax)
+    set_ax_time_text(ax=ax, snap_time_ms=snap_time_ms)
 
     # TODO キャンバス更新
     if snap_time_ms == IN_PARAMS.snap_start_time_ms:
@@ -812,7 +1045,10 @@ def make_snap_each_snap_time(
             is_plot_reference_vector = False
 
     # 以下，画像の保存処理
-    save_file_name_without_extension = f"snap{snap_time_ms:05}_{plot_name}"
+
+    save_file_name_without_extension = (
+        f"snap{snap_time_ms:0{IN_PARAMS.num_x_in_pathstr}}_{plot_name}"
+    )
     extension = "svg" if IN_PARAMS.svg_flag else "jpeg"
     save_file_path = save_dir_snap_path / Path(
         f"{save_file_name_without_extension}.{extension}"
@@ -840,18 +1076,29 @@ def make_snap_all_snap_time(
     save_dir_snap_path.mkdir(exist_ok=True, parents=True)
 
     scaler_cm_to_inch = 1 / 2.54
-    fig = plt.figure(
-        figsize=(25.4 * scaler_cm_to_inch, 13 * scaler_cm_to_inch),
-        dpi=IN_PARAMS.snapshot_dpi,
-        layout="constrained",
-    )
-    ax = fig.add_subplot(1, 1, 1, aspect="equal")
+    disired_fig_width = IN_PARAMS.fig_horizontal_cm * scaler_cm_to_inch
 
-    # カラーバーのプロット
+    fig = plt.figure(
+        figsize=(
+            disired_fig_width,
+            5 * disired_fig_width,  # 縦方向が見切れないよう十分大きく取る
+        ),
+        dpi=IN_PARAMS.snapshot_dpi,
+    )
+    ax = fig.add_axes(
+        (
+            (0, 0, 1 * IN_PARAMS.tooning_for_fig, 1)
+        ),  # widthはちょうど指定した大きさに近づくようチューニングする
+        aspect="equal",
+    )
+
     if not is_group_plot:
         plot_colorbar(fig=fig, ax=ax)
 
-    for snap_time_ms in snap_time_array_ms:
+    # 本番プロット（調整のため最初だけ一回多くプロットしている）
+    for snap_time_ms in np.insert(
+        snap_time_array_ms, 0, [IN_PARAMS.snap_start_time_ms]
+    ):
         try:
             make_snap_each_snap_time(
                 fig=fig,
@@ -1033,6 +1280,8 @@ GROUPIDX_PARAMS = construct_dict_groupindex_to_groupeachidxdataclass(
 def main() -> None:
     print(f"plot execute by {sys.argv[1]}\n")
 
+    set_mplparams_init()
+
     # contourプロット
     execute_plot_contour_all()
 
@@ -1045,4 +1294,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    print(mpl.matplotlib_fname())
     main()

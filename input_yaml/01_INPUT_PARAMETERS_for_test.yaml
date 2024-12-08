@@ -4,8 +4,8 @@ save_dir_name: "plot_output_results_allregion"
 #* contourプロットの順序．上から順番にプロットを行う．いらないものはNOT_PLOT_BELOWの下へ移動．ラベル名は結果の保存ディレクトリ名と同じになる．
 plot_order_list_contour:
   - &id_pressure "Pressure"
-  - &id_density "Density"
   - "NOT_PLOT_BELOW"
+  - &id_density "Density"
   # - "speed"
   # - "div_U"
   # - "vorticity"
@@ -17,23 +17,96 @@ plot_order_list_group:
   - &id_move "move"
   - "NOT_PLOT_BELOW"
 
+#* プロットするデータの時刻
+timestep_ms: 10 # datファイルの00050のところ.　SNAPの出力時間間隔が違う場合に注意
+snap_start_time_ms: 10
+snap_end_time_ms: 300
+
+# * 画像保存時の設定
+snapshot_dpi: 200
+
 # *出力画像の大きさ [cm]
 # （参考）A4用紙の縦向きサイズ（縦 × 横）は 29.7 × 21.0[cm]
-# fig_horizontal_cm: 18.0 # 横方向のみ設定．縦方向は自動で調節される
+fig_horizontal_cm: 25.4 # 横方向のみ設定．縦方向は自動で調節される
+tooning_for_fig: 0.9 # 現時点，↑で指定したサイズより少し大きくなるのでこれで調節（1未満である必要．0.9付近が良いか．）
 
-#* プロット関連
-timestep_ms: 50 # datファイルの00050のとこ.　SNAPの出力時間間隔が違う場合に注意
-snap_start_time_ms: 10
-snap_end_time_ms: 60
+#* アニメーション関連
+framerate: 100
+crf_num: 35 # CRF値を設定．lowqualityの動画を作成するときに使用する．大きいほどクオリティが下がる．35くらいでちょうど良さそう．
+
+# *全体の見た目の設定
+axis_lw: &axis_lw 1.7 # 軸線の太さ
+is_plot_axis_bottom: True # 下側の軸を表示するか
+is_plot_axis_left: True # 左側の軸を表示するか
+is_plot_axis_top: False # 上側の軸を表示するか
+is_plot_axis_right: False # 右側の軸を表示するか
+is_plot_ticks_bottom: True # 下側のx軸の目盛りを表示
+is_plot_ticks_left: True # 左側のy軸の目盛りを表示
+is_plot_ticks_top: False # 上側のx軸の目盛りを非表示
+is_plot_ticks_right: False # 右側のy軸の目盛りを非表示
+
+# *フォント関連
+base_font_size: &base_font_size 15.0 # 基準フォントサイズ
+xlabel_font_size: *base_font_size # x軸タイトルのフォントサイズ
+ylabel_font_size: *base_font_size # y軸 タイトルのフォントサイズ
+xticks_font_size: *base_font_size # x軸目盛りの値のフォントサイズ
+yticks_font_size: *base_font_size # y軸目盛りの値のフォントサイズ
+timetext_font_size: 17.0 # 時刻テキストのフォントサイズ
+is_use_TimesNewRoman_in_mathtext: True # 数式で可能な限りTimes New Romanを使うか（FalseでTeXっぽいフォントを使う）
+
+# * グラフの表示範囲の設定
 xlim_min: &xlim_min -0.06
 xlim_max: &xlim_max 1.24
 ylim_min: &ylim_min -0.06
 ylim_max: &ylim_max 0.41
-snapshot_dpi: 200
 
-#* アニメーション関連
-framerate: 20
-crf_num: 35 # CRF値を設定．lowqualityの動画を作成するときに使用する．大きいほどクオリティが下がる．35くらいでちょうど良さそう．
+# *目盛りの設定（x軸）
+# -主目盛り-
+anchor_x_ticks: 0.1 # 主目盛りで必ず表示する座標
+space_x_ticks: 0.2 # 主目盛りの間隔
+strformatter_x: null # 主目盛りの値の書式等を変更したいときにいじる（変更しない場合はnullにする）．
+x_tickslabel_pad: &x_tickslabel_pad 4.0 # x軸主目盛りから目盛りラベルをどれだけ離すか
+x_ticks_length: &x_ticks_length 10.0 # x軸主目盛り線の長さ
+x_ticks_width: *axis_lw # x軸主目盛り線の線幅
+# -副目盛り-
+is_plot_mticks_x: True # 副目盛りをプロットするか
+num_x_mtick: 3 # 副目盛りの数
+x_mticks_length: 5.0 # x軸補助目盛り線の長さ
+x_mticks_width: 0.75 # x軸補助目盛り線の線幅
+
+# *目盛りの設定（y軸）
+# -主目盛り-
+anchor_y_ticks: 0.0 # 主目盛りで必ず表示する座標
+space_y_ticks: 0.1 # 主目盛りの間隔
+strformatter_y: "%.02f" # 主目盛りの値の書式等を変更したいときにいじる（変更しない場合はnullにする）．
+y_tickslabel_pad: 4.0 # y軸主目盛りから目盛りラベルをどれだけ離すか
+y_ticks_length: 10.0 # y軸主目盛り線の長さ
+y_ticks_width: *axis_lw # y軸主目盛り線の線幅
+# -副目盛り-
+is_plot_mticks_y: True # 副目盛りをプロットするか
+num_y_mtick: 3 # 副目盛りの数
+y_mticks_length: 5.0 # y軸補助目盛り線の長さ
+y_mticks_width: 0.75 # y軸補助目盛り線の線幅
+
+# *軸ラベルの設定（x軸）
+xlabel_text: "$x \\, \\mathrm{(m)}$" # ラベルのテキスト
+xlabel_pos: 1.2 # テキストの中心のx座標（データの単位）
+xlabel_offset: -0.04 #TODO yminからの，テキストの上端のy座標の変位（データの単位）
+
+# *軸ラベルの設定（y軸）
+ylabel_text: "$y \\, \\mathrm{(m)}$" # ラベルのテキスト
+ylabel_pos: 0.2 # テキストの中心のy座標（データ単位）
+y_horizontalalignment: "right" # テキストのx方向の配置の基準（基本は"center" or "right"）
+ylabel_offset: -0.10 #  #TODO xminからの，テキストのhorizontalalignmentのx座標の変位（データの単位）
+is_horizontal_ylabel: False # ラベルを横向きにするか
+
+#* 時刻のテキストの設定
+time_text: "$t = xxxxx \\, \\mathrm{s}$" # 時刻テキスト（xxxxxの部分に時刻が挿入される）
+strformatter_timetext: ".03f" # 時刻テキストの書式（小数点以下のゼロ埋めの調節で使用）
+time_text_pos_x: *xlim_min # 時刻テキストの左端のx座標（データの単位）
+time_text_pos_y: *ylim_max # 時刻テキストの下端のy座標（データの単位）
+
+#* カラーバー関連の設定
 
 # * svg出力用．これをTrueにした場合，ここで指定した時刻のsvgのみを作成する．jpegの画像やアニメーションの作成は行わないので注意．
 svg_flag: False
@@ -142,7 +215,6 @@ contour:
 #* ベクトルプロットのid振り用（コード内部で直接使用することはない）
 vector_list:
   - &id_velocity_vector "velocity"
-
 #* ベクトルプロットの選択
 vector_id: *id_velocity_vector
 
