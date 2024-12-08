@@ -1,5 +1,5 @@
 #* スナップやアニメーションを保存するディレクトリ名
-save_dir_name: "plot_output_results_allregion"
+save_dir_name: "plot_output_results_halfregion"
 
 #* contourプロットの順序．上から順番にプロットを行う．いらないものはNOT_PLOT_BELOWの下へ移動．ラベル名は結果の保存ディレクトリ名と同じになる．
 plot_order_list_contour:
@@ -20,7 +20,7 @@ plot_order_list_group:
 #* プロットするデータの時刻
 timestep_ms: 10 # datファイルの00050のところ.　SNAPの出力時間間隔が違う場合に注意
 snap_start_time_ms: 10
-snap_end_time_ms: 3000
+snap_end_time_ms: 30
 
 # * 画像保存時の設定
 snapshot_dpi: 200 # 大きすぎる値にしないよう注意（ファイル容量が膨大になりうるため）
@@ -60,7 +60,7 @@ is_use_TimesNewRoman_in_mathtext: True # 数式で可能な限りTimes New Roman
 
 # * グラフの表示範囲の設定
 xlim_min: &xlim_min -0.06
-xlim_max: &xlim_max 1.24
+xlim_max: &xlim_max 0.5
 ylim_min: &ylim_min -0.06
 ylim_max: &ylim_max 0.41
 
@@ -94,7 +94,7 @@ y_mticks_width: 0.75 # y軸補助目盛り線の線幅
 
 # *軸ラベルの設定（x軸）
 xlabel_text: "$x \\, \\mathrm{(m)}$" # ラベルのテキスト
-xlabel_pos: 1.2 # テキストの中心のx座標（データの単位）
+xlabel_pos: 0.4 # テキストの中心のx座標（データの単位）
 xlabel_offset: -0.055 #TODO yminからの，テキストの上端のy座標の変位（データの単位）
 
 # *軸ラベルの設定（y軸）
@@ -263,7 +263,7 @@ vector:
     length_reference_vector: 1.0 # reference vectorの単位
     reference_vector_text: "Velocity $\\mathbfit{{u}}$\nxxxxx m/s" # reference vectorのラベルのテキスト（xxxxxの部分に長さlength_reference_vectorが挿入される）
     strformatter_reference_vector_text: ".01f" # reference vectorのラベルのテキストの書式（小数点以下のゼロ埋めの調節で使用）
-    reference_vector_pos_x: 1.1 # reference vectorのx座標（データの単位）
+    reference_vector_pos_x: 0.4 # reference vectorのx座標（データの単位）
     reference_vector_pos_y: *ylim_max # reference vectorのy座標（データの単位）
     reference_vector_labelpad: 0.1 # reference vectorのラベルを矢印からどれだけ離すか
 

@@ -29,6 +29,10 @@ class DataclassInputParameters:
     # * groupプロットの順序．上から順番にプロットを行う．
     plot_order_list_group: list  # List[str]であるが，後の__post_init__でチェック
 
+    # * 画像保存時の設定
+    snapshot_dpi: int
+    extension: str
+
     # *出力画像の大きさ [cm]
     # （参考）A4用紙の縦向きサイズ（縦 × 横）は 29.7 × 21.0[cm]
     fig_horizontal_cm: float  # 横方向のみ設定．縦方向は自動で調節される
@@ -52,7 +56,6 @@ class DataclassInputParameters:
     xlim_max: float
     ylim_min: float
     ylim_max: float
-    snapshot_dpi: int
 
     # * アニメーション関連
     framerate: int
@@ -78,6 +81,7 @@ class DataclassInputParameters:
     timetext_font_size: float  # 時刻テキストのフォントサイズ
     colorbar_title_font_size: float  # カラーバーのタイトルのサイズ
     colorbar_ticks_font_size: float  # カラーバーの目盛りの値のサイズ
+    reference_vector_font_size: float  # reference vectorのラベルのフォントサイズ
     is_use_TimesNewRoman_in_mathtext: bool  # 数式で可能な限りTimes New Romanを使うか（FalseでTeXっぽいフォントを使う）
 
     # *目盛りの設定（x軸）
@@ -135,6 +139,7 @@ class DataclassInputParameters:
     # * カラーバー関連の設定
     is_horizontal_colorbar: bool  # カラーバーを横向きにするか
     colorbar_pad: float  # TODO  カラーバーがプロットのボックスからどれだけ離れているか（チューニング）
+    colorbar_labelpad: float  # カラーバーのタイトルをバーからどれだけ離すか
     colorbar_shrink: float  # カラーバーをどれくらい縮めるか（0より大きく1以下の値）
     colorbar_aspect: (
         float  # カラーバーのアスペクト比（shrinkを先に調整してからがよさそう）
@@ -257,7 +262,15 @@ class DataclassVector:
     col_index_vectory: int
     scaler_length_vector: float
     scaler_width_vector: float
+    headlength_vector: float
+    headaxislength_vector: float
+    headwidth_vector: float
     length_reference_vector: float
+    reference_vector_text: str
+    strformatter_reference_vector_text: str
+    reference_vector_pos_x: float
+    reference_vector_pos_y: float
+    reference_vector_labelpad: float
 
     def __post_init__(self) -> None:
         class_dict = dataclasses.asdict(self)
@@ -708,7 +721,9 @@ def plot_colorbar(fig: Figure, ax: Axes, plot_name: str) -> None:
 
     # ラベルの大きさ
     cbar.set_label(
-        f"{CUR_CONTOUR_PARAMS.label}", fontsize=IN_PARAMS.colorbar_title_font_size
+        f"{CUR_CONTOUR_PARAMS.label}",
+        fontsize=IN_PARAMS.colorbar_title_font_size,
+        labelpad=IN_PARAMS.colorbar_labelpad,
     )
 
     # カラーバーの枠線の太さ
@@ -776,45 +791,78 @@ def plot_velocity_vector(
         scale=scale,
         scale_units="x",
         width=width,
-        # width=0 if IN_PARAMS.svg_flag else width,
-        # headwidth=0 if IN_PARAMS.svg_flag else 3.0,
+        headlength=VECTOR_PARAMS.headlength_vector,
+        headaxislength=VECTOR_PARAMS.headaxislength_vector,
+        headwidth=VECTOR_PARAMS.headwidth_vector,
         gid=f"{group_id_prefix}{group_index}",
         clip_on=not IN_PARAMS.svg_flag,
     )
 
     if is_plot_reference_vector:
-        title = ax.title
-        # タイトルのバウンディングボックスを取得
-        renderer = fig.canvas.get_renderer()
-        bbox_title = title.get_window_extent(renderer=renderer)
-
-        y_center_display = bbox_title.y0
-
-        # 表示座標系から軸座標系への変換
-        y_center_axes = ax.transAxes.inverted().transform((0, y_center_display))[1]
-
-        ax.quiverkey(
+        qk = ax.quiverkey(
             Q=q,
-            X=0.9,
-            Y=y_center_axes,
-            # X=IN_PARAMS.xlim_min * 0.1 + IN_PARAMS.xlim_max * 0.9,
-            # Y=0.5,
+            X=VECTOR_PARAMS.reference_vector_pos_x,
+            Y=VECTOR_PARAMS.reference_vector_pos_y,
             U=VECTOR_PARAMS.length_reference_vector,
-            label=f"Velocity $\\mathbfit{{u}}$\n{VECTOR_PARAMS.length_reference_vector} m/s",
+            label=VECTOR_PARAMS.reference_vector_text.replace(
+                "xxxxx",
+                f"{VECTOR_PARAMS.length_reference_vector:{VECTOR_PARAMS.strformatter_reference_vector_text}}",
+            ),
+            fontproperties={"size": IN_PARAMS.reference_vector_font_size},
+            labelsep=VECTOR_PARAMS.reference_vector_labelpad,
             labelpos="N",
-            # coordinates="figure",
+            coordinates="data",
         )
 
-        # これで右上を確実に捉えれば勝ち？
+        # 以下でreference vectorが余白の自動調節に含まれるようにする
+        # TODO（labelpos="N"の場合のみ）
+
+        # 1. Bboxを取得（表示座標系）
+        fig.canvas.draw()  # 描画が完了している必要がある
+        renderer = fig.canvas.get_renderer()
+        bbox_text = qk.text.get_window_extent(renderer=renderer)
+
+        # 2. データ座標系への変換
+        inv = ax.transData.inverted()
+        x0_data, y0_data = inv.transform((bbox_text.x0, bbox_text.y0))  # 左下隅
+        x1_data, y1_data = inv.transform((bbox_text.x1, bbox_text.y1))  # 右上隅
+
+        # 3. 隅にテキストを配置してこいつで自動調節をする
         ax.text(
-            s="A",
-            x=0.9,
-            y=y_center_axes + 0.2,
-            transform=ax.transAxes,
+            s="Dummy1",
+            x=x0_data,
+            y=y0_data,
             horizontalalignment="center",
             verticalalignment="center",
-            # alpha=0,
-            gid="This is dummy text.",
+            alpha=0,
+            gid="This is dummy text1.",
+        )
+        ax.text(
+            s="Dummy2",
+            x=x1_data,
+            y=y1_data,
+            horizontalalignment="center",
+            verticalalignment="center",
+            alpha=0,
+            gid="This is dummy text2.",
+        )
+        ax.text(
+            s="Dummy3",
+            x=x0_data,
+            y=y1_data,
+            horizontalalignment="center",
+            verticalalignment="center",
+            alpha=0,
+            gid="This is dummy text3.",
+        )
+        ax.text(
+            s="Dummy4",
+            x=x1_data,
+            y=y0_data,
+            horizontalalignment="center",
+            verticalalignment="center",
+            alpha=0,
+            gid="This is dummy text4.",
         )
 
     return
@@ -1106,9 +1154,8 @@ def make_snap_each_snap_time(
     save_file_name_without_extension = (
         f"snap{snap_time_ms:0{IN_PARAMS.num_x_in_pathstr}}_{plot_name}"
     )
-    extension = "svg" if IN_PARAMS.svg_flag else "jpeg"
     save_file_path = save_dir_snap_path / Path(
-        f"{save_file_name_without_extension}.{extension}"
+        f"{save_file_name_without_extension}.{IN_PARAMS.extension}"
     )
     fig.savefig(save_file_path)
 
