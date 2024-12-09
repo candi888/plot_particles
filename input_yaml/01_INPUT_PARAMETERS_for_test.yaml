@@ -19,7 +19,7 @@ plot_order_list_group:
 
 #* プロットするデータの時刻
 timestep_ms: 10 # datファイルの00050のところ.　SNAPの出力時間間隔が違う場合に注意
-snap_start_time_ms: 10
+snap_start_time_ms: 1000
 snap_end_time_ms: 3000
 
 # * 画像保存時の設定

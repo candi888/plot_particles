@@ -638,6 +638,32 @@ def plot_particles_by_scatter(
         clip_on=not IN_PARAMS.svg_flag,
     )
 
+    from mpl_toolkits.axes_grid1.inset_locator import mark_inset, zoomed_inset_axes
+
+    # # inset Axes....
+    x1, x2, y1, y2 = 1.0, 1.1, 0.0, 0.1  # subregion of the original image
+    axins = ax.inset_axes(
+        (0.6, 0.6, 0.3, 0.3),
+        xlim=(x1, x2),
+        ylim=(y1, y2),
+        xticklabels=[],
+        yticklabels=[],
+        aspect="equal",
+    )
+    # axins = zoomed_inset_axes(ax, zoom=2.5, loc="upper right")
+    axins.scatter(
+        par_x,
+        par_y,
+        s=s,
+        c=par_color,
+        linewidths=0,
+        gid=f"{group_id_prefix}{group_index}",
+        clip_on=not IN_PARAMS.svg_flag,
+    )
+    axins.axis("off")
+
+    ax.indicate_inset_zoom(axins, edgecolor="black")
+
     return
 
 
