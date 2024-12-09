@@ -3,8 +3,8 @@ save_dir_name: "plot_output_results_allregion"
 
 #* contourプロットの順序．上から順番にプロットを行う．いらないものはNOT_PLOT_BELOWの下へ移動．ラベル名は結果の保存ディレクトリ名と同じになる．
 plot_order_list_contour:
-  - &id_pressure "Pressure"
   - &id_density "Density"
+  - &id_pressure "Pressure"
   - "NOT_PLOT_BELOW"
   # - "speed"
   # - "div_U"

@@ -487,6 +487,7 @@ def get_mask_array_by_plot_region(snap_time_ms: int) -> NDArray[np.bool_]:
 
 
 def load_par_data_masked_by_plot_region(
+    pardata_filepath_str_time_replaced_by_xxxxx: str,
     snap_time_ms: int,
     usecols: tuple[int, ...] | int,
     mask_array: NDArray[np.bool_],
@@ -495,7 +496,7 @@ def load_par_data_masked_by_plot_region(
     original_data = np.loadtxt(
         Path(__file__).parent
         / Path(
-            IN_PARAMS.xydisa_file_path.replace(
+            pardata_filepath_str_time_replaced_by_xxxxx.replace(
                 "x" * IN_PARAMS.num_x_in_pathstr,
                 f"{snap_time_ms:0{IN_PARAMS.num_x_in_pathstr}}",
             )
@@ -670,7 +671,6 @@ def get_cmap_for_color_contour() -> Colormap:
 
 
 def get_facecolor_by_physics_contour(
-    plot_name: str,
     snap_time_ms: int,
     mask_array: NDArray[np.bool_],
     mask_array_by_group: NDArray[np.bool_] | None = None,
@@ -681,6 +681,7 @@ def get_facecolor_by_physics_contour(
     norm = get_norm_for_color_contour()
 
     par_physics = load_par_data_masked_by_plot_region(
+        pardata_filepath_str_time_replaced_by_xxxxx=CUR_CONTOUR_PARAMS.data_file_path,
         snap_time_ms=snap_time_ms,
         mask_array=mask_array,
         usecols=CUR_CONTOUR_PARAMS.col_index,
@@ -768,7 +769,9 @@ def plot_velocity_vector(
     mask_array_by_group: NDArray[np.bool_] | None = None,
 ) -> None:
     global list_extra_artists
+    # TODO ベクトルのデータがあるファイルパスをyamlで入力できるように
     par_u, par_v = load_par_data_masked_by_plot_region(
+        pardata_filepath_str_time_replaced_by_xxxxx=IN_PARAMS.xydisa_file_path,
         snap_time_ms=snap_time_ms,
         mask_array=mask_array,
         usecols=(
@@ -828,6 +831,7 @@ def plot_velocity_vector(
         x1_data, y1_data = inv.transform((bbox_text.x1, bbox_text.y1))  # 右上隅
 
         # 3. 隅にテキストを配置してこいつで自動調節をする
+        # TODO リファクタリング
         ax.text(
             s="Dummy1",
             x=x0_data,
@@ -1015,13 +1019,11 @@ def change_facecolor_and_alpha_by_groupidxparams(
 
 def get_facecolor_array_for_contour(
     group_index: int,
-    plot_name: str,
     snap_time_ms: int,
     mask_array: NDArray[np.bool_],
     mask_array_by_group: NDArray[np.bool_],
 ) -> NDArray[np.float64]:
     par_color = get_facecolor_by_physics_contour(
-        plot_name=plot_name,
         snap_time_ms=snap_time_ms,
         mask_array=mask_array,
         mask_array_by_group=mask_array_by_group,
@@ -1096,6 +1098,7 @@ def make_snap_each_snap_time(
 
         # x, y, disaの取得
         par_x, par_y, par_disa = load_par_data_masked_by_plot_region(
+            pardata_filepath_str_time_replaced_by_xxxxx=IN_PARAMS.xydisa_file_path,
             snap_time_ms=snap_time_ms,
             mask_array=mask_array,
             usecols=(
@@ -1114,7 +1117,6 @@ def make_snap_each_snap_time(
         else:
             par_color = get_facecolor_array_for_contour(
                 group_index=group_index,
-                plot_name=plot_name,
                 snap_time_ms=snap_time_ms,
                 mask_array=mask_array,
                 mask_array_by_group=mask_array_by_group,
