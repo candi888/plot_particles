@@ -1400,5 +1400,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    print(mpl.matplotlib_fname())
     main()
