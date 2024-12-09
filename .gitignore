@@ -1,2 +1,6 @@
 INPUT/
 OUTPUT/
+__pycache__
+.mypy_cache
+.DS_Store
+tempCodeRunnerFile
