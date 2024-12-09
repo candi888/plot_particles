@@ -19,7 +19,7 @@ plot_order_list_group:
 
 #* プロットするデータの時刻
 timestep_ms: 10 # datファイルの00050のところ.　SNAPの出力時間間隔が違う場合に注意
-snap_start_time_ms: 1000
+snap_start_time_ms: 10
 snap_end_time_ms: 3000
 
 # * 画像保存時の設定
@@ -32,7 +32,7 @@ fig_horizontal_cm: 18.0 # 横方向のみ設定．縦方向は自動で調節さ
 tooning_for_fig: 0.9 # 現時点，↑で指定したサイズより少し大きくなるのでこれで調節（0より大きく1以下である必要．0.9付近が良いか．）
 
 #* アニメーション関連
-framerate: 100
+framerate: 59
 crf_num: 35 # CRF値を設定．lowqualityの動画を作成するときに使用する．大きいほどクオリティが下がる．35くらいでちょうど良さそう．
 
 # *全体の見た目の設定
