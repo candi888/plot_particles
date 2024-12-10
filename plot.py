@@ -469,6 +469,7 @@ def get_mask_array_by_plot_region(snap_time_ms: int) -> NDArray[np.bool_]:
             IN_PARAMS.col_index_disa,
         ),
         dtype=np.float64,
+        encoding="utf-8",
     )
 
     x = original_data[:, 0]
@@ -503,6 +504,7 @@ def load_par_data_masked_by_plot_region(
         ),
         usecols=usecols,
         dtype=np.float64,
+        encoding="utf-8",
     )
 
     masked_data = original_data[mask_array]
@@ -526,6 +528,7 @@ def get_group_index_array(
         ),
         dtype=np.int8,
         usecols=GROUP_CONFIG_PARAMS.col_index,
+        encoding="utf-8",
     )[mask_array]
 
     return masked_group_index
@@ -1236,12 +1239,16 @@ def make_animation_from_snap(
     for_ffmpeg = []
     for snap_time_ms in snap_time_array_ms:
         cur_snap_path = (
-            save_dir_sub_path / "snap_shot" / f"snap{snap_time_ms:05}_{plot_name}.jpeg"
+            save_dir_sub_path
+            / "snap_shot"
+            / f"snap{snap_time_ms:0{IN_PARAMS.num_x_in_pathstr}}_{plot_name}.jpeg"
         )
         # アニメーション作成で使うsnapが存在するかの確認
         if not cur_snap_path.exists():
             break
-        for_ffmpeg.append(f"file 'snap{snap_time_ms:05}_{plot_name}.jpeg'")
+        for_ffmpeg.append(
+            f"file 'snap{snap_time_ms:0{IN_PARAMS.num_x_in_pathstr}}_{plot_name}.jpeg'"
+        )
 
     if for_ffmpeg == []:
         print(

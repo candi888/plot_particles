@@ -1,5 +1,5 @@
 #* スナップやアニメーションを保存するディレクトリ名
-save_dir_name: "plot_output_results_halfregion"
+save_dir_name: "plot_test_halfregion"
 
 #* contourプロットの順序．上から順番にプロットを行う．いらないものはNOT_PLOT_BELOWの下へ移動．ラベル名は結果の保存ディレクトリ名と同じになる．
 plot_order_list_contour:
