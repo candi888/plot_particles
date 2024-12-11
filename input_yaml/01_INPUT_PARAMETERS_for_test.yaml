@@ -3,9 +3,9 @@ save_dir_name: "plot_output_results_allregion"
 
 #* contourプロットの順序．上から順番にプロットを行う．いらないものはNOT_PLOT_BELOWの下へ移動．ラベル名は結果の保存ディレクトリ名と同じになる．
 plot_order_list_contour:
+  - "NOT_PLOT_BELOW"
   - &id_pressure "Pressure"
   - &id_density "Density"
-  - "NOT_PLOT_BELOW"
   # - "speed"
   # - "div_U"
   # - "vorticity"
@@ -19,12 +19,12 @@ plot_order_list_group:
 
 #* プロットするデータの時刻
 timestep_ms: 10 # datファイルの00050のところ.　SNAPの出力時間間隔が違う場合に注意
-snap_start_time_ms: 10
-snap_end_time_ms: 3000
+snap_start_time_ms: 1000
+snap_end_time_ms: 1010
 
 # * 画像保存時の設定
 snapshot_dpi: 200 # 大きすぎる値にしないよう注意（ファイル容量が膨大になりうるため）
-extension: "jpeg" # svgやpdfは大量出力しないように注意する（ファイル容量が膨大になりうるため）
+extension: "svg" # svgやpdfは大量出力しないように注意する（ファイル容量が膨大になりうるため）
 
 # *出力画像の大きさ [cm]
 # （参考）A4用紙の縦向きサイズ（縦 × 横）は 29.7 × 21.0[cm]

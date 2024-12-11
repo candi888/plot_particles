@@ -638,37 +638,32 @@ def plot_particles_by_scatter(
         clip_on=not IN_PARAMS.svg_flag,
     )
 
-    from mpl_toolkits.axes_grid1.inset_locator import mark_inset, zoomed_inset_axes
+    # from mpl_toolkits.axes_grid1.inset_locator import mark_inset, zoomed_inset_axes
 
-    # # inset Axes....
-    x1, x2, y1, y2 = 1.0, 1.1, 0.0, 0.1  # subregion of the original image
-    axins = ax.inset_axes(
-        (0.85, 0.3, 0.3, 0.3),
-        xlim=(x1, x2),
-        ylim=(y1, y2),
-        xticklabels=[],
-        yticklabels=[],
-        aspect="equal",
-        transform=ax.transData,
-    )
-    # axins = zoomed_inset_axes(
-    #     ax,
-    #     zoom=1,
-    #     loc="center",
-    #     axes_kwargs={"xlim": (x1, x2), "ylim": (y1, y2)},
+    # # # inset Axes....
+    # x1, x2, y1, y2 = 1.0, 1.1, 0.0, 0.1  # subregion of the original image
+    # axins = ax.inset_axes(
+    #     (0.85, 0.3, 0.3, 0.3),
+    #     xlim=(x1, x2),
+    #     ylim=(y1, y2),
+    #     xticklabels=[],
+    #     yticklabels=[],
+    #     aspect="equal",
+    #     transform=ax.transData,
     # )
-    axins.scatter(
-        par_x,
-        par_y,
-        s=s * (3**2),
-        c=par_color,
-        linewidths=0,
-        gid=f"{group_id_prefix}{group_index}",
-        clip_on=not IN_PARAMS.svg_flag,
-    )
-    axins.axis("off")
 
-    ax.indicate_inset_zoom(axins, edgecolor="black")
+    # axins.scatter(
+    #     par_x,
+    #     par_y,
+    #     s=s * (3**2),
+    #     c=par_color,
+    #     linewidths=0,
+    #     gid=f"{group_id_prefix}{group_index}",
+    #     clip_on=not IN_PARAMS.svg_flag,
+    # )
+    # axins.axis("off")
+
+    # ax.indicate_inset_zoom(axins, edgecolor="black")
 
     return
 
@@ -797,6 +792,7 @@ def plot_velocity_vector(
     group_index: int,
     par_x: NDArray[np.float64],
     par_y: NDArray[np.float64],
+    zoom_tmp: float,
     mask_array_by_group: NDArray[np.bool_] | None = None,
 ) -> None:
     global list_extra_artists
@@ -812,6 +808,8 @@ def plot_velocity_vector(
 
     # scale_units="x"で軸の長さが基準
     # scale=10で，軸単位で0.1の長さが大きさ1のベクトルの長さに対応する
+
+    # TODO ここの分母をaxinsだといじらないとだめか
     original_scale = 10 / (IN_PARAMS.xlim_max - IN_PARAMS.xlim_min)
     scale = original_scale / VECTOR_PARAMS.scaler_length_vector
     width = original_scale / 5000 * VECTOR_PARAMS.scaler_width_vector
@@ -822,10 +820,10 @@ def plot_velocity_vector(
         par_v,
         scale=scale,
         scale_units="x",
-        width=width,
-        headlength=VECTOR_PARAMS.headlength_vector,
-        headaxislength=VECTOR_PARAMS.headaxislength_vector,
-        headwidth=VECTOR_PARAMS.headwidth_vector,
+        width=width * zoom_tmp,
+        headlength=VECTOR_PARAMS.headlength_vector * zoom_tmp,
+        headaxislength=VECTOR_PARAMS.headaxislength_vector * zoom_tmp,
+        headwidth=VECTOR_PARAMS.headwidth_vector * zoom_tmp,
         gid=f"{group_id_prefix}{group_index}",
         clip_on=not IN_PARAMS.svg_flag,
     )
@@ -1123,6 +1121,29 @@ def make_snap_each_snap_time(
     vector_group_id_prefix = "vector"
 
     is_plot_reference_vector = True
+
+    # # inset Axes....
+    x1, x2, y1, y2 = 1.0, 1.1, 0.0, 0.1  # subregion of the original image
+    axins = ax.inset_axes(
+        (0.85, 0.3, 0.3, 0.3),
+        transform=ax.transData,
+    )
+
+    axins.set_xlim(x1, x2)
+    axins.set_ylim(y1, y2)
+    axins.axis("off")
+
+    # ax.indicate_inset(
+    #     (0.55, 0.2, 0.3, 0.3),
+    #     inset_ax=axins,
+    #     transform=ax.transData,
+    # )
+    ax.indicate_inset_zoom(
+        inset_ax=axins,
+        alpha=1.0,
+        edgecolor="red",
+    )
+
     for group_index in np.unique(par_group_index)[::-1]:
         mask_array_by_group: NDArray[np.bool_] = par_group_index == group_index
 
@@ -1163,6 +1184,17 @@ def make_snap_each_snap_time(
             group_id_prefix=particle_group_id_prefix,
             group_index=group_index,
         )
+        # 拡大図
+        plot_particles_by_scatter(
+            fig=fig,
+            ax=axins,
+            par_x=par_x,
+            par_y=par_y,
+            par_disa=par_disa,
+            par_color=par_color,
+            group_id_prefix=particle_group_id_prefix,
+            group_index=group_index,
+        )
 
         # ベクトルのプロット
         if get_cur_is_plot_vector(is_group_plot=is_group_plot, group_index=group_index):
@@ -1177,9 +1209,25 @@ def make_snap_each_snap_time(
                 par_y=par_y,
                 group_id_prefix=vector_group_id_prefix,
                 group_index=group_index,
+                zoom_tmp=1.0,
             )
             # 初回のみreference vectorをプロット
             is_plot_reference_vector = False
+
+            # 拡大図
+            plot_velocity_vector(
+                fig=fig,
+                ax=axins,
+                snap_time_ms=snap_time_ms,
+                mask_array=mask_array,
+                is_plot_reference_vector=is_plot_reference_vector,
+                mask_array_by_group=mask_array_by_group,
+                par_x=par_x,
+                par_y=par_y,
+                group_id_prefix=vector_group_id_prefix,
+                group_index=group_index,
+                zoom_tmp=3.0,
+            )
 
     # 以下，画像の保存処理
 
