@@ -606,11 +606,12 @@ def plot_particles_by_scatter(
     par_y: NDArray[np.float64],
     par_disa: NDArray[np.float64],
     par_color: NDArray[np.float64],
-    plot_name: str,
     group_id_prefix: str,
     group_index: int,
 ) -> None:
     s = data_unit_to_points_size(diameter_in_data_units=par_disa, fig=fig, axis=ax)
+
+    groupingid = IN_PARAMS.grouping_id
     ax.scatter(
         par_x,
         par_y,
@@ -619,7 +620,7 @@ def plot_particles_by_scatter(
         linewidths=0,
         gid=f"{group_id_prefix}{group_index}",
         clip_on=not IN_PARAMS.svg_flag,
-        zorder=PLOT_GROUP_IDX_PARAMSoup_index],
+        zorder=PLOT_GROUP_IDX_PARAMS[groupingid][group_index].particle_zorder,
     )
 
     return
@@ -810,6 +811,7 @@ def plot_velocity_vector(
     scale = original_scale / VECTOR_PARAMS.scaler_length_vector
     width = original_scale / 5000 * VECTOR_PARAMS.scaler_width_vector
 
+    groupingid = IN_PARAMS.grouping_id
     # ベクトルをプロット
     q = ax.quiver(
         par_x,
@@ -823,7 +825,7 @@ def plot_velocity_vector(
         headaxislength=VECTOR_PARAMS.headaxislength_vector,
         headwidth=VECTOR_PARAMS.headwidth_vector,
         gid=f"{group_id_prefix}{group_index}",
-        clip_on=not IN_PARAMS.svg_flag,
+        zorder=PLOT_GROUP_IDX_PARAMS[groupingid][group_index].vector_zorder,
     )
 
     if is_plot_reference_vector:
@@ -1130,7 +1132,6 @@ def make_snap_each_snap_time(
             par_y=par_y,
             par_disa=par_disa,
             par_color=par_color,
-            plot_name=plot_name,
             group_id_prefix=particle_group_id_prefix,
             group_index=group_index,
         )
