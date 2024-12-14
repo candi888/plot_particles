@@ -606,6 +606,7 @@ def plot_particles_by_scatter(
     par_y: NDArray[np.float64],
     par_disa: NDArray[np.float64],
     par_color: NDArray[np.float64],
+    plot_name: str,
     group_id_prefix: str,
     group_index: int,
 ) -> None:
@@ -618,6 +619,7 @@ def plot_particles_by_scatter(
         linewidths=0,
         gid=f"{group_id_prefix}{group_index}",
         clip_on=not IN_PARAMS.svg_flag,
+        zorder=PLOT_GROUP_IDX_PARAMSoup_index],
     )
 
     return
@@ -1075,7 +1077,7 @@ def make_snap_each_snap_time(
     if IN_PARAMS.is_plot_time_text:
         set_ax_time_text(ax=ax, snap_time_ms=snap_time_ms)
 
-    # # 初回だけキャンバス更新が必要（scatterの大きさを揃えるため）
+    #  初回だけキャンバス更新が必要（scatterの大きさを揃えるため）
     if snap_time_ms == IN_PARAMS.snap_start_time_ms:
         fig.canvas.draw()
 
@@ -1128,6 +1130,7 @@ def make_snap_each_snap_time(
             par_y=par_y,
             par_disa=par_disa,
             par_color=par_color,
+            plot_name=plot_name,
             group_id_prefix=particle_group_id_prefix,
             group_index=group_index,
         )
@@ -1140,14 +1143,14 @@ def make_snap_each_snap_time(
                 fig=fig,
                 ax=ax,
                 snap_time_ms=snap_time_ms,
-                mask_array=mask_array,
                 is_plot_reference_vector=is_plot_reference_vector,
-                mask_array_by_group=mask_array_by_group,
                 par_x=par_x,
                 par_y=par_y,
                 group_id_prefix=vector_group_id_prefix,
                 group_index=group_index,
                 refvec_corners_for_dummytext=refvec_corners_for_dummytext,
+                mask_array=mask_array,
+                mask_array_by_group=mask_array_by_group,
             )
 
             # 最初のみreference vectorをプロットする
