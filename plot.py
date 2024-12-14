@@ -61,6 +61,9 @@ class DataclassInputParameters:
     crf_num: int
 
     # *全体の見た目の設定
+    is_plot_hypervisor1: bool  # xy軸ラベル，時刻テキストなど，軸の表示範囲を変えると再度調整が必要なものの表示有無（最初にレイアウトを調整する時にはFalse，最後にTrueにして軸ラベルなどの位置調整を行うことを推奨）
+    is_plot_hypervisor2: bool  # 軸線，目盛，目盛ラベルなどの表示有無（粒子やベクトルのみをプロットしたい時に使用）
+
     axis_lw: float  # 軸線の太さ
     is_plot_axis_bottom: bool  # 下側の軸を表示するか
     is_plot_axis_left: bool  # 左側の軸を表示するか
@@ -93,6 +96,9 @@ class DataclassInputParameters:
     x_tickslabel_pad: float  # x軸主目盛りから目盛りラベルをどれだけ離すか
     x_ticks_length: float  # x軸主目盛り線の長さ
     x_ticks_width: float  # x軸主目盛り線の線幅
+    is_plot_xtickslabel_bottom: bool  # 下側のy軸の目盛ラベルを表示するか
+    is_plot_xtickslabel_top: bool  # 上側のy軸の目盛ラベルを表示するか
+
     # -副目盛り-
     is_plot_mticks_x: bool  # 副目盛りをプロットするか
     num_x_mtick: int  # 副目盛りの数
@@ -109,6 +115,9 @@ class DataclassInputParameters:
     y_tickslabel_pad: float  # y軸主目盛りから目盛りラベルをどれだけ離すか
     y_ticks_length: float  # y軸主目盛り線の長さ
     y_ticks_width: float  # y軸主目盛り線の線幅
+    is_plot_ytickslabel_left: bool  # 左側のy軸の目盛ラベルを表示するか
+    is_plot_ytickslabel_right: bool  # 右側のy軸の目盛ラベルを表示するか
+
     # -副目盛り-
     is_plot_mticks_y: bool  # 副目盛りをプロットするか
     num_y_mtick: int  # 副目盛りの数
@@ -893,6 +902,8 @@ def set_ax_xticks(ax: Axes) -> None:
         pad=IN_PARAMS.x_tickslabel_pad,
         length=IN_PARAMS.x_ticks_length,
         width=IN_PARAMS.x_ticks_width,
+        labelbottom=IN_PARAMS.is_plot_ticks_bottom,
+        labeltop=IN_PARAMS.is_plot_ticks_top,
     )
 
     # 副目盛り
@@ -929,6 +940,8 @@ def set_ax_yticks(ax: Axes) -> None:
         pad=IN_PARAMS.y_tickslabel_pad,
         length=IN_PARAMS.y_ticks_length,
         width=IN_PARAMS.y_ticks_width,
+        labelleft=IN_PARAMS.is_plot_ticks_left,
+        labelright=IN_PARAMS.is_plot_ticks_right,
     )
 
     # 副目盛り
@@ -1068,8 +1081,12 @@ def make_snap_each_snap_time(
     refvec_corners_for_dummytext: List[List[float]],
 ) -> None:
     set_ax_lim(ax=ax)
-    set_ax_xticks(ax=ax)
-    set_ax_yticks(ax=ax)
+
+    if IN_PARAMS.is_plot_hypervisor2:
+        set_ax_xticks(ax=ax)
+        set_ax_yticks(ax=ax)
+    else:
+        ax.axis("off")
 
     if IN_PARAMS.is_plot_xlabel_text:
         set_xlabel(ax=ax)
