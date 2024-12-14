@@ -5,4 +5,5 @@ __pycache__
 .DS_Store
 tempCodeRunnerFile
 plot_test_allregion
+plot_test_svg
 plot_test_halfregion

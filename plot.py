@@ -12,6 +12,7 @@ import numpy as np
 import yaml  # type: ignore
 from matplotlib.axes import Axes
 from matplotlib.cm import ScalarMappable
+from matplotlib.collections import LineCollection
 from matplotlib.colors import Colormap, LinearSegmentedColormap, Normalize, to_rgba
 from matplotlib.figure import Figure
 from matplotlib.quiver import QuiverKey
@@ -813,6 +814,26 @@ def plot_transparent_dummytext_for_reference_vector_display(
             )
 
 
+def plot_vector_for_svg(
+    ax: Axes,
+    linepoint_xy1: List[NDArray[np.float64] | List[float]],
+    linepoint_xy2: List[NDArray[np.float64] | List[float]],
+    zorder: float,
+    gid: str,
+    clip_on: bool,
+) -> None:
+    segments = np.stack(
+        [np.column_stack(linepoint_xy1), np.column_stack(linepoint_xy2)], axis=1
+    )
+
+    lc = LineCollection(
+        segments, colors="red", linewidths=0.3, zorder=zorder, gid=gid, clip_on=clip_on
+    )
+    ax.add_collection(lc)
+
+    return
+
+
 def plot_vector(
     fig: Figure,
     ax: Axes,
@@ -861,6 +882,18 @@ def plot_vector(
         zorder=PLOT_GROUP_IDX_PARAMS[groupingid][group_index].vector_zorder,
     )
 
+    # svg編集用
+    if IN_PARAMS.snap_extension == "svg":
+        plot_vector_for_svg(
+            ax=ax,
+            linepoint_xy1=[par_x, par_y],
+            linepoint_xy2=[par_x + par_u / scale, par_y + par_v / scale],
+            zorder=PLOT_GROUP_IDX_PARAMS[groupingid][group_index].vector_zorder * 0.1
+            + 3 * 0.9,
+            gid=f"for_edit_{group_id_prefix}_{PLOT_GROUP_IDX_PARAMS[groupingid][group_index].label}",
+            clip_on=True,
+        )
+
     if is_plot_reference_vector:
         # reference vectorのプロット
         qk = ax.quiverkey(
@@ -876,7 +909,31 @@ def plot_vector(
             labelsep=PLOT_VECTOR_PARAMS.reference_vector_labelpad,
             labelpos="N",
             coordinates="data",
+            gid="reference_vector",
         )
+
+        # svg編集用（reference vector）
+        if IN_PARAMS.snap_extension == "svg":
+            plot_vector_for_svg(
+                ax=ax,
+                linepoint_xy1=[
+                    [
+                        PLOT_VECTOR_PARAMS.reference_vector_pos_x
+                        - PLOT_VECTOR_PARAMS.length_reference_vector / scale / 2
+                    ],
+                    [PLOT_VECTOR_PARAMS.reference_vector_pos_y],
+                ],
+                linepoint_xy2=[
+                    [
+                        PLOT_VECTOR_PARAMS.reference_vector_pos_x
+                        + PLOT_VECTOR_PARAMS.length_reference_vector / scale / 2,
+                    ],
+                    [PLOT_VECTOR_PARAMS.reference_vector_pos_y],
+                ],
+                zorder=4000,
+                gid="for_edit_reference_vector",
+                clip_on=False,
+            )
 
         # 初回のみreference vector表示用のdummy textの座標を取得
         if snap_time_ms == IN_PARAMS.snap_start_time_ms:
