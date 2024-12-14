@@ -3,8 +3,8 @@ save_dir_name: "plot_test_allregion"
 
 #* contourプロットの順序．上から順番にプロットを行う．いらないものはNOT_PLOT_BELOWの下へ移動．ラベル名は結果の保存ディレクトリ名と同じになる．
 plot_order_list_contour:
-  - &id_density "Density"
   - &id_pressure "Pressure"
+  - &id_density "Density"
   - "NOT_PLOT_BELOW"
   # - "speed"
   # - "div_U"
@@ -105,6 +105,7 @@ ylabel_offset: -0.025 #  #TODO xminからの，テキストのhorizontalalignmen
 is_horizontal_ylabel: True # ラベルを横向きにするか
 
 #* 時刻のテキストの設定
+is_plot_time_text: True # 時刻テキストをプロットするか
 time_text: "$t = xxxxx \\, \\mathrm{s}$" # 時刻テキスト（xxxxxの部分に時刻が挿入される）
 strformatter_timetext: ".03f" # 時刻テキストの書式（小数点以下のゼロ埋めの調節で使用）
 time_text_pos_x: *xlim_min # 時刻テキストの左端のx座標（データの単位）
@@ -138,11 +139,10 @@ colorbar_mticks_width: 0.75 # 補助目盛り線の線幅
 svg_flag: False
 svg_snap_time_ms: null
 
-#* pythonファイルからの各相対パス．数字の部分は"xxxxx"を入れる．（コード内部で直接使用することはない）
+#* pythonファイルからの各データファイルの相対パス．数字の部分は"xxxxx"を入れる．（コード内部で直接使用することはない）
 path_list:
   - &xud_path "OUTPUT/SNAP/XUDxxxxx.DAT"
   - &tmd_path "OUTPUT/SNAP/TMDxxxxx.DAT"
-num_x_in_pathstr: 5 # 数字の部分の"xx..."でxがいくつあるか
 
 #* 必須の物理量（x, y, disa）がどの素データのどの列か．0-index
 xydisa_file_path: *xud_path
@@ -267,3 +267,6 @@ vector:
     reference_vector_pos_y: *ylim_max # reference vectorのy座標（データの単位）
     reference_vector_labelpad: 0.1 # reference vectorのラベルを矢印からどれだけ離すか
 
+#* 以下は基本いじらなくてOK
+num_x_in_pathstr: 5 # 数字の部分の"xx..."でxがいくつあるか
+scaler_s_to_ms: 1000

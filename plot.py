@@ -46,7 +46,6 @@ class DataclassInputParameters:
 
     # * このファイルからの各相対パス
     path_list: list
-    num_x_in_pathstr: int
 
     # * プロット関連
     timestep_ms: int
@@ -131,6 +130,7 @@ class DataclassInputParameters:
     is_horizontal_ylabel: bool  # ラベルを横向きにするか
 
     # * 時刻のテキストの設定
+    is_plot_time_text: bool  # 時刻テキストをプロットするか
     time_text: str  # 時刻テキスト（xxxxxの部分に時刻が挿入される）
     strformatter_timetext: str  # 時刻テキストの書式（小数点以下のゼロ埋めの調節で使用）
     time_text_pos_x: float  # 時刻テキストの左端のx座標（データの単位）
@@ -173,6 +173,10 @@ class DataclassInputParameters:
 
     # * ベクトルプロットの選択
     vector_id: str
+
+    # * advanced setting
+    scaler_s_to_ms: int
+    num_x_in_pathstr: int
 
     def __post_init__(self) -> None:
         class_dict = dataclasses.asdict(self)
@@ -987,7 +991,8 @@ def set_ylabel(ax: Axes) -> None:
 def set_ax_time_text(ax: Axes, snap_time_ms: int) -> None:
     ax.text(
         s=IN_PARAMS.time_text.replace(
-            "xxxxx", f"{snap_time_ms/1000:{IN_PARAMS.strformatter_timetext}}"
+            "xxxxx",
+            f"{snap_time_ms/IN_PARAMS.scaler_s_to_ms:{IN_PARAMS.strformatter_timetext}}",
         ),
         x=IN_PARAMS.time_text_pos_x,
         y=IN_PARAMS.time_text_pos_y,
@@ -1080,7 +1085,9 @@ def make_snap_each_snap_time(
     set_ax_yticks(ax=ax)
     set_xlabel(ax=ax)
     set_ylabel(ax=ax)
-    set_ax_time_text(ax=ax, snap_time_ms=snap_time_ms)
+
+    if IN_PARAMS.is_plot_time_text:
+        set_ax_time_text(ax=ax, snap_time_ms=snap_time_ms)
 
     # TODO キャンバス更新
     if snap_time_ms == IN_PARAMS.snap_start_time_ms:
@@ -1217,14 +1224,18 @@ def make_snap_all_snap_time(
                 plot_name=plot_name,
                 is_group_plot=is_group_plot,
             )
-            print(f"{snap_time_ms/1000:.03f} s {plot_name} plot finished")
+            print(
+                f"{snap_time_ms/IN_PARAMS.scaler_s_to_ms:.03f} s {plot_name} plot finished"
+            )
         except FileNotFoundError:
             print(
-                f"{snap_time_ms/1000:.03f} s時点の計算データがありません．スナップショットの作成を終了します．\n"
+                f"{snap_time_ms/IN_PARAMS.scaler_s_to_ms:.03f} s時点の計算データがありません．スナップショットの作成を終了します．\n"
             )
             break
 
-    print(f"{snap_time_ms/1000:.03f} s {plot_name} all make snap finished\n")
+    print(
+        f"{snap_time_ms/IN_PARAMS.scaler_s_to_ms:.03f} s {plot_name} all make snap finished\n"
+    )
     plt.close()
     return
 
