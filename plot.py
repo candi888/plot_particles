@@ -1,7 +1,6 @@
 import dataclasses
 import subprocess
 import sys
-import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any, Dict
 
@@ -116,11 +115,13 @@ class DataclassInputParameters:
     y_mticks_width: float  # y軸補助目盛り線の線幅
 
     # *軸ラベルの設定（x軸）
+    is_plot_xlabel_text: bool
     xlabel_text: str  # ラベルのテキスト
     xlabel_pos: float  # テキストの中心のx座標（データの単位）
     xlabel_offset: float
 
     # *軸ラベルの設定（y軸）
+    is_plot_ylabel_text: bool
     ylabel_text: str  # ラベルのテキスト
     ylabel_pos: float  # テキストの中心のy座標（データ単位）
     y_horizontalalignment: (
@@ -137,6 +138,7 @@ class DataclassInputParameters:
     time_text_pos_y: float  # 時刻テキストの下端のy座標（データの単位）
 
     # * カラーバー関連の設定
+    is_plot_colorbar: bool
     is_horizontal_colorbar: bool  # カラーバーを横向きにするか
     colorbar_pad: float  # TODO  カラーバーがプロットのボックスからどれだけ離れているか（チューニング）
     colorbar_labelpad: float  # カラーバーのタイトルをバーからどれだけ離すか
@@ -149,9 +151,6 @@ class DataclassInputParameters:
     is_drawedges_colorbar: bool  # カラーバーの区切り線を描画するか
     # -主目盛り-
     num_colorbar_ticks: int  # 主目盛りの数
-    strformatter_colorbar: (
-        str | None
-    )  # 主目盛りの値の書式等を変更したいときにいじる（変更しない場合はnullにする）．
     colorbar_tickslabel_pad: float  # x軸主目盛りから目盛りラベルをどれだけ離すか
     colorbar_ticks_length: float  # x軸主目盛り線の長さ
     colorbar_ticks_width: float  # x軸主目盛り線の線幅
@@ -244,6 +243,7 @@ class DataclassContour:
     col_index: int
     min_value_contour: float
     max_value_contour: float
+    strformatter_colorbar: str | None
     cmap: str
     is_plot_vector: bool
 
@@ -269,6 +269,8 @@ class DataclassVector:
     headlength_vector: float
     headaxislength_vector: float
     headwidth_vector: float
+
+    is_plot_reference_vector: bool
     length_reference_vector: float
     reference_vector_text: str
     strformatter_reference_vector_text: str
@@ -353,15 +355,19 @@ def construct_input_parameters_dataclass() -> DataclassInputParameters:
     return DataclassInputParameters(**inparam_dict)
 
 
-def construct_contour_dataclass(
-    contour_name: str | None = None,
-) -> DataclassContour | None:
-    if contour_name is None:
-        return None
+def construct_dict_of_contour_dataclass() -> Dict[str, DataclassContour]:
+    inparam_dict_contour = read_inparam_yaml_as_dict()["contour"]
 
-    inparam_dict = read_inparam_yaml_as_dict()
+    res_dict = dict()
+    for plot_contour_name in IN_PARAMS.plot_order_list_contour:
+        if plot_contour_name == "NOT_PLOT_BELOW":
+            break
 
-    return DataclassContour(**inparam_dict["contour"][contour_name])
+        res_dict[plot_contour_name] = DataclassContour(
+            **inparam_dict_contour[plot_contour_name]
+        )
+
+    return res_dict
 
 
 def construct_vector_dataclass() -> DataclassVector:
@@ -370,23 +376,41 @@ def construct_vector_dataclass() -> DataclassVector:
     return DataclassVector(**inparam_dict["vector"][IN_PARAMS.vector_id])
 
 
-def construct_group_config_dataclass(group_name: str) -> DataclassGroupConfig:
-    inparam_dict = read_inparam_yaml_as_dict()
+def construct_dict_of_group_config_dataclass() -> Dict[str, DataclassGroupConfig]:
+    inparam_dict_group = read_inparam_yaml_as_dict()["group"]
 
-    return DataclassGroupConfig(**inparam_dict["group"][group_name]["config"])
+    res_dict: Dict[str, DataclassGroupConfig] = dict()
+
+    for plot_group_name in IN_PARAMS.plot_order_list_group:
+        if plot_group_name == "NOT_PLOT_BELOW":
+            break
+
+        res_dict[plot_group_name] = DataclassGroupConfig(
+            **inparam_dict_group[plot_group_name]["config"]
+        )
+
+    return res_dict
 
 
-def construct_dict_groupindex_to_groupeachidxdataclass(
-    group_name: str,
-) -> Dict[int, DataclassGroupEachIndex]:
-    inparam_dict = read_inparam_yaml_as_dict()
-    groupidx_to_paramsdict: Dict[int, Dict[str, Any]] = inparam_dict["group"][
-        group_name
-    ]["each_idx"]
+def construct_dict_of_group_idx_dataclass() -> (
+    Dict[str, Dict[int, DataclassGroupEachIndex]]
+):
+    inparam_dict_group = read_inparam_yaml_as_dict()["group"]
 
-    res_dict = dict()
-    for group_idx, data_dict in groupidx_to_paramsdict.items():
-        res_dict[group_idx] = DataclassGroupEachIndex(**data_dict)
+    res_dict: Dict[str, Dict[int, DataclassGroupEachIndex]] = dict()
+
+    for plot_group_name in IN_PARAMS.plot_order_list_group:
+        if plot_group_name == "NOT_PLOT_BELOW":
+            break
+
+        tmp_dict: Dict[int, DataclassGroupEachIndex] = {}
+        cur_group_dict: Dict[int, Dict[str, Any]] = inparam_dict_group[plot_group_name][
+            "each_idx"
+        ]
+        for group_idx, data_dict in cur_group_dict.items():
+            tmp_dict[group_idx] = DataclassGroupEachIndex(**data_dict)
+
+        res_dict[plot_group_name] = tmp_dict
 
     return res_dict
 
@@ -521,73 +545,21 @@ def load_par_data_masked_by_plot_region(
 
 def get_group_index_array(
     snap_time_ms: int, mask_array: NDArray[np.bool_]
-) -> NDArray[np.int8]:
+) -> NDArray[np.int32]:
     masked_group_index = np.loadtxt(
         Path(__file__).parent
         / Path(
-            GROUP_CONFIG_PARAMS.data_file_path.replace(
+            PLOT_GROUP_CONFIG_PARAMS[IN_PARAMS.grouping_id].data_file_path.replace(
                 "x" * IN_PARAMS.num_x_in_pathstr,
                 f"{snap_time_ms:0{IN_PARAMS.num_x_in_pathstr}}",
             )
         ),
-        dtype=np.int8,
-        usecols=GROUP_CONFIG_PARAMS.col_index,
+        dtype=np.int32,
+        usecols=PLOT_GROUP_CONFIG_PARAMS[IN_PARAMS.grouping_id].col_index,
         encoding="utf-8",
     )[mask_array]
 
     return masked_group_index
-
-
-# TODO revise
-def postprocess_svg_setclippath(
-    svg_file_path: Path, particle_group_id_prefix: str, vector_group_id_prefix: str
-) -> None:
-    """
-    指定されたSVGファイルに対して，'{particle_group_id_prefix}'または'{vector_group_id_prefix}'という文字列を含むIDを持つ要素に
-    クリッピングマスクを適用し，修正したファイルを上書き保存する．
-
-    Args:
-        svg_file_path (Path): 修正対象のSVGファイルのパス
-        particle_group_id_prefix (str): 粒子のグループID
-        vector_group_id_prefix (str): 流速ベクトルのグループID
-    """
-    # SVGファイルをパースしてツリー構造を取得
-    tree = ET.parse(svg_file_path)
-    root = tree.getroot()
-
-    # # クリッピングパスが定義されていない場合は、<defs>セクションに追加
-    defs = root.find("{http://www.w3.org/2000/svg}defs")
-    if defs is None:
-        defs = ET.Element("{http://www.w3.org/2000/svg}defs")
-        root.insert(0, defs)
-
-    # クリッピングパスを定義
-    clip_path = ET.Element("{http://www.w3.org/2000/svg}clipPath", {"id": "clip-axis"})
-    # TODO 一般性を
-    clip_rect = ET.Element(
-        "{http://www.w3.org/2000/svg}rect",
-        {
-            "x": "41.201563",  # 軸の開始位置
-            "y": "21.9325",  # 軸の下限
-            "width": "460.8",  # 軸の幅
-            "height": "25",  # 軸の高さ
-        },
-    )
-    clip_path.append(clip_rect)
-    defs.append(clip_path)
-
-    # '{particle_group_id_prefix}'または'{vector_group_id_prefix}'という文字列を含むIDを持つグループに対してクリッピングマスクを適用
-    for group in root.findall(".//{http://www.w3.org/2000/svg}g"):
-        group_id = group.attrib.get("id", "")
-        if (particle_group_id_prefix in group_id) or (
-            vector_group_id_prefix in group_id
-        ):
-            group.set("clip-path", "url(#clip-axis)")
-
-    # 修正内容を元のファイルに上書き保存
-    tree.write(svg_file_path, encoding="utf-8", xml_declaration=True)
-
-    return
 
 
 def data_unit_to_points_size(
@@ -649,17 +621,15 @@ def plot_particles_by_scatter(
     return
 
 
-def get_norm_for_color_contour() -> Normalize:
-    assert CUR_CONTOUR_PARAMS is not None
+def get_norm_for_color_contour(plot_name: str) -> Normalize:
     return Normalize(
-        vmin=CUR_CONTOUR_PARAMS.min_value_contour,
-        vmax=CUR_CONTOUR_PARAMS.max_value_contour,
+        vmin=PLOT_CONTOUR_PARAMS[plot_name].min_value_contour,
+        vmax=PLOT_CONTOUR_PARAMS[plot_name].max_value_contour,
     )
 
 
-def get_cmap_for_color_contour() -> Colormap:
-    assert CUR_CONTOUR_PARAMS is not None
-    cmap_name = CUR_CONTOUR_PARAMS.cmap
+def get_cmap_for_color_contour(plot_name: str) -> Colormap:
+    cmap_name = PLOT_CONTOUR_PARAMS[plot_name].cmap
 
     try:
         if cmap_name == "small rainbow":
@@ -679,19 +649,20 @@ def get_cmap_for_color_contour() -> Colormap:
 
 def get_facecolor_by_physics_contour(
     snap_time_ms: int,
+    plot_name: str,
     mask_array: NDArray[np.bool_],
     mask_array_by_group: NDArray[np.bool_] | None = None,
 ) -> NDArray[np.float64]:
-    assert CUR_CONTOUR_PARAMS is not None
-
-    cmap = get_cmap_for_color_contour()
-    norm = get_norm_for_color_contour()
+    cmap = get_cmap_for_color_contour(plot_name=plot_name)
+    norm = get_norm_for_color_contour(plot_name=plot_name)
 
     par_physics = load_par_data_masked_by_plot_region(
-        pardata_filepath_str_time_replaced_by_xxxxx=CUR_CONTOUR_PARAMS.data_file_path,
+        pardata_filepath_str_time_replaced_by_xxxxx=PLOT_CONTOUR_PARAMS[
+            plot_name
+        ].data_file_path,
         snap_time_ms=snap_time_ms,
         mask_array=mask_array,
-        usecols=CUR_CONTOUR_PARAMS.col_index,
+        usecols=PLOT_CONTOUR_PARAMS[plot_name].col_index,
         mask_array_by_group=mask_array_by_group,
     )
 
@@ -701,10 +672,8 @@ def get_facecolor_by_physics_contour(
 
 
 def plot_colorbar(fig: Figure, ax: Axes, plot_name: str) -> None:
-    assert CUR_CONTOUR_PARAMS is not None
-
-    cmap = get_cmap_for_color_contour()
-    norm = get_norm_for_color_contour()
+    cmap = get_cmap_for_color_contour(plot_name=plot_name)
+    norm = get_norm_for_color_contour(plot_name=plot_name)
     mappable = ScalarMappable(cmap=cmap, norm=norm)
 
     assert norm.vmin is not None and norm.vmax is not None
@@ -720,7 +689,7 @@ def plot_colorbar(fig: Figure, ax: Axes, plot_name: str) -> None:
         anchor=(0.5, 0.0),
         panchor=(0, 1.0),
         ticks=ticker.LinearLocator(numticks=IN_PARAMS.num_colorbar_ticks),
-        format=IN_PARAMS.strformatter_colorbar,
+        format=PLOT_CONTOUR_PARAMS[plot_name].strformatter_colorbar,
         drawedges=IN_PARAMS.is_drawedges_colorbar,
     )
 
@@ -729,7 +698,7 @@ def plot_colorbar(fig: Figure, ax: Axes, plot_name: str) -> None:
 
     # ラベルの大きさ
     cbar.set_label(
-        f"{CUR_CONTOUR_PARAMS.label}",
+        f"{PLOT_CONTOUR_PARAMS[plot_name].label}",
         fontsize=IN_PARAMS.colorbar_title_font_size,
         labelpad=IN_PARAMS.colorbar_labelpad,
     )
@@ -1009,10 +978,9 @@ def change_facecolor_and_alpha_by_groupidxparams(
     par_color_masked_by_group: NDArray[np.float64],
     group_index: int,
 ) -> NDArray[np.float64]:
-    assert CUR_CONTOUR_PARAMS is not None
-
-    change_contour_color = GROUPIDX_PARAMS[group_index].contour_color
-    change_contour_alpha = GROUPIDX_PARAMS[group_index].contour_alpha
+    groupingid = IN_PARAMS.grouping_id
+    change_contour_color = PLOT_GROUP_IDX_PARAMS[groupingid][group_index].contour_color
+    change_contour_alpha = PLOT_GROUP_IDX_PARAMS[groupingid][group_index].contour_alpha
 
     if change_contour_color is None:
         par_color_masked_by_group[:, 3] = change_contour_alpha  # ４列目がrgbaのa
@@ -1028,11 +996,13 @@ def change_facecolor_and_alpha_by_groupidxparams(
 def get_facecolor_array_for_contour(
     group_index: int,
     snap_time_ms: int,
+    plot_name: str,
     mask_array: NDArray[np.bool_],
     mask_array_by_group: NDArray[np.bool_],
 ) -> NDArray[np.float64]:
     par_color = get_facecolor_by_physics_contour(
         snap_time_ms=snap_time_ms,
+        plot_name=plot_name,
         mask_array=mask_array,
         mask_array_by_group=mask_array_by_group,
     )
@@ -1050,22 +1020,26 @@ def get_facecolor_array_for_group(
     return np.full(
         (num_par_cur_group, 4),
         to_rgba(
-            c=GROUPIDX_PARAMS[group_index].group_color,
-            alpha=GROUPIDX_PARAMS[group_index].group_alpha,
+            c=PLOT_GROUP_IDX_PARAMS[IN_PARAMS.grouping_id][group_index].group_color,
+            alpha=PLOT_GROUP_IDX_PARAMS[IN_PARAMS.grouping_id][group_index].group_alpha,
         ),
     )
 
 
-def get_cur_is_plot_vector(is_group_plot: bool, group_index: int) -> bool:
+def get_cur_is_plot_vector(
+    plot_name: str, is_group_plot: bool, group_index: int
+) -> bool:
     if is_group_plot:
-        return GROUPIDX_PARAMS[group_index].group_is_plot_vector
+        return PLOT_GROUP_IDX_PARAMS[IN_PARAMS.grouping_id][
+            group_index
+        ].group_is_plot_vector
 
     else:
-        assert CUR_CONTOUR_PARAMS is not None
-
         return (
-            GROUPIDX_PARAMS[group_index].contour_is_plot_vector
-            and CUR_CONTOUR_PARAMS.is_plot_vector
+            PLOT_GROUP_IDX_PARAMS[IN_PARAMS.grouping_id][
+                group_index
+            ].contour_is_plot_vector
+            and PLOT_CONTOUR_PARAMS[plot_name].is_plot_vector
         )
 
 
@@ -1077,14 +1051,14 @@ def make_snap_each_snap_time(
     plot_name: str,
     is_group_plot: bool,
 ) -> None:
-    if not is_group_plot:
-        assert CUR_CONTOUR_PARAMS is not None
-
     set_ax_lim(ax=ax)
     set_ax_xticks(ax=ax)
     set_ax_yticks(ax=ax)
-    set_xlabel(ax=ax)
-    set_ylabel(ax=ax)
+
+    if IN_PARAMS.is_plot_xlabel_text:
+        set_xlabel(ax=ax)
+    if IN_PARAMS.is_plot_ylabel_text:
+        set_ylabel(ax=ax)
 
     if IN_PARAMS.is_plot_time_text:
         set_ax_time_text(ax=ax, snap_time_ms=snap_time_ms)
@@ -1102,7 +1076,8 @@ def make_snap_each_snap_time(
     particle_group_id_prefix = "particle"
     vector_group_id_prefix = "vector"
 
-    is_plot_reference_vector = True
+    is_plot_reference_vector = VECTOR_PARAMS.is_plot_reference_vector
+
     for group_index in np.unique(par_group_index)[::-1]:
         mask_array_by_group: NDArray[np.bool_] = par_group_index == group_index
 
@@ -1128,6 +1103,7 @@ def make_snap_each_snap_time(
             par_color = get_facecolor_array_for_contour(
                 group_index=group_index,
                 snap_time_ms=snap_time_ms,
+                plot_name=plot_name,
                 mask_array=mask_array,
                 mask_array_by_group=mask_array_by_group,
             )
@@ -1145,7 +1121,9 @@ def make_snap_each_snap_time(
         )
 
         # ベクトルのプロット
-        if get_cur_is_plot_vector(is_group_plot=is_group_plot, group_index=group_index):
+        if get_cur_is_plot_vector(
+            plot_name=plot_name, is_group_plot=is_group_plot, group_index=group_index
+        ):
             plot_velocity_vector(
                 fig=fig,
                 ax=ax,
@@ -1182,33 +1160,29 @@ def make_snap_all_snap_time(
     plot_name: str,
     is_group_plot: bool,
 ) -> None:
-    if not is_group_plot:
-        # CUR_CONTOUR_PARAMSを現在のcontourプロット用の情報に更新
-        global CUR_CONTOUR_PARAMS
-        CUR_CONTOUR_PARAMS = construct_contour_dataclass(contour_name=plot_name)
-        assert CUR_CONTOUR_PARAMS is not None
-
     save_dir_snap_path = save_dir_sub_path / "snap_shot"
     save_dir_snap_path.mkdir(exist_ok=True, parents=True)
 
     scaler_cm_to_inch = 1 / 2.54
     disired_fig_width = IN_PARAMS.fig_horizontal_cm * scaler_cm_to_inch
 
+    print(
+        "fig_horizontal（ピクセル単位） :",
+        int(disired_fig_width * IN_PARAMS.snapshot_dpi),
+    )
+    # 縦方向が見切れないよう十分大きく取る
     fig = plt.figure(
-        figsize=(
-            disired_fig_width,
-            5 * disired_fig_width,  # 縦方向が見切れないよう十分大きく取る
-        ),
+        figsize=(disired_fig_width, 5 * disired_fig_width),
         dpi=IN_PARAMS.snapshot_dpi,
     )
+
+    # widthはちょうど指定した大きさに近づくようチューニングする
     ax = fig.add_axes(
-        (
-            (0, 0, 1 * IN_PARAMS.tooning_for_fig, 1)
-        ),  # widthはちょうど指定した大きさに近づくようチューニングする
+        ((0, 0, 1 * IN_PARAMS.tooning_for_fig, 1)),
         aspect="equal",
     )
 
-    if not is_group_plot:
+    if IN_PARAMS.is_plot_colorbar and (not is_group_plot):
         plot_colorbar(fig=fig, ax=ax, plot_name=plot_name)
 
     # 本番プロット（調整のため最初だけ一回多くプロットしている）
@@ -1388,16 +1362,14 @@ def execute_plot_group_all() -> None:
 # ---グローバル変数群---
 # contour, vector, group以外のすべてのyamlの設定を格納
 IN_PARAMS = construct_input_parameters_dataclass()
-# contourの設定を保持（contourプロットの最初で更新する）
-CUR_CONTOUR_PARAMS = construct_contour_dataclass()
+# contourの設定を格納．plot_order_list_contourの「plot_name -> contour内の設定」の辞書
+PLOT_CONTOUR_PARAMS = construct_dict_of_contour_dataclass()
 # vectorの設定を格納（vector_idで指定したもの）
 VECTOR_PARAMS = construct_vector_dataclass()
-# groupのうち，configの設定を格納
-GROUP_CONFIG_PARAMS = construct_group_config_dataclass(group_name=IN_PARAMS.grouping_id)
-# groupのうち，each_idx全ての「idx -> そのidx内の設定」の辞書
-GROUPIDX_PARAMS = construct_dict_groupindex_to_groupeachidxdataclass(
-    group_name=IN_PARAMS.grouping_id
-)
+# groupの設定を格納1．plot_order_list_groupの「group_name -> config -> そのconfig内の設定」の辞書の辞書
+PLOT_GROUP_CONFIG_PARAMS = construct_dict_of_group_config_dataclass()
+# groupの設定を格納2．plot_order_list_groupの「group_name -> idx -> そのidx内の設定」の辞書の辞書
+PLOT_GROUP_IDX_PARAMS = construct_dict_of_group_idx_dataclass()
 # ---グローバル変数群---
 
 
@@ -1418,4 +1390,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    print(mpl.matplotlib_fname())
     main()

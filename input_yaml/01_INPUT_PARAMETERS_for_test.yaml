@@ -3,8 +3,8 @@ save_dir_name: "plot_test_allregion"
 
 #* contourプロットの順序．上から順番にプロットを行う．いらないものはNOT_PLOT_BELOWの下へ移動．ラベル名は結果の保存ディレクトリ名と同じになる．
 plot_order_list_contour:
-  - &id_pressure "Pressure"
   - &id_density "Density"
+  - &id_pressure "Pressure"
   - "NOT_PLOT_BELOW"
   # - "speed"
   # - "div_U"
@@ -93,12 +93,14 @@ y_mticks_length: 5.0 # y軸補助目盛り線の長さ
 y_mticks_width: 0.75 # y軸補助目盛り線の線幅
 
 # *軸ラベルの設定（x軸）
-xlabel_text: "$x \\, \\mathrm{(m)}$" # ラベルのテキスト
+is_plot_xlabel_text: False # x軸ラベルを表示するか
+xlabel_text: "$x \\, \\mathrm{(m)}$" # x軸ルのテキスト
 xlabel_pos: 1.2 # テキストの中心のx座標（データの単位）
 xlabel_offset: -0.055 #TODO yminからの，テキストの上端のy座標の変位（データの単位）
 
 # *軸ラベルの設定（y軸）
-ylabel_text: "$y \\, \\mathrm{(m)}$" # ラベルのテキスト
+is_plot_ylabel_text: False # y軸ラベルを表示するか
+ylabel_text: "$y \\, \\mathrm{(m)}$" # y軸ラベルのテキスト
 ylabel_pos: 0.3 # テキストの中心のy座標（データ単位）
 y_horizontalalignment: "right" # テキストのx方向の配置の基準（基本は"center" or "right"）
 ylabel_offset: -0.025 #  #TODO xminからの，テキストのhorizontalalignmentのx座標の変位（データの単位）
@@ -114,21 +116,21 @@ time_text_pos_y: *ylim_max # 時刻テキストの下端のy座標（データ�
 #TODO 位置調整（horizontalなら水平方向）
 #TODO 位置調整（ラベルの位置）
 #TODO カラーバーの向き（vertical）
-#* カラーバー関連の設定
+#* カラーバー関連の設定（一部はcontourの方にある）
+is_plot_colorbar: True
 is_horizontal_colorbar: True # カラーバーを横向きにするか
 colorbar_pad: 0.005 #TODO  カラーバーをプロットのボックスからどれだけ離すか（チューニング）
 colorbar_labelpad: 8.0 # カラーバーのタイトルをバーからどれだけ離すか（チューニング）
 colorbar_shrink: 0.28 # カラーバーをどれくらい縮めるか（0より大きく1以下の値）
 colorbar_aspect: 20.0 # カラーバーのアスペクト比（shrinkを先に調整してからがよさそう）
 axis_lw_colorbar: &axis_lw_colorbar 0.0 # カラーバーの枠線の太さ
-num_edges_colorbar: 512 # カラーバーの区切りの数
+num_edges_colorbar: 256 # カラーバーの区切りの数
 is_drawedges_colorbar: False # カラーバーの区切り線を描画するか
 # -主目盛り-
 num_colorbar_ticks: 3 # 主目盛りの数
-strformatter_colorbar: null # 主目盛りの値の書式等を変更したいときにいじる（変更しない場合はnullにする）．
-colorbar_tickslabel_pad: 4.0 # 主目盛りから目盛りラベルをどれだけ離すか
-colorbar_ticks_length: 3.0 # 主目盛り線の長さ
-colorbar_ticks_width: 0.5 # 主目盛り線の線幅
+colorbar_tickslabel_pad: 2.0 # 主目盛りから目盛りラベルをどれだけ離すか
+colorbar_ticks_length: 5.0 # 主目盛り線の長さ
+colorbar_ticks_width: *axis_lw_colorbar # 主目盛り線の線幅
 # -副目盛り-
 is_plot_mticks_colorbar: False # 副目盛りをプロットするか
 num_colorbar_mtick: 3 # 副目盛りの数
@@ -225,6 +227,7 @@ contour:
     col_index: 4 # データが何列目にあるか　（0-index）
     min_value_contour: 0.0 #コンターの最小値
     max_value_contour: 1000.0 # コンターの最大値
+    strformatter_colorbar: null # カラーバーの主目盛りの値の書式等を変更したいときにいじる（変更しない場合はnullにする）．
     cmap: *contourbase_cmap # matplotlibのカラーマップ or "small rainbow"
     is_plot_vector: False # Trueの場合，group内のbasecontourで設定したis_plot_vectorが反映される
 
@@ -235,6 +238,7 @@ contour:
     col_index: 7 # データが何列目にあるか　（0-index）
     min_value_contour: 0.97 #コンターの最小値
     max_value_contour: 1.03 # コンターの最大値
+    strformatter_colorbar: null # カラーバーの主目盛りの値の書式等を変更したいときにいじる（変更しない場合はnullにする）．
     cmap: *contourbase_cmap # matplotlibのカラーマップ or "small rainbow"
     is_plot_vector: True # Trueの場合，group内のbasecontourで設定したis_plot_vectorが反映される
 
@@ -260,6 +264,7 @@ vector:
     headlength_vector: 8.0 # ベクトルの見た目の設定１(default:5.0)
     headaxislength_vector: 4.0 # ベクトルの見た目の設定２(default:4.5)
     headwidth_vector: 6.0 # ベクトルの見た目の設定３(default:3.0)
+    is_plot_reference_vector: True # reference vectorを表示するか
     length_reference_vector: 1.0 # reference vectorの単位
     reference_vector_text: "Velocity $\\mathbfit{{u}}$\nxxxxx m/s" # reference vectorのラベルのテキスト（xxxxxの部分に長さlength_reference_vectorが挿入される）
     strformatter_reference_vector_text: ".01f" # reference vectorのラベルのテキストの書式（小数点以下のゼロ埋めの調節で使用）
