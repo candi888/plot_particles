@@ -220,12 +220,6 @@ class DataclassInputParameters:
 
         print("1. 型チェック OK")
 
-        # svg関連の処理
-        if self.svg_flag and self.svg_snap_time_ms is None:
-            raise ValueError(
-                "svg_snap time_msの値が設定されていません．svgを作成したい時刻[ms]を設定してください"
-            )
-
         # * 2.諸々のエラー処理
         # plot_order_list_contourの処理
         if "NOT_PLOT_BELOW" not in self.plot_order_list_contour:
@@ -624,7 +618,6 @@ def plot_particles_by_scatter(
         c=par_color,
         linewidths=0,
         gid=f"{group_id_prefix}{group_index}",
-        clip_on=not IN_PARAMS.svg_flag,
         zorder=PLOT_GROUP_IDX_PARAMS[groupingid][group_index].particle_zorder,
     )
 
