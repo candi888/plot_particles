@@ -131,7 +131,7 @@ is_plot_colorbar: *is_plot_hypervisor1 # カラーバーを表示するか
 is_horizontal_colorbar: True # カラーバーを横向きにするか
 colorbar_pad: 0.005 #TODO  カラーバーをプロットのボックスからどれだけ離すか（チューニング）
 colorbar_labelpad: 8.0 # カラーバーのタイトルをバーからどれだけ離すか（チューニング）
-colorbar_shrink: 0.28 # カラーバーをどれくらい縮めるか（0より大きく1以下の値）
+colorbar_shrink: 0.20 # カラーバーをどれくらい縮めるか（0より大きく1以下の値）
 colorbar_aspect: 20.0 # カラーバーのアスペクト比（shrinkを先に調整してからがよさそう）
 axis_lw_colorbar: &axis_lw_colorbar 0.0 # カラーバーの枠線の太さ
 num_edges_colorbar: 256 # カラーバーの区切りの数
@@ -146,10 +146,6 @@ is_plot_mticks_colorbar: False # 副目盛りをプロットするか
 num_colorbar_mtick: 3 # 副目盛りの数
 colorbar_mticks_length: 3.0 # 補助目盛り線の長さ
 colorbar_mticks_width: 0.75 # 補助目盛り線の線幅
-
-# * svg出力用．これをTrueにした場合，ここで指定した時刻のsvgのみを作成する．jpegの画像やアニメーションの作成は行わないので注意．
-svg_flag: False
-svg_snap_time_ms: null
 
 #* pythonファイルからの各データファイルの相対パス．数字の部分は"xxxxx"を入れる．（コード内部で直接使用することはない）
 path_list:

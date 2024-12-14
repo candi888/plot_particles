@@ -170,10 +170,6 @@ class DataclassInputParameters:
     colorbar_mticks_length: float  # x軸補助目盛り線の長さ
     colorbar_mticks_width: float  # x軸補助目盛り線の線幅
 
-    # * svg出力用．これをTrueにした場合，ここで指定した時刻のsvgのみを作成する．jpegの画像やアニメーションの作成は行わないので注意．
-    svg_flag: bool
-    svg_snap_time_ms: int | None
-
     # * contourプロットでのグループ分けの選択
     grouping_id: str
 
