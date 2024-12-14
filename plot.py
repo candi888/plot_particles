@@ -30,8 +30,15 @@ class DataclassInputParameters:
     plot_order_list_group: list  # List[str]であるが，後の__post_init__でチェック
 
     # * 画像保存時の設定
-    snapshot_dpi: int
-    extension: str
+    is_make_snap: bool
+    snap_dpi: int
+    snap_extension: str
+
+    # * アニメーション関連
+    is_make_anim: bool
+    anim_extension: str  # アニメーション作成に使用するスナップショットの拡張子（基本は，png or jpeg）
+    framerate: int  # アニメーションのフレームレート．実スケールのものを作りたい時は 1000 / anim_timestep_ms を指定する
+    crf_num: int  # 値が大きいほどlowqualityの動画の質が下がる．パワポに載せる動画など，ファイルサイズ小さめのが要るとき用にチューニング（2MB以下になるのがよいか）
 
     # *出力画像の大きさ [cm]
     # （参考）A4用紙の縦向きサイズ（縦 × 横）は 29.7 × 21.0[cm]
@@ -48,17 +55,17 @@ class DataclassInputParameters:
     path_list: list
 
     # * プロット関連
-    timestep_ms: int
+    snap_timestep_ms: int
     snap_start_time_ms: int
     snap_end_time_ms: int
+    anim_timestep_ms: int
+    anim_start_time_ms: int
+    anim_end_time_ms: int
+
     xlim_min: float
     xlim_max: float
     ylim_min: float
     ylim_max: float
-
-    # * アニメーション関連
-    framerate: int
-    crf_num: int
 
     # *全体の見た目の設定
     is_plot_hypervisor1: bool  # xy軸ラベル，時刻テキストなど，軸の表示範囲を変えると再度調整が必要なものの表示有無（最初にレイアウトを調整する時にはFalse，最後にTrueにして軸ラベルなどの位置調整を行うことを推奨）
@@ -134,7 +141,7 @@ class DataclassInputParameters:
     is_plot_ylabel_text: bool
     ylabel_text: str  # ラベルのテキスト
     ylabel_pos: float  # テキストの中心のy座標（データ単位）
-    y_horizontalalignment: (
+    ylabel_horizontalalignment: (
         str  # テキストのx方向の配置の基準（基本は"center" or "right"）
     )
     ylabel_offset: float
@@ -150,12 +157,21 @@ class DataclassInputParameters:
     # * カラーバー関連の設定
     is_plot_colorbar: bool
     is_horizontal_colorbar: bool  # カラーバーを横向きにするか
-    colorbar_pad: float  # TODO  カラーバーがプロットのボックスからどれだけ離れているか（チューニング）
-    colorbar_labelpad: float  # カラーバーのタイトルをバーからどれだけ離すか
+    colorbar_pos: float  # カラーバーの位置の微調整（横向きならx方向，縦向きならy方向について，0.5でちょうどプロットのボックスの中心．0.0〜1.0 でプロットのボックスの領域内）
+    colorbar_pad: float
     colorbar_shrink: float  # カラーバーをどれくらい縮めるか（0より大きく1以下の値）
     colorbar_aspect: (
         float  # カラーバーのアスペクト比（shrinkを先に調整してからがよさそう）
     )
+    colorbar_label_horizontalalignment: (
+        str  # テキストのx方向の配置の基準（"center" or "left" or "right"）
+    )
+    colorbar_label_verticalalignment: (
+        str  # テキストのy方向の配置の基準（基本は"center" or "bottom" or "top"）
+    )
+    colorbar_label_x: float  # カラーバーのタイトルラベルのx方向の調整（0.0〜1.0 でカラーバーの領域内）
+    colorbar_label_y: float  # カラーバーのタイトルラベルのy方向の調整（0.0〜1.0 でカラーバーの領域内）
+    colorbar_rotation: float
     axis_lw_colorbar: float  # カラーバーの枠線の太さ
     num_edges_colorbar: int  # カラーバーの区切りの数
     is_drawedges_colorbar: bool  # カラーバーの区切り線を描画するか
@@ -164,6 +180,9 @@ class DataclassInputParameters:
     colorbar_tickslabel_pad: float  # x軸主目盛りから目盛りラベルをどれだけ離すか
     colorbar_ticks_length: float  # x軸主目盛り線の長さ
     colorbar_ticks_width: float  # x軸主目盛り線の線幅
+    is_reverse_colorbar_tickslabel: (
+        bool  # 目盛ラベルの位置をカラーバーに対して反転させるか
+    )
     # -副目盛り-
     is_plot_mticks_colorbar: bool  # 副目盛りをプロットするか
     num_colorbar_mtick: int  # 副目盛りの数
@@ -289,7 +308,7 @@ class DataclassVector:
                     f"{class_arg_name}の型が一致しません．\n{class_arg_name}の型は現在は{type(class_dict[class_arg_name])}ですが，{class_arg_expected_type}である必要があります．"
                 )
 
-        print("VECTOR_PARAMS construct OK")
+        print("PLOT_VECTOR_PARAMS construct OK")
 
 
 @dataclasses.dataclass(frozen=True)
@@ -617,7 +636,7 @@ def plot_particles_by_scatter(
         s=s,
         c=par_color,
         linewidths=0,
-        gid=f"{group_id_prefix}{group_index}",
+        gid=f"{group_id_prefix}_{PLOT_GROUP_IDX_PARAMS[groupingid][group_index].label}",
         zorder=PLOT_GROUP_IDX_PARAMS[groupingid][group_index].particle_zorder,
     )
 
@@ -686,24 +705,37 @@ def plot_colorbar(fig: Figure, ax: Axes, plot_name: str) -> None:
         ax=ax,
         shrink=IN_PARAMS.colorbar_shrink,
         aspect=IN_PARAMS.colorbar_aspect,
-        orientation="horizontal" if IN_PARAMS.is_horizontal_colorbar else "vertical",
         pad=IN_PARAMS.colorbar_pad,
-        location="top",
-        anchor=(0.5, 0.0),
-        panchor=(0, 1.0),
         ticks=ticker.LinearLocator(numticks=IN_PARAMS.num_colorbar_ticks),
         format=PLOT_CONTOUR_PARAMS[plot_name].strformatter_colorbar,
         drawedges=IN_PARAMS.is_drawedges_colorbar,
+        orientation="horizontal" if IN_PARAMS.is_horizontal_colorbar else "vertical",
+        location="top" if IN_PARAMS.is_horizontal_colorbar else "right",
+        anchor=(IN_PARAMS.colorbar_pos, 0.0)
+        if IN_PARAMS.is_horizontal_colorbar
+        else (0.0, IN_PARAMS.colorbar_pos),
+        panchor=(0.0, 1.0) if IN_PARAMS.is_horizontal_colorbar else (1.0, 0.5),
     )
 
     # ラベルと目盛りの位置
-    cbar.ax.xaxis.set_ticks_position("bottom")
+    if IN_PARAMS.is_reverse_colorbar_tickslabel:
+        cbar.ax.xaxis.set_ticks_position("top")
+        cbar.ax.yaxis.set_ticks_position("right")
+    else:
+        cbar.ax.xaxis.set_ticks_position("bottom")
+        cbar.ax.yaxis.set_ticks_position("left")
 
-    # ラベルの大きさ
-    cbar.set_label(
-        f"{PLOT_CONTOUR_PARAMS[plot_name].label}",
+    # カラーバーのラベル
+    cbar.ax.text(
+        x=IN_PARAMS.colorbar_label_x,
+        y=IN_PARAMS.colorbar_label_y,
+        s=f"{PLOT_CONTOUR_PARAMS[plot_name].label}",
+        transform=cbar.ax.transAxes,
         fontsize=IN_PARAMS.colorbar_title_font_size,
-        labelpad=IN_PARAMS.colorbar_labelpad,
+        horizontalalignment=IN_PARAMS.colorbar_label_horizontalalignment,
+        verticalalignment=IN_PARAMS.colorbar_label_verticalalignment,
+        rotation=IN_PARAMS.colorbar_rotation,
+        gid="colorbar_label_text",
     )
 
     # カラーバーの枠線の太さ
@@ -779,7 +811,7 @@ def plot_transparent_dummytext_for_reference_vector_display(
             )
 
 
-def plot_velocity_vector(
+def plot_vector(
     fig: Figure,
     ax: Axes,
     snap_time_ms: int,
@@ -793,12 +825,12 @@ def plot_velocity_vector(
     mask_array_by_group: NDArray[np.bool_] | None = None,
 ) -> None:
     par_u, par_v = load_par_data_masked_by_plot_region(
-        pardata_filepath_str_time_replaced_by_xxxxx=VECTOR_PARAMS.data_file_path,
+        pardata_filepath_str_time_replaced_by_xxxxx=PLOT_VECTOR_PARAMS.data_file_path,
         snap_time_ms=snap_time_ms,
         mask_array=mask_array,
         usecols=(
-            VECTOR_PARAMS.col_index_vectorx,
-            VECTOR_PARAMS.col_index_vectory,
+            PLOT_VECTOR_PARAMS.col_index_vectorx,
+            PLOT_VECTOR_PARAMS.col_index_vectory,
         ),
         mask_array_by_group=mask_array_by_group,
     )
@@ -806,8 +838,9 @@ def plot_velocity_vector(
     # scale_units="x"で軸の長さが基準
     # scale=10で，軸単位で0.1の長さが大きさ1のベクトルの長さに対応する
     original_scale = 10 / (IN_PARAMS.xlim_max - IN_PARAMS.xlim_min)
-    scale = original_scale / VECTOR_PARAMS.scaler_length_vector
-    width = original_scale / 5000 * VECTOR_PARAMS.scaler_width_vector
+    scale = original_scale / PLOT_VECTOR_PARAMS.scaler_length_vector
+    # 5000はチューニング定数
+    width = original_scale / 5000 * PLOT_VECTOR_PARAMS.scaler_width_vector
 
     groupingid = IN_PARAMS.grouping_id
     # ベクトルをプロット
@@ -819,10 +852,10 @@ def plot_velocity_vector(
         scale=scale,
         scale_units="x",
         width=width,
-        headlength=VECTOR_PARAMS.headlength_vector,
-        headaxislength=VECTOR_PARAMS.headaxislength_vector,
-        headwidth=VECTOR_PARAMS.headwidth_vector,
-        gid=f"{group_id_prefix}{group_index}",
+        headlength=PLOT_VECTOR_PARAMS.headlength_vector,
+        headaxislength=PLOT_VECTOR_PARAMS.headaxislength_vector,
+        headwidth=PLOT_VECTOR_PARAMS.headwidth_vector,
+        gid=f"{group_id_prefix}_{PLOT_GROUP_IDX_PARAMS[groupingid][group_index].label}",
         zorder=PLOT_GROUP_IDX_PARAMS[groupingid][group_index].vector_zorder,
     )
 
@@ -830,15 +863,15 @@ def plot_velocity_vector(
         # reference vectorのプロット
         qk = ax.quiverkey(
             Q=q,
-            X=VECTOR_PARAMS.reference_vector_pos_x,
-            Y=VECTOR_PARAMS.reference_vector_pos_y,
-            U=VECTOR_PARAMS.length_reference_vector,
-            label=VECTOR_PARAMS.reference_vector_text.replace(
+            X=PLOT_VECTOR_PARAMS.reference_vector_pos_x,
+            Y=PLOT_VECTOR_PARAMS.reference_vector_pos_y,
+            U=PLOT_VECTOR_PARAMS.length_reference_vector,
+            label=PLOT_VECTOR_PARAMS.reference_vector_text.replace(
                 "xxxxx",
-                f"{VECTOR_PARAMS.length_reference_vector:{VECTOR_PARAMS.strformatter_reference_vector_text}}",
+                f"{PLOT_VECTOR_PARAMS.length_reference_vector:{PLOT_VECTOR_PARAMS.strformatter_reference_vector_text}}",
             ),
             fontproperties={"size": IN_PARAMS.reference_vector_font_size},
-            labelsep=VECTOR_PARAMS.reference_vector_labelpad,
+            labelsep=PLOT_VECTOR_PARAMS.reference_vector_labelpad,
             labelpos="N",
             coordinates="data",
         )
@@ -963,7 +996,7 @@ def set_ylabel(ax: Axes) -> None:
         y=IN_PARAMS.ylabel_pos,
         x=IN_PARAMS.xlim_min + IN_PARAMS.ylabel_offset,
         verticalalignment="center",
-        horizontalalignment=IN_PARAMS.y_horizontalalignment,
+        horizontalalignment=IN_PARAMS.ylabel_horizontalalignment,
         fontsize=IN_PARAMS.ylabel_font_size,
         gid="y_title_text",
     )
@@ -1077,12 +1110,12 @@ def make_snap_each_snap_time(
     else:
         ax.axis("off")
 
-    if IN_PARAMS.is_plot_xlabel_text:
+    if IN_PARAMS.is_plot_hypervisor2 and IN_PARAMS.is_plot_xlabel_text:
         set_xlabel(ax=ax)
-    if IN_PARAMS.is_plot_ylabel_text:
+    if IN_PARAMS.is_plot_hypervisor2 and IN_PARAMS.is_plot_ylabel_text:
         set_ylabel(ax=ax)
 
-    if IN_PARAMS.is_plot_time_text:
+    if IN_PARAMS.is_plot_hypervisor2 and IN_PARAMS.is_plot_time_text:
         set_ax_time_text(ax=ax, snap_time_ms=snap_time_ms)
 
     #  初回だけキャンバス更新が必要（scatterの大きさを揃えるため）
@@ -1098,7 +1131,7 @@ def make_snap_each_snap_time(
     particle_group_id_prefix = "particle"
     vector_group_id_prefix = "vector"
 
-    is_plot_reference_vector = VECTOR_PARAMS.is_plot_reference_vector
+    is_plot_reference_vector = PLOT_VECTOR_PARAMS.is_plot_reference_vector
 
     for group_index in np.unique(par_group_index)[::-1]:
         mask_array_by_group: NDArray[np.bool_] = par_group_index == group_index
@@ -1146,7 +1179,7 @@ def make_snap_each_snap_time(
         if get_cur_is_plot_vector(
             plot_name=plot_name, is_group_plot=is_group_plot, group_index=group_index
         ):
-            plot_velocity_vector(
+            plot_vector(
                 fig=fig,
                 ax=ax,
                 snap_time_ms=snap_time_ms,
@@ -1168,7 +1201,7 @@ def make_snap_each_snap_time(
         f"snap{snap_time_ms:0{IN_PARAMS.num_x_in_pathstr}}_{plot_name}"
     )
     save_file_path = save_dir_snap_path / Path(
-        f"{save_file_name_without_extension}.{IN_PARAMS.extension}"
+        f"{save_file_name_without_extension}.{IN_PARAMS.snap_extension}"
     )
     fig.savefig(save_file_path)
 
@@ -1191,12 +1224,12 @@ def make_snap_all_snap_time(
 
     print(
         "fig_horizontal（ピクセル単位） :",
-        int(disired_fig_width * IN_PARAMS.snapshot_dpi),
+        int(disired_fig_width * IN_PARAMS.snap_dpi),
     )
     # 縦方向が見切れないよう十分大きく取る
     fig = plt.figure(
         figsize=(disired_fig_width, 5 * disired_fig_width),
-        dpi=IN_PARAMS.snapshot_dpi,
+        dpi=IN_PARAMS.snap_dpi,
     )
 
     # widthはちょうど指定した大きさに近づくようチューニングする
@@ -1208,7 +1241,7 @@ def make_snap_all_snap_time(
     if IN_PARAMS.is_plot_colorbar and (not is_group_plot):
         plot_colorbar(fig=fig, ax=ax, plot_name=plot_name)
 
-    # reference vectorを表示するための内部処理用の変数
+    # reference vectorを表示するための内部処理用の変数の初期化
     refvec_corners_for_dummytext = [[0.0, 0.0], [0.0, 0.0]]
 
     # 本番プロット（調整のため最初だけ一回多くプロットしている）
@@ -1228,9 +1261,10 @@ def make_snap_all_snap_time(
             print(
                 f"{snap_time_ms/IN_PARAMS.scaler_s_to_ms:.03f} s {plot_name} plot finished"
             )
-        except FileNotFoundError:
+        except FileNotFoundError as e:
+            print(e)
             print(
-                f"{snap_time_ms/IN_PARAMS.scaler_s_to_ms:.03f} s時点の計算データがありません．スナップショットの作成を終了します．\n"
+                f"{snap_time_ms/IN_PARAMS.scaler_s_to_ms:.03f} s時点の計算データがありません．{plot_name}におけるスナップショット作成を終了します．\n"
             )
             break
 
@@ -1242,24 +1276,24 @@ def make_snap_all_snap_time(
 
 
 def make_animation_from_snap(
-    snap_time_array_ms: NDArray[np.int64], save_dir_sub_path: Path, plot_name: str
+    anim_time_array_ms: NDArray[np.int64], save_dir_sub_path: Path, plot_name: str
 ) -> None:
     save_dir_animation_path = save_dir_sub_path / "animation"
     save_dir_animation_path.mkdir(exist_ok=True)
 
     # 連番でない画像の読み込みに対応させるための準備
     for_ffmpeg = []
-    for snap_time_ms in snap_time_array_ms:
+    for anim_time_ms in anim_time_array_ms:
         cur_snap_path = (
             save_dir_sub_path
             / "snap_shot"
-            / f"snap{snap_time_ms:0{IN_PARAMS.num_x_in_pathstr}}_{plot_name}.jpeg"
+            / f"snap{anim_time_ms:0{IN_PARAMS.num_x_in_pathstr}}_{plot_name}.jpeg"
         )
         # アニメーション作成で使うsnapが存在するかの確認
         if not cur_snap_path.exists():
-            break
+            continue
         for_ffmpeg.append(
-            f"file 'snap{snap_time_ms:0{IN_PARAMS.num_x_in_pathstr}}_{plot_name}.jpeg'"
+            f"file 'snap{anim_time_ms:0{IN_PARAMS.num_x_in_pathstr}}_{plot_name}.jpeg'"
         )
 
     if for_ffmpeg == []:
@@ -1327,8 +1361,15 @@ def execute_plot_all(is_group_plot: bool) -> None:
     # スナップショットを出力する時間[ms]のarray
     snap_time_array_ms: NDArray[np.int64] = np.arange(
         IN_PARAMS.snap_start_time_ms,
-        IN_PARAMS.snap_end_time_ms + IN_PARAMS.timestep_ms,
-        IN_PARAMS.timestep_ms,
+        IN_PARAMS.snap_end_time_ms + IN_PARAMS.snap_timestep_ms,
+        IN_PARAMS.snap_timestep_ms,
+    )
+
+    # アニメーション作成に使用するスナップショットの時間[ms]のarray
+    anim_time_array_ms: NDArray[np.int64] = np.arange(
+        IN_PARAMS.anim_start_time_ms,
+        IN_PARAMS.anim_end_time_ms + IN_PARAMS.anim_timestep_ms,
+        IN_PARAMS.anim_timestep_ms,
     )
 
     plot_order_list = (
@@ -1341,18 +1382,20 @@ def execute_plot_all(is_group_plot: bool) -> None:
 
         save_dir_sub_path = save_dir_path / plot_name
 
-        make_snap_all_snap_time(
-            snap_time_array_ms=snap_time_array_ms,
-            save_dir_sub_path=save_dir_sub_path,
-            plot_name=plot_name,
-            is_group_plot=is_group_plot,
-        )
+        if IN_PARAMS.is_make_snap:
+            make_snap_all_snap_time(
+                snap_time_array_ms=snap_time_array_ms,
+                save_dir_sub_path=save_dir_sub_path,
+                plot_name=plot_name,
+                is_group_plot=is_group_plot,
+            )
 
-        make_animation_from_snap(
-            snap_time_array_ms=snap_time_array_ms,
-            save_dir_sub_path=save_dir_sub_path,
-            plot_name=plot_name,
-        )
+        if IN_PARAMS.is_make_anim:
+            make_animation_from_snap(
+                anim_time_array_ms=anim_time_array_ms,
+                save_dir_sub_path=save_dir_sub_path,
+                plot_name=plot_name,
+            )
 
     return
 
@@ -1360,12 +1403,16 @@ def execute_plot_all(is_group_plot: bool) -> None:
 # ---グローバル変数群---
 # contour, vector, group以外のすべてのyamlの設定を格納
 IN_PARAMS = construct_input_parameters_dataclass()
+
 # contourの設定を格納．plot_order_list_contourの「plot_name -> contour内の設定」の辞書
 PLOT_CONTOUR_PARAMS = construct_dict_of_contour_dataclass()
+
 # vectorの設定を格納（vector_idで指定したもの）
-VECTOR_PARAMS = construct_vector_dataclass()
+PLOT_VECTOR_PARAMS = construct_vector_dataclass()
+
 # groupの設定を格納1．plot_order_list_groupの「group_name -> config -> そのconfig内の設定」の辞書の辞書
 PLOT_GROUP_CONFIG_PARAMS = construct_dict_of_group_config_dataclass()
+
 # groupの設定を格納2．plot_order_list_groupの「group_name -> idx -> そのidx内の設定」の辞書の辞書
 PLOT_GROUP_IDX_PARAMS = construct_dict_of_group_idx_dataclass()
 # ---グローバル変数群---

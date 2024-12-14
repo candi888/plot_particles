@@ -17,27 +17,36 @@ plot_order_list_group:
   - &id_move "move"
   - "NOT_PLOT_BELOW"
 
-#* プロットするデータの時刻
-timestep_ms: 10 # datファイルの00050のところ.　SNAPの出力時間間隔が違う場合に注意
-snap_start_time_ms: 10
-snap_end_time_ms: 3000
+#* プロットに使用する時刻
+# -スナップショット-
+snap_timestep_ms: &snap_timestep_ms 10 # スナップショットの作成に使用するデータの時間間隔
+snap_start_time_ms: &snap_start_time_ms 10 # スナップショット作成の開始時刻．
+snap_end_time_ms: &snap_end_time_ms 3000 # スナップショット作成の終了時刻．今あるデータ全てを出力したい場合は十分大きい値を指定してもよい．
 
-# * 画像保存時の設定
-snapshot_dpi: 200 # 大きすぎる値にしないよう注意（ファイル容量が膨大になりうるため）
-extension: "jpeg" # svgやpdfは大量出力しないように注意する（ファイル容量が膨大になりうるため）
+# -アニメーション-（アニメーションは作成したスナップショットをパラパラ漫画にして作るので，↑で必要な画像を全て作成しておく必要あり）
+anim_timestep_ms: *snap_timestep_ms # アニメーションの作成に使用するデータの時間間隔
+anim_start_time_ms: *snap_start_time_ms # アニメーション作成の開始時刻．
+anim_end_time_ms: *snap_end_time_ms # アニメーション作成の終了時刻．今あるデータ全てを出力したい場合は十分大きい値を指定してもよい．
+
+# * スナップショット関連
+is_make_snap: True # スナップショット作成を実行するか
+snap_dpi: 200 # dpi．大きすぎる値にしないよう注意（ファイル容量が膨大になりうるため）
+snap_extension: &extension "jpeg" # 拡張子．svgやpdfは大量出力しないように注意する（ファイル容量が膨大になりうるため）
+
+#* アニメーション関連
+is_make_anim: True # アニメーション作成を実行するか
+anim_extension: "jpeg" # アニメーション作成に使用するスナップショットの拡張子（基本は，png or jpeg）
+framerate: 100 # アニメーションのフレームレート．実スケールのものを作りたい時は 1000 / anim_timestep_ms を指定する
+crf_num: 35 # 値が大きいほどlowqualityの動画の質が下がる．パワポに載せる動画など，ファイルサイズ小さめのが要るとき用にチューニング（2MB以下になるのがよいか）
 
 # *出力画像の大きさ [cm]
 # （参考）A4用紙の縦向きサイズ（縦 × 横）は 29.7 × 21.0[cm]
 fig_horizontal_cm: 18.0 # 横方向のみ設定．縦方向は自動で調節される．大きすぎる値にしないよう注意（ファイル容量が膨大になりうるため）
 tooning_for_fig: 0.9 # 現時点，↑で指定したサイズより少し大きくなるのでこれで調節（0より大きく1以下である必要．0.9付近が良いか．）
 
-#* アニメーション関連
-framerate: 100
-crf_num: 35 # CRF値を設定．lowqualityの動画を作成するときに使用する．大きいほどクオリティが下がる．35くらいでちょうど良さそう．
-
-# *全体の見た目の設定
+# *全体の見た目の一括設定
 is_plot_hypervisor1: &is_plot_hypervisor1 True # xy軸ラベル，時刻テキストなど，軸の表示範囲を変えると再度調整が必要なものの表示有無（最初にレイアウトを調整する時にはFalse，最後にTrueにして軸ラベルなどの位置調整を行うことを推奨）
-is_plot_hypervisor2: &is_plot_hypervisor2 True # 軸線，目盛，目盛ラベルなどの表示有無（粒子やベクトルのみをプロットしたい時にはFalse）
+is_plot_hypervisor2: &is_plot_hypervisor2 True # 粒子，ベクトル，カラーバーのみをプロットしたい時にはFalse
 
 #* 軸線の設定
 axis_lw: &axis_lw 1.7 # 軸線の太さ
@@ -106,14 +115,14 @@ y_mticks_width: 0.75 # y軸補助目盛り線の線幅
 is_plot_xlabel_text: *is_plot_hypervisor1 # x軸ラベルを表示するか
 xlabel_text: "$x \\, \\mathrm{(m)}$" # x軸ルのテキスト
 xlabel_pos: 1.2 # テキストの中心のx座標（データの単位）
-xlabel_offset: -0.055 #TODO yminからの，テキストの上端のy座標の変位（データの単位）
+xlabel_offset: -0.055 #yminからの，テキストの上端のy座標の変位（データの単位）
 
 # *軸ラベルの設定（y軸）
 is_plot_ylabel_text: *is_plot_hypervisor1 # y軸ラベルを表示するか
 ylabel_text: "$y \\, \\mathrm{(m)}$" # y軸ラベルのテキスト
 ylabel_pos: 0.3 # テキストの中心のy座標（データ単位）
-y_horizontalalignment: "right" # テキストのx方向の配置の基準（基本は"center" or "right"）
-ylabel_offset: -0.025 #  #TODO xminからの，テキストのhorizontalalignmentのx座標の変位（データの単位）
+ylabel_horizontalalignment: "right" # テキストのx方向の配置の基準（基本は"center" or "right"）
+ylabel_offset: -0.025 #  #xminからの，テキストのhorizontalalignmentのx座標の変位（データの単位）
 is_horizontal_ylabel: True # ラベルを横向きにするか
 
 #* 時刻のテキストの設定
@@ -123,16 +132,18 @@ strformatter_timetext: ".03f" # 時刻テキストの書式（小数点以下の
 time_text_pos_x: *xlim_min # 時刻テキストの左端のx座標（データの単位）
 time_text_pos_y: *ylim_max # 時刻テキストの下端のy座標（データの単位）
 
-#TODO 位置調整（horizontalなら水平方向）
-#TODO 位置調整（ラベルの位置）
-#TODO カラーバーの向き（vertical）
 #* カラーバー関連の設定（一部はcontourの方にある）
 is_plot_colorbar: *is_plot_hypervisor1 # カラーバーを表示するか
 is_horizontal_colorbar: True # カラーバーを横向きにするか
-colorbar_pad: 0.005 #TODO  カラーバーをプロットのボックスからどれだけ離すか（チューニング）
-colorbar_labelpad: 8.0 # カラーバーのタイトルをバーからどれだけ離すか（チューニング）
-colorbar_shrink: 0.20 # カラーバーをどれくらい縮めるか（0より大きく1以下の値）
+colorbar_pos: 0.5 # カラーバーの位置の微調整（横向きならx方向，縦向きならy方向について，0.5でちょうどプロットのボックスの中心．0.0〜1.0 でプロットのボックスの領域内）
+colorbar_pad: 0.005 # カラーバーをプロットのボックスからどれだけ離すか（0.0, 0.01くらいから試して最初に感覚を掴むことを推奨）
+colorbar_shrink: 0.3 # カラーバーをどれくらい縮めるか（0より大きく1以下の値）
 colorbar_aspect: 20.0 # カラーバーのアスペクト比（shrinkを先に調整してからがよさそう）
+colorbar_label_horizontalalignment: "right" # カラーバーのタイトルラベルのx方向の配置の基準（"center" or "left" or "right"）
+colorbar_label_verticalalignment: "center" # カラーバーのタイトルラベルのy方向の配置の基準（基本は"center" or "bottom" or "top"）
+colorbar_label_x: -0.05 # カラーバーのタイトルラベルのx方向の調整（0.0〜1.0 でカラバーの領域内）
+colorbar_label_y: 0.5 # カラーバーのタイトルラベルのy方向の調整（0.0〜1.0 でカラーバーの領域内）
+colorbar_rotation: 0.0 # カラーバーのタイトルラベルを何°傾けるか
 axis_lw_colorbar: &axis_lw_colorbar 0.0 # カラーバーの枠線の太さ
 num_edges_colorbar: 256 # カラーバーの区切りの数
 is_drawedges_colorbar: False # カラーバーの区切り線を描画するか
@@ -141,6 +152,7 @@ num_colorbar_ticks: 3 # 主目盛りの数
 colorbar_tickslabel_pad: 2.0 # 主目盛りから目盛りラベルをどれだけ離すか
 colorbar_ticks_length: 5.0 # 主目盛り線の長さ
 colorbar_ticks_width: *axis_lw_colorbar # 主目盛り線の線幅
+is_reverse_colorbar_tickslabel: False # 目盛ラベルの位置をカラーバーに対して反転させるか
 # -副目盛り-
 is_plot_mticks_colorbar: False # 副目盛りをプロットするか
 num_colorbar_mtick: 3 # 副目盛りの数
