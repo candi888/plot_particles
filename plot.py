@@ -2,18 +2,19 @@ import dataclasses
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.style as mplstyle
 import matplotlib.ticker as ticker
 import numpy as np
-import yaml
+import yaml  # type: ignore
 from matplotlib.axes import Axes
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import Colormap, LinearSegmentedColormap, Normalize, to_rgba
 from matplotlib.figure import Figure
+from matplotlib.quiver import QuiverKey
 from numpy.typing import NDArray
 
 
@@ -262,6 +263,7 @@ class DataclassContour:
 
 @dataclasses.dataclass(frozen=True)
 class DataclassVector:
+    data_file_path: str
     col_index_vectorx: int
     col_index_vectory: int
     scaler_length_vector: float
@@ -704,7 +706,7 @@ def plot_colorbar(fig: Figure, ax: Axes, plot_name: str) -> None:
     )
 
     # カラーバーの枠線の太さ
-    cbar.outline.set_linewidth(IN_PARAMS.axis_lw_colorbar)
+    cbar.outline.set_linewidth(IN_PARAMS.axis_lw_colorbar)  # type: ignore
 
     # 主目盛り
     cbar.ax.tick_params(
@@ -732,22 +734,65 @@ def plot_colorbar(fig: Figure, ax: Axes, plot_name: str) -> None:
     return
 
 
+def update_refvec_corners(
+    refvec_corners_for_dummytext: List[List[float]],
+    fig: Figure,
+    ax: Axes,
+    qk: QuiverKey,
+) -> None:
+    # 1. Bboxを取得（表示座標系）
+    fig.canvas.draw()  # 描画が完了している必要がある
+    renderer = fig.canvas.get_renderer()  # type: ignore
+    bbox_text = qk.text.get_window_extent(renderer=renderer)
+
+    # 2. データ座標系への変換
+    inv = ax.transData.inverted()
+    x0_data, y0_data = inv.transform((bbox_text.x0, bbox_text.y0))  # 左下隅
+    x1_data, y1_data = inv.transform((bbox_text.x1, bbox_text.y1))  # 右上隅
+
+    # 参照渡しの辺りに注意
+    refvec_corners_for_dummytext[0] = [x0_data, x1_data]
+    refvec_corners_for_dummytext[1] = [y0_data, y1_data]
+
+    return
+
+
+def plot_transparent_dummytext_for_reference_vector_display(
+    ax: Axes,
+    refvec_corners_for_dummytext: List[List[float]],
+) -> None:
+    # 以下でreference vectorが余白の自動調節に含まれるようにする
+    # 現状，labelpos="N"の場合のみ対応
+
+    # 3. 隅にテキストを配置してこれらで自動調節をする
+    for x in refvec_corners_for_dummytext[0]:
+        for y in refvec_corners_for_dummytext[1]:
+            ax.text(
+                s="Dummy",
+                x=x,
+                y=y,
+                horizontalalignment="center",
+                verticalalignment="center",
+                alpha=0.0,
+                gid="You can delete this dummy text.",
+            )
+
+
 def plot_velocity_vector(
     fig: Figure,
     ax: Axes,
     snap_time_ms: int,
     is_plot_reference_vector: bool,
-    mask_array: NDArray[np.bool_],
     group_id_prefix: str,
     group_index: int,
     par_x: NDArray[np.float64],
     par_y: NDArray[np.float64],
+    refvec_corners_for_dummytext: List[List[float]],
+    mask_array: NDArray[np.bool_],
     mask_array_by_group: NDArray[np.bool_] | None = None,
 ) -> None:
-    global list_extra_artists
-    # TODO ベクトルのデータがあるファイルパスをyamlで入力できるように
     par_u, par_v = load_par_data_masked_by_plot_region(
-        pardata_filepath_str_time_replaced_by_xxxxx=IN_PARAMS.xydisa_file_path,
+        pardata_filepath_str_time_replaced_by_xxxxx=VECTOR_PARAMS.data_file_path,
         snap_time_ms=snap_time_ms,
         mask_array=mask_array,
         usecols=(
@@ -762,6 +807,8 @@ def plot_velocity_vector(
     original_scale = 10 / (IN_PARAMS.xlim_max - IN_PARAMS.xlim_min)
     scale = original_scale / VECTOR_PARAMS.scaler_length_vector
     width = original_scale / 5000 * VECTOR_PARAMS.scaler_width_vector
+
+    # ベクトルをプロット
     q = ax.quiver(
         par_x,
         par_y,
@@ -778,6 +825,7 @@ def plot_velocity_vector(
     )
 
     if is_plot_reference_vector:
+        # reference vectorのプロット
         qk = ax.quiverkey(
             Q=q,
             X=VECTOR_PARAMS.reference_vector_pos_x,
@@ -793,56 +841,19 @@ def plot_velocity_vector(
             coordinates="data",
         )
 
-        # 以下でreference vectorが余白の自動調節に含まれるようにする
-        # TODO（labelpos="N"の場合のみ）
+        # 初回のみreference vector表示用のdummy textの座標を取得
+        if snap_time_ms == IN_PARAMS.snap_start_time_ms:
+            update_refvec_corners(
+                refvec_corners_for_dummytext=refvec_corners_for_dummytext,
+                fig=fig,
+                ax=ax,
+                qk=qk,
+            )
 
-        # 1. Bboxを取得（表示座標系）
-        fig.canvas.draw()  # 描画が完了している必要がある
-        renderer = fig.canvas.get_renderer()
-        bbox_text = qk.text.get_window_extent(renderer=renderer)
-
-        # 2. データ座標系への変換
-        inv = ax.transData.inverted()
-        x0_data, y0_data = inv.transform((bbox_text.x0, bbox_text.y0))  # 左下隅
-        x1_data, y1_data = inv.transform((bbox_text.x1, bbox_text.y1))  # 右上隅
-
-        # 3. 隅にテキストを配置してこいつで自動調節をする
-        # TODO リファクタリング
-        ax.text(
-            s="Dummy1",
-            x=x0_data,
-            y=y0_data,
-            horizontalalignment="center",
-            verticalalignment="center",
-            alpha=0,
-            gid="This is dummy text1.",
-        )
-        ax.text(
-            s="Dummy2",
-            x=x1_data,
-            y=y1_data,
-            horizontalalignment="center",
-            verticalalignment="center",
-            alpha=0,
-            gid="This is dummy text2.",
-        )
-        ax.text(
-            s="Dummy3",
-            x=x0_data,
-            y=y1_data,
-            horizontalalignment="center",
-            verticalalignment="center",
-            alpha=0,
-            gid="This is dummy text3.",
-        )
-        ax.text(
-            s="Dummy4",
-            x=x1_data,
-            y=y0_data,
-            horizontalalignment="center",
-            verticalalignment="center",
-            alpha=0,
-            gid="This is dummy text4.",
+        # reference vector表示用のdummy textをプロット
+        plot_transparent_dummytext_for_reference_vector_display(
+            ax=ax,
+            refvec_corners_for_dummytext=refvec_corners_for_dummytext,
         )
 
     return
@@ -1050,6 +1061,7 @@ def make_snap_each_snap_time(
     save_dir_snap_path: Path,
     plot_name: str,
     is_group_plot: bool,
+    refvec_corners_for_dummytext: List[List[float]],
 ) -> None:
     set_ax_lim(ax=ax)
     set_ax_xticks(ax=ax)
@@ -1063,7 +1075,7 @@ def make_snap_each_snap_time(
     if IN_PARAMS.is_plot_time_text:
         set_ax_time_text(ax=ax, snap_time_ms=snap_time_ms)
 
-    # TODO キャンバス更新
+    # # 初回だけキャンバス更新が必要（scatterの大きさを揃えるため）
     if snap_time_ms == IN_PARAMS.snap_start_time_ms:
         fig.canvas.draw()
 
@@ -1135,12 +1147,13 @@ def make_snap_each_snap_time(
                 par_y=par_y,
                 group_id_prefix=vector_group_id_prefix,
                 group_index=group_index,
+                refvec_corners_for_dummytext=refvec_corners_for_dummytext,
             )
-            # 初回のみreference vectorをプロット
+
+            # 最初のみreference vectorをプロットする
             is_plot_reference_vector = False
 
     # 以下，画像の保存処理
-
     save_file_name_without_extension = (
         f"snap{snap_time_ms:0{IN_PARAMS.num_x_in_pathstr}}_{plot_name}"
     )
@@ -1185,6 +1198,9 @@ def make_snap_all_snap_time(
     if IN_PARAMS.is_plot_colorbar and (not is_group_plot):
         plot_colorbar(fig=fig, ax=ax, plot_name=plot_name)
 
+    # reference vectorを表示するための内部処理用の変数
+    refvec_corners_for_dummytext = [[0.0, 0.0], [0.0, 0.0]]
+
     # 本番プロット（調整のため最初だけ一回多くプロットしている）
     for snap_time_ms in np.insert(
         snap_time_array_ms, 0, [IN_PARAMS.snap_start_time_ms]
@@ -1197,6 +1213,7 @@ def make_snap_all_snap_time(
                 save_dir_snap_path=save_dir_snap_path,
                 plot_name=plot_name,
                 is_group_plot=is_group_plot,
+                refvec_corners_for_dummytext=refvec_corners_for_dummytext,
             )
             print(
                 f"{snap_time_ms/IN_PARAMS.scaler_s_to_ms:.03f} s {plot_name} plot finished"
@@ -1208,7 +1225,7 @@ def make_snap_all_snap_time(
             break
 
     print(
-        f"{snap_time_ms/IN_PARAMS.scaler_s_to_ms:.03f} s {plot_name} all make snap finished\n"
+        f"{snap_time_ms/IN_PARAMS.scaler_s_to_ms:.03f} s {plot_name} all make snapshot finished\n"
     )
     plt.close()
     return
@@ -1293,7 +1310,7 @@ def make_animation_from_snap(
     return
 
 
-def execute_plot_contour_all() -> None:
+def execute_plot_all(is_group_plot: bool) -> None:
     # スナップやアニメーションを保存するディレクトリ名
     save_dir_path: Path = Path(__file__).parent / IN_PARAMS.save_dir_name
 
@@ -1304,57 +1321,28 @@ def execute_plot_contour_all() -> None:
         IN_PARAMS.timestep_ms,
     )
 
-    for cur_contour_name in IN_PARAMS.plot_order_list_contour:
-        if cur_contour_name == "NOT_PLOT_BELOW":
-            break
-
-        save_dir_sub_path = save_dir_path / cur_contour_name
-
-        make_snap_all_snap_time(
-            snap_time_array_ms=snap_time_array_ms,
-            save_dir_sub_path=save_dir_sub_path,
-            plot_name=cur_contour_name,
-            is_group_plot=False,
-        )
-        make_animation_from_snap(
-            snap_time_array_ms=snap_time_array_ms,
-            save_dir_sub_path=save_dir_sub_path,
-            plot_name=cur_contour_name,
-        )
-        print(f"contour:{cur_contour_name} finished\n")
-
-    return
-
-
-def execute_plot_group_all() -> None:
-    # スナップやアニメーションを保存するディレクトリ名
-    save_dir_path: Path = Path(__file__).parent / IN_PARAMS.save_dir_name
-
-    # スナップショットを出力する時間[ms]のarray
-    snap_time_array_ms: NDArray[np.int64] = np.arange(
-        IN_PARAMS.snap_start_time_ms,
-        IN_PARAMS.snap_end_time_ms + IN_PARAMS.timestep_ms,
-        IN_PARAMS.timestep_ms,
+    plot_order_list = (
+        PLOT_GROUP_IDX_PARAMS.keys() if is_group_plot else PLOT_CONTOUR_PARAMS.keys()
     )
 
-    for cur_group_name in IN_PARAMS.plot_order_list_group:
-        if cur_group_name == "NOT_PLOT_BELOW":
+    for plot_name in plot_order_list:
+        if plot_name == "NOT_PLOT_BELOW":
             break
 
-        save_dir_sub_path = save_dir_path / cur_group_name
+        save_dir_sub_path = save_dir_path / plot_name
 
         make_snap_all_snap_time(
             snap_time_array_ms=snap_time_array_ms,
             save_dir_sub_path=save_dir_sub_path,
-            plot_name=cur_group_name,
-            is_group_plot=True,
+            plot_name=plot_name,
+            is_group_plot=is_group_plot,
         )
+
         make_animation_from_snap(
             snap_time_array_ms=snap_time_array_ms,
             save_dir_sub_path=save_dir_sub_path,
-            plot_name=cur_group_name,
+            plot_name=plot_name,
         )
-        print(f"group:{cur_group_name} finished\n")
 
     return
 
@@ -1379,10 +1367,10 @@ def main() -> None:
     set_mplparams_init()
 
     # contourプロット
-    execute_plot_contour_all()
+    execute_plot_all(is_group_plot=False)
 
     # groupプロット
-    execute_plot_group_all()
+    execute_plot_all(is_group_plot=True)
 
     print("all finished")
 

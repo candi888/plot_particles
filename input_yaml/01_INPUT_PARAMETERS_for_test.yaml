@@ -257,6 +257,7 @@ vector:
     length_reference_vector: &vectorbase_length_reference 1
 
   *id_velocity_vector :
+    data_file_path: *xud_path
     col_index_vectorx: 2 # ベクトルのx成分がデータの何列目か 0-index
     col_index_vectory: 3 # ベクトルのy成分がデータの何列目か 0-index
     scaler_length_vector: 0.6 # ベクトルの長さの調整用．nに設定 -> ベクトルの長さをn倍
