@@ -56,6 +56,8 @@ is_plot_axis_top: &is_plot_axis_top False # 上側の軸を表示するか
 is_plot_axis_right: &is_plot_axis_right False # 右側の軸を表示するか
 
 # *フォント関連
+font_name: "Times New Roman" # 全体で使用するフォント．スパコンでTimes New Romanを使う設定をしていないときなどには変更が必要
+is_use_userfont_in_mathtext: True # 数式で可能な限りfont_nameで指定したフォントを使うか（FalseでTeXっぽいフォントを使う）
 base_font_size: &base_font_size 15.0 # 基準フォントサイズ
 xlabel_font_size: *base_font_size # x軸タイトルのフォントサイズ
 ylabel_font_size: *base_font_size # y軸 タイトルのフォントサイズ
@@ -65,7 +67,6 @@ timetext_font_size: 17.0 # 時刻テキストのフォントサイズ
 colorbar_title_font_size: 12.0 # カラーバーのタイトルのサイズ
 colorbar_ticks_font_size: 12.0 # カラーバーの目盛りの値のサイズ
 reference_vector_font_size: 12.0 # reference vectorのラベルのフォントサイズ
-is_use_TimesNewRoman_in_mathtext: True # 数式で可能な限りTimes New Romanを使うか（FalseでTeXっぽいフォントを使う）
 
 # * グラフの表示範囲の設定
 xlim_min: &xlim_min -0.06

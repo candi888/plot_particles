@@ -24,10 +24,10 @@ class DataclassInputParameters:
     save_dir_name: str
 
     # * contourプロットの順序．上から順番にプロットを行う．
-    plot_order_list_contour: list  # List[str]であるが，後の__post_init__でチェック
+    plot_order_list_contour: list
 
     # * groupプロットの順序．上から順番にプロットを行う．
-    plot_order_list_group: list  # List[str]であるが，後の__post_init__でチェック
+    plot_order_list_group: list
 
     # * 画像保存時の設定
     is_make_snap: bool
@@ -36,9 +36,9 @@ class DataclassInputParameters:
 
     # * アニメーション関連
     is_make_anim: bool
-    anim_extension: str  # アニメーション作成に使用するスナップショットの拡張子（基本は，png or jpeg）
-    framerate: int  # アニメーションのフレームレート．実スケールのものを作りたい時は 1000 / anim_timestep_ms を指定する
-    crf_num: int  # 値が大きいほどlowqualityの動画の質が下がる．パワポに載せる動画など，ファイルサイズ小さめのが要るとき用にチューニング（2MB以下になるのがよいか）
+    anim_extension: str
+    framerate: int
+    crf_num: int
 
     # *出力画像の大きさ [cm]
     # （参考）A4用紙の縦向きサイズ（縦 × 横）は 29.7 × 21.0[cm]
@@ -82,6 +82,8 @@ class DataclassInputParameters:
     is_plot_ticks_right: bool  # 右側のy軸の目盛りを非表示
 
     # *フォント関連
+    font_name: str
+    is_use_userfont_in_mathtext: bool  # 数式で可能な限りTimes New Romanを使うか（FalseでTeXっぽいフォントを使う）
     base_font_size: float  # 基準フォントサイズ
     xlabel_font_size: float  # x軸タイトルのフォントサイズ
     ylabel_font_size: float  # y軸 タイトルのフォントサイズ
@@ -91,7 +93,6 @@ class DataclassInputParameters:
     colorbar_title_font_size: float  # カラーバーのタイトルのサイズ
     colorbar_ticks_font_size: float  # カラーバーの目盛りの値のサイズ
     reference_vector_font_size: float  # reference vectorのラベルのフォントサイズ
-    is_use_TimesNewRoman_in_mathtext: bool  # 数式で可能な限りTimes New Romanを使うか（FalseでTeXっぽいフォントを使う）
 
     # *目盛りの設定（x軸）
     # -主目盛り-
@@ -453,16 +454,16 @@ def set_mplparams_init() -> None:
     plt.rcParams["savefig.bbox"] = "tight"
     plt.rcParams["savefig.pad_inches"] = 0.05
 
-    # MatplotlibのデフォルトフォントをTimes New Romanに設定
-    plt.rcParams["font.family"] = "Times New Roman"
+    # Matplotlibのデフォルトフォントを設定
+    plt.rcParams["font.family"] = IN_PARAMS.font_name
 
     # mathtext関連
-    if IN_PARAMS.is_use_TimesNewRoman_in_mathtext:
+    if IN_PARAMS.is_use_userfont_in_mathtext:
         plt.rcParams["mathtext.fontset"] = "custom"
-        plt.rcParams["mathtext.it"] = "Times New Roman:italic"
-        plt.rcParams["mathtext.bf"] = "Times New Roman:bold"
-        plt.rcParams["mathtext.bfit"] = "Times New Roman:italic:bold"
-        plt.rcParams["mathtext.rm"] = "Times New Roman"
+        plt.rcParams["mathtext.it"] = f"{IN_PARAMS.font_name}:italic"
+        plt.rcParams["mathtext.bf"] = f"{IN_PARAMS.font_name}:bold"
+        plt.rcParams["mathtext.bfit"] = f"{IN_PARAMS.font_name}:italic:bold"
+        plt.rcParams["mathtext.rm"] = f"{IN_PARAMS.font_name}"
         plt.rcParams["mathtext.fallback"] = "cm"
     else:
         plt.rcParams["mathtext.fontset"] = "cm"
@@ -522,7 +523,8 @@ def get_mask_array_by_plot_region(snap_time_ms: int) -> NDArray[np.bool_]:
 
     x = original_data[:, 0]
     y = original_data[:, 1]
-    margin = np.max(original_data[:, 2]) * 2  # 最大粒径の2倍分marginを設定
+    # 最大粒径の2倍分marginを設定
+    margin = np.max(original_data[:, 2]) * 2
 
     # 範囲条件を設定
     mask_array = (
