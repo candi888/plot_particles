@@ -164,7 +164,7 @@ num_colorbar_mtick: 3 # 副目盛りの数
 colorbar_mticks_length: 3.0 # 補助目盛り線の長さ
 colorbar_mticks_width: 0.75 # 補助目盛り線の線幅
 
-#* pythonファイルからの各データファイルの相対パス．数字の部分は"xxxxx"を入れる．（コード内部で直接使用することはない）
+#* かplot_particlesディレクトリからの各データファイルの相対パス．数字の部分は"xxxxx"を入れる．（コード内部で直接使用することはない）
 path_list:
   - &xud_path "OUTPUT/SNAP/XUDxxxxx.DAT"
   - &tmd_path "OUTPUT/SNAP/TMDxxxxx.DAT"

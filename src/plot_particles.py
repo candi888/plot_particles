@@ -349,7 +349,7 @@ def main_sub() -> None:
     # ---関数---
     def read_inparam_yaml_as_dict() -> Dict:
         with open(
-            Path(__file__).parent / "input_yaml" / YAML_FILE_PATH.name,
+            Path(__file__).parents[1] / "input_yaml" / YAML_FILE_PATH.name,
             mode="r",
             encoding="utf-8",
         ) as f:
@@ -521,7 +521,7 @@ def main_sub() -> None:
 
     def get_mask_array_by_plot_region(snap_time_ms: int) -> NDArray[np.bool_]:
         original_data = np.loadtxt(
-            Path(__file__).parent
+            Path(__file__).parents[2]
             / Path(
                 IN_PARAMS.xydisa_file_path.replace(
                     "x" * IN_PARAMS.num_x_in_pathstr,
@@ -560,7 +560,7 @@ def main_sub() -> None:
         mask_array_by_group: NDArray[np.bool_] | None = None,
     ) -> NDArray[np.float64]:
         original_data = np.loadtxt(
-            Path(__file__).parent
+            Path(__file__).parents[2]
             / Path(
                 pardata_filepath_str_time_replaced_by_xxxxx.replace(
                     "x" * IN_PARAMS.num_x_in_pathstr,
@@ -583,7 +583,7 @@ def main_sub() -> None:
         snap_time_ms: int, mask_array: NDArray[np.bool_]
     ) -> NDArray[np.int32]:
         masked_group_idx = np.loadtxt(
-            Path(__file__).parent
+            Path(__file__).parents[2]
             / Path(
                 PLOT_GROUP_CONFIG_PARAMS[IN_PARAMS.grouping_id].data_file_path.replace(
                     "x" * IN_PARAMS.num_x_in_pathstr,
@@ -1501,7 +1501,7 @@ def main_sub() -> None:
         return
 
     def execute_plot_all(is_group_plot: bool) -> None:
-        save_dir_path: Path = Path(__file__).parent / IN_PARAMS.save_dir_name
+        save_dir_path: Path = Path(__file__).parents[1] / IN_PARAMS.save_dir_name
 
         snap_time_array_ms: NDArray[np.int64] = np.arange(
             IN_PARAMS.snap_start_time_ms,
@@ -1546,7 +1546,7 @@ def main_sub() -> None:
 
     def get_input_yaml_file_path_list() -> List[Path]:
         # プロットに使用するyamlファイルのリストを作成
-        input_yaml_dir_path = Path(__file__).parent / "input_yaml"
+        input_yaml_dir_path = Path(__file__).parents[1] / "input_yaml"
         input_yaml_file_path_list = list(input_yaml_dir_path.glob("*.yaml"))
         input_yaml_file_path_list.sort()
 
