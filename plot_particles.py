@@ -807,7 +807,7 @@ def main_sub() -> None:
                     gid="You can delete this dummy text.",
                 )
 
-    def plot_vector_for_svg(
+    def plot_redline_as_vector_for_svg(
         ax: Axes,
         linepoint_xy1: List[NDArray[np.float64] | List[float]],
         linepoint_xy2: List[NDArray[np.float64] | List[float]],
@@ -881,7 +881,7 @@ def main_sub() -> None:
 
         # svg編集用
         if IN_PARAMS.snap_extension == "svg":
-            plot_vector_for_svg(
+            plot_redline_as_vector_for_svg(
                 ax=ax,
                 linepoint_xy1=[par_x, par_y],
                 linepoint_xy2=[par_x + par_u / scale, par_y + par_v / scale],
@@ -912,7 +912,7 @@ def main_sub() -> None:
 
             # svg編集用（reference vector）
             if IN_PARAMS.snap_extension == "svg":
-                plot_vector_for_svg(
+                plot_redline_as_vector_for_svg(
                     ax=ax,
                     linepoint_xy1=[
                         [
@@ -928,7 +928,7 @@ def main_sub() -> None:
                         ],
                         [PLOT_VECTOR_PARAMS.reference_vector_pos_y],
                     ],
-                    zorder=4000,
+                    zorder=4000,  # 十分大きい値に
                     gid="for_edit_reference_vector",
                     clip_on=False,
                 )
@@ -1412,17 +1412,14 @@ def main_sub() -> None:
         return
 
     def execute_plot_all(is_group_plot: bool) -> None:
-        # スナップやアニメーションを保存するディレクトリ名
         save_dir_path: Path = Path(__file__).parent / IN_PARAMS.save_dir_name
 
-        # スナップショットを出力する時間[ms]のarray
         snap_time_array_ms: NDArray[np.int64] = np.arange(
             IN_PARAMS.snap_start_time_ms,
             IN_PARAMS.snap_end_time_ms + IN_PARAMS.snap_timestep_ms,
             IN_PARAMS.snap_timestep_ms,
         )
 
-        # アニメーション作成に使用するスナップショットの時間[ms]のarray
         anim_time_array_ms: NDArray[np.int64] = np.arange(
             IN_PARAMS.anim_start_time_ms,
             IN_PARAMS.anim_end_time_ms + IN_PARAMS.anim_timestep_ms,
@@ -1470,8 +1467,9 @@ def main_sub() -> None:
 
     # * ------main部分------
 
-    # ---グローバル変数群の更新---
     for YAML_FILE_PATH in get_input_yaml_file_path_list():
+        # ---グローバル変数群の更新---
+
         # contour, vector, group以外のすべてのyamlの設定を格納
         IN_PARAMS = construct_input_parameters_dataclass()
 
@@ -1486,7 +1484,8 @@ def main_sub() -> None:
 
         # groupの設定を格納2．plot_order_list_groupの「group_name -> idx -> そのidx内の設定」の辞書の辞書
         PLOT_GROUP_IDX_PARAMS = construct_dict_of_group_idx_dataclass()
-        # ---グローバル変数群の更新---
+
+        # ---グローバル変数群の更新----
 
         print(f"plot by {YAML_FILE_PATH.name} start\n")
 
