@@ -580,18 +580,23 @@ def main_sub() -> None:
         return masked_data.T
 
     def get_group_idx_array(
-        snap_time_ms: int, mask_array: NDArray[np.bool_]
+        plot_name: str,
+        is_group_plot: bool,
+        snap_time_ms: int,
+        mask_array: NDArray[np.bool_],
     ) -> NDArray[np.int32]:
+        cur_grouping = plot_name if is_group_plot else IN_PARAMS.grouping_id
+
         masked_group_idx = np.loadtxt(
             Path(__file__).parents[2]
             / Path(
-                PLOT_GROUP_CONFIG_PARAMS[IN_PARAMS.grouping_id].data_file_path.replace(
+                PLOT_GROUP_CONFIG_PARAMS[cur_grouping].data_file_path.replace(
                     "x" * IN_PARAMS.num_x_in_pathstr,
                     f"{snap_time_ms:0{IN_PARAMS.num_x_in_pathstr}}",
                 )
             ),
             dtype=np.int32,
-            usecols=PLOT_GROUP_CONFIG_PARAMS[IN_PARAMS.grouping_id].col_idx,
+            usecols=PLOT_GROUP_CONFIG_PARAMS[cur_grouping].col_idx,
             encoding="utf-8",
         )[mask_array]
 
@@ -619,20 +624,23 @@ def main_sub() -> None:
         par_y: NDArray[np.float64],
         par_disa: NDArray[np.float64],
         par_color: NDArray[np.float64],
+        plot_name: str,
+        is_group_plot: bool,
         group_id_prefix: str,
         group_idx: int,
     ) -> None:
         s = data_unit_to_points_size(diameter_in_data_units=par_disa, fig=fig, axis=ax)
 
-        groupingid = IN_PARAMS.grouping_id
+        cur_grouping = plot_name if is_group_plot else IN_PARAMS.grouping_id
+
         ax.scatter(
             par_x,
             par_y,
             s=s,
             c=par_color,
             linewidths=0,
-            gid=f"{group_id_prefix}_{PLOT_GROUP_IDX_PARAMS[groupingid][group_idx].label}",
-            zorder=PLOT_GROUP_IDX_PARAMS[groupingid][group_idx].particle_zorder,
+            gid=f"{group_id_prefix}_{PLOT_GROUP_IDX_PARAMS[cur_grouping][group_idx].label}",
+            zorder=PLOT_GROUP_IDX_PARAMS[cur_grouping][group_idx].particle_zorder,
         )
 
         return
@@ -832,6 +840,8 @@ def main_sub() -> None:
         is_plot_reference_vector: bool,
         group_id_prefix: str,
         group_idx: int,
+        plot_name: str,
+        is_group_plot: bool,
         par_x: NDArray[np.float64],
         par_y: NDArray[np.float64],
         refvec_corners_for_dummytext: List[List[float]],
@@ -856,7 +866,8 @@ def main_sub() -> None:
         # 5000はチューニング定数
         width = original_scale / 5000 * PLOT_VECTOR_PARAMS.scaler_width_vector
 
-        groupingid = IN_PARAMS.grouping_id
+        cur_grouping = plot_name if is_group_plot else IN_PARAMS.grouping_id
+
         # ベクトルをプロット
         q = ax.quiver(
             par_x,
@@ -870,8 +881,8 @@ def main_sub() -> None:
             headlength=PLOT_VECTOR_PARAMS.headlength_vector,
             headaxislength=PLOT_VECTOR_PARAMS.headaxislength_vector,
             headwidth=PLOT_VECTOR_PARAMS.headwidth_vector,
-            gid=f"{group_id_prefix}_{PLOT_GROUP_IDX_PARAMS[groupingid][group_idx].label}",
-            zorder=PLOT_GROUP_IDX_PARAMS[groupingid][group_idx].vector_zorder,
+            gid=f"{group_id_prefix}_{PLOT_GROUP_IDX_PARAMS[cur_grouping][group_idx].label}",
+            zorder=PLOT_GROUP_IDX_PARAMS[cur_grouping][group_idx].vector_zorder,
         )
 
         # svg編集用
@@ -880,9 +891,10 @@ def main_sub() -> None:
                 ax=ax,
                 linepoint_xy1=[par_x, par_y],
                 linepoint_xy2=[par_x + par_u / scale, par_y + par_v / scale],
-                zorder=PLOT_GROUP_IDX_PARAMS[groupingid][group_idx].vector_zorder * 0.1
+                zorder=PLOT_GROUP_IDX_PARAMS[cur_grouping][group_idx].vector_zorder
+                * 0.1
                 + 3 * 0.9,
-                gid=f"for_edit_{group_id_prefix}_{PLOT_GROUP_IDX_PARAMS[groupingid][group_idx].label}",
+                gid=f"for_edit_{group_id_prefix}_{PLOT_GROUP_IDX_PARAMS[cur_grouping][group_idx].label}",
                 clip_on=True,
             )
 
@@ -1114,16 +1126,15 @@ def main_sub() -> None:
         )
 
     def get_facecolor_array_for_group(
+        plot_name: str,
         group_idx: int,
         num_par_cur_group: int,
     ) -> NDArray[np.float64]:
         return np.full(
             (num_par_cur_group, 4),
             to_rgba(
-                c=PLOT_GROUP_IDX_PARAMS[IN_PARAMS.grouping_id][group_idx].group_color,
-                alpha=PLOT_GROUP_IDX_PARAMS[IN_PARAMS.grouping_id][
-                    group_idx
-                ].group_alpha,
+                c=PLOT_GROUP_IDX_PARAMS[plot_name][group_idx].group_color,
+                alpha=PLOT_GROUP_IDX_PARAMS[plot_name][group_idx].group_alpha,
             ),
         )
 
@@ -1131,9 +1142,7 @@ def main_sub() -> None:
         plot_name: str, is_group_plot: bool, group_idx: int
     ) -> bool:
         if is_group_plot:
-            return PLOT_GROUP_IDX_PARAMS[IN_PARAMS.grouping_id][
-                group_idx
-            ].group_is_plot_vector
+            return PLOT_GROUP_IDX_PARAMS[plot_name][group_idx].group_is_plot_vector
 
         else:
             return (
@@ -1236,7 +1245,7 @@ def main_sub() -> None:
 
         # 今プロットする粒子のgroupidxを取得
         par_group_idx = get_group_idx_array(
-            snap_time_ms=snap_time_ms, mask_array=mask_array
+            plot_name, is_group_plot, snap_time_ms=snap_time_ms, mask_array=mask_array
         )
 
         # reference vectorをプロットするか（動的に更新）
@@ -1267,7 +1276,9 @@ def main_sub() -> None:
             # 粒子の色の取得
             if is_group_plot:
                 par_color = get_facecolor_array_for_group(
-                    group_idx=group_idx, num_par_cur_group=par_x.shape[0]
+                    plot_name=plot_name,
+                    group_idx=group_idx,
+                    num_par_cur_group=par_x.shape[0],
                 )
             else:
                 par_color = get_facecolor_array_for_contour(
@@ -1286,6 +1297,8 @@ def main_sub() -> None:
                 par_y=par_y,
                 par_disa=par_disa,
                 par_color=par_color,
+                plot_name=plot_name,
+                is_group_plot=is_group_plot,
                 group_id_prefix=particle_group_id_prefix,
                 group_idx=group_idx,
             )
@@ -1298,6 +1311,8 @@ def main_sub() -> None:
                     par_y=par_y,
                     par_disa=par_disa,
                     par_color=par_color,
+                    plot_name=plot_name,
+                    is_group_plot=is_group_plot,
                     group_id_prefix=particle_group_id_prefix,
                     group_idx=group_idx,
                 )
@@ -1313,6 +1328,8 @@ def main_sub() -> None:
                     ax=ax,
                     snap_time_ms=snap_time_ms,
                     is_plot_reference_vector=is_plot_reference_vector,
+                    plot_name=plot_name,
+                    is_group_plot=is_group_plot,
                     par_x=par_x,
                     par_y=par_y,
                     group_id_prefix=vector_group_id_prefix,
@@ -1333,6 +1350,8 @@ def main_sub() -> None:
                         snap_time_ms=snap_time_ms,
                         mask_array=mask_array,
                         is_plot_reference_vector=is_plot_reference_vector,
+                        plot_name=plot_name,
+                        is_group_plot=is_group_plot,
                         mask_array_by_group=mask_array_by_group,
                         par_x=par_x,
                         par_y=par_y,

@@ -26,10 +26,10 @@ is_plot_hypervisor1: &is_plot_hypervisor1 True
 is_plot_hypervisor2: &is_plot_hypervisor2 True
 
 # * プロット範囲の設定
-xlim_min: &xlim_min -0.06 # 左端のx座標（データ座標系）
-xlim_max: &xlim_max 1.24 # 右端のx座標（データ座標系）
-ylim_min: &ylim_min -0.06 # 下端のx座標（データ座標系）
-ylim_max: &ylim_max 0.41 # 上端のx座標（データ座標系）
+xlim_min: &xlim_min -0.06 # 左端のx座標（データ座標）
+xlim_max: &xlim_max 1.24 # 右端のx座標（データ座標）
+ylim_min: &ylim_min -0.06 # 下端のx座標（データ座標）
+ylim_max: &ylim_max 0.41 # 上端のx座標（データ座標）
 
 #* プロットに使用する時刻
 # -スナップショット-
