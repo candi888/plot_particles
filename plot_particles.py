@@ -22,42 +22,32 @@ def main_sub() -> None:
     # ---dataclassの定義---
     @dataclasses.dataclass(frozen=True)
     class DataclassInputParameters:
-        # * スナップやアニメーションを保存するディレクトリ名
         save_dir_name: str
 
-        # * contourプロットの順序．上から順番にプロットを行う．
         plot_order_list_contour: list
 
-        # * groupプロットの順序．上から順番にプロットを行う．
         plot_order_list_group: list
 
-        # * 画像保存時の設定
         is_make_snap: bool
         snap_dpi: int
         snap_extension: str
 
-        # * アニメーション関連
         is_make_anim: bool
         ffmpeg_path: str
         anim_extension: str
         framerate: int
         crf_num: int
 
-        # *出力画像の大きさ [cm]
-        # （参考）A4用紙の縦向きサイズ（縦 × 横）は 29.7 × 21.0[cm]
-        fig_horizontal_cm: float  # 横方向のみ設定．縦方向は自動で調節される
+        fig_horizontal_cm: float
         tooning_for_fig: float
 
-        # * 必須の物理量（x, y, disa）がどの素データのどの列か．0-index
         xydisa_file_path: str
         col_idx_x: int
         col_idx_y: int
         col_idx_disa: int
 
-        # * このファイルからの各相対パス
         path_list: list
 
-        # * プロット関連
         snap_timestep_ms: int
         snap_start_time_ms: int
         snap_end_time_ms: int
@@ -70,146 +60,113 @@ def main_sub() -> None:
         ylim_min: float
         ylim_max: float
 
-        # *全体の見た目の設定
-        is_plot_hypervisor1: bool  # xy軸ラベル，時刻テキストなど，軸の表示範囲を変えると再度調整が必要なものの表示有無（最初にレイアウトを調整する時にはFalse，最後にTrueにして軸ラベルなどの位置調整を行うことを推奨）
-        is_plot_hypervisor2: bool  # 軸線，目盛，目盛ラベルなどの表示有無（粒子やベクトルのみをプロットしたい時に使用）
+        is_plot_hypervisor1: bool
+        is_plot_hypervisor2: bool
 
-        axis_lw: float  # 軸線の太さ
-        is_plot_axis_bottom: bool  # 下側の軸を表示するか
-        is_plot_axis_left: bool  # 左側の軸を表示するか
-        is_plot_axis_top: bool  # 上側の軸を表示するか
-        is_plot_axis_right: bool  # 右側の軸を表示するか
-        is_plot_ticks_bottom: bool  # 下側のx軸の目盛りを表示
-        is_plot_ticks_left: bool  # 左側のy軸の目盛りを表示
-        is_plot_ticks_top: bool  # 上側のx軸の目盛りを非表示
-        is_plot_ticks_right: bool  # 右側のy軸の目盛りを非表示
+        axis_lw: float
+        is_plot_axis_bottom: bool
+        is_plot_axis_left: bool
+        is_plot_axis_top: bool
+        is_plot_axis_right: bool
+        is_plot_ticks_bottom: bool
+        is_plot_ticks_left: bool
+        is_plot_ticks_top: bool
+        is_plot_ticks_right: bool
 
-        # *フォント関連
         font_name: str
-        is_use_userfont_in_mathtext: bool  # 数式で可能な限りTimes New Romanを使うか（FalseでTeXっぽいフォントを使う）
-        base_font_size: float  # 基準フォントサイズ
-        xlabel_font_size: float  # x軸タイトルのフォントサイズ
-        ylabel_font_size: float  # y軸 タイトルのフォントサイズ
-        xticks_font_size: float  # x軸目盛りの値のフォントサイズ
-        yticks_font_size: float  # y軸目盛りの値のフォントサイズ
-        timetext_font_size: float  # 時刻テキストのフォントサイズ
-        colorbar_title_font_size: float  # カラーバーのタイトルのサイズ
-        colorbar_ticks_font_size: float  # カラーバーの目盛りの値のサイズ
-        reference_vector_font_size: float  # reference vectorのラベルのフォントサイズ
+        is_use_userfont_in_mathtext: bool
+        base_font_size: float
+        xlabel_font_size: float
+        ylabel_font_size: float
+        xticks_font_size: float
+        yticks_font_size: float
+        timetext_font_size: float
+        colorbar_title_font_size: float
+        colorbar_ticks_font_size: float
+        reference_vector_font_size: float
 
-        # *目盛りの設定（x軸）
-        # -主目盛り-
-        anchor_x_ticks: float  # 主目盛りで必ず表示する座標
-        space_x_ticks: float  # 主目盛りの間隔
-        strformatter_x: (
-            str | None
-        )  # 主目盛りの値の書式等を変更したいときにいじる（変更しない場合はNoneにする）．
-        x_tickslabel_pad: float  # x軸主目盛りから目盛りラベルをどれだけ離すか
-        x_ticks_length: float  # x軸主目盛り線の長さ
-        x_ticks_width: float  # x軸主目盛り線の線幅
-        is_plot_xtickslabel_bottom: bool  # 下側のy軸の目盛ラベルを表示するか
-        is_plot_xtickslabel_top: bool  # 上側のy軸の目盛ラベルを表示するか
+        anchor_x_ticks: float
+        space_x_ticks: float
+        strformatter_x: str | None
+        x_tickslabel_pad: float
+        x_ticks_length: float
+        x_ticks_width: float
+        is_plot_xtickslabel_bottom: bool
+        is_plot_xtickslabel_top: bool
 
-        # -副目盛り-
-        is_plot_mticks_x: bool  # 副目盛りをプロットするか
-        num_x_mtick: int  # 副目盛りの数
-        x_mticks_length: float  # x軸補助目盛り線の長さ
-        x_mticks_width: float  # x軸補助目盛り線の線幅
+        is_plot_mticks_x: bool
+        num_x_mtick: int
+        x_mticks_length: float
+        x_mticks_width: float
 
-        # *目盛りの設定（y軸）
-        # -主目盛り-
-        anchor_y_ticks: float  # 主目盛りで必ず表示する座標
-        space_y_ticks: float  # 主目盛りの間隔
-        strformatter_y: (
-            str | None
-        )  # 主目盛りの値の書式等を変更したいときにいじる（変更しない場合はNoneにする）．
-        y_tickslabel_pad: float  # y軸主目盛りから目盛りラベルをどれだけ離すか
-        y_ticks_length: float  # y軸主目盛り線の長さ
-        y_ticks_width: float  # y軸主目盛り線の線幅
-        is_plot_ytickslabel_left: bool  # 左側のy軸の目盛ラベルを表示するか
-        is_plot_ytickslabel_right: bool  # 右側のy軸の目盛ラベルを表示するか
+        anchor_y_ticks: float
+        space_y_ticks: float
+        strformatter_y: str | None
+        y_tickslabel_pad: float
+        y_ticks_length: float
+        y_ticks_width: float
+        is_plot_ytickslabel_left: bool
+        is_plot_ytickslabel_right: bool
 
-        # -副目盛り-
-        is_plot_mticks_y: bool  # 副目盛りをプロットするか
-        num_y_mtick: int  # 副目盛りの数
-        y_mticks_length: float  # y軸補助目盛り線の長さ
-        y_mticks_width: float  # y軸補助目盛り線の線幅
+        is_plot_mticks_y: bool
+        num_y_mtick: int
+        y_mticks_length: float
+        y_mticks_width: float
 
-        # *軸ラベルの設定（x軸）
         is_plot_xlabel_text: bool
-        xlabel_text: str  # ラベルのテキスト
-        xlabel_pos: float  # テキストの中心のx座標（データの単位）
+        xlabel_text: str
+        xlabel_pos: float
         xlabel_offset: float
 
-        # *軸ラベルの設定（y軸）
         is_plot_ylabel_text: bool
-        ylabel_text: str  # ラベルのテキスト
-        ylabel_pos: float  # テキストの中心のy座標（データ単位）
-        ylabel_horizontalalignment: (
-            str  # テキストのx方向の配置の基準（基本は"center" or "right"）
-        )
+        ylabel_text: str
+        ylabel_pos: float
+        ylabel_horizontalalignment: str
         ylabel_offset: float
-        is_horizontal_ylabel: bool  # ラベルを横向きにするか
+        is_horizontal_ylabel: bool
 
-        # * 時刻のテキストの設定
-        is_plot_time_text: bool  # 時刻テキストをプロットするか
-        time_text: str  # 時刻テキスト（xxxxxの部分に時刻が挿入される）
-        strformatter_timetext: (
-            str  # 時刻テキストの書式（小数点以下のゼロ埋めの調節で使用）
-        )
-        time_text_pos_x: float  # 時刻テキストの左端のx座標（データの単位）
-        time_text_pos_y: float  # 時刻テキストの下端のy座標（データの単位）
+        is_plot_time_text: bool
+        time_text: str
+        strformatter_timetext: str
+        time_text_pos_x: float
+        time_text_pos_y: float
 
-        # * カラーバー関連の設定
         is_plot_colorbar: bool
-        is_horizontal_colorbar: bool  # カラーバーを横向きにするか
-        colorbar_pos: float  # カラーバーの位置の微調整（横向きならx方向，縦向きならy方向について，0.5でちょうどプロットのボックスの中心．0.0〜1.0 でプロットのボックスの領域内）
+        is_horizontal_colorbar: bool
+        colorbar_pos: float
         colorbar_pad: float
-        colorbar_shrink: float  # カラーバーをどれくらい縮めるか（0より大きく1以下の値）
-        colorbar_aspect: (
-            float  # カラーバーのアスペクト比（shrinkを先に調整してからがよさそう）
-        )
-        colorbar_label_horizontalalignment: (
-            str  # テキストのx方向の配置の基準（"center" or "left" or "right"）
-        )
-        colorbar_label_verticalalignment: (
-            str  # テキストのy方向の配置の基準（基本は"center" or "bottom" or "top"）
-        )
-        colorbar_label_x: float  # カラーバーのタイトルラベルのx方向の調整（0.0〜1.0 でカラーバーの領域内）
-        colorbar_label_y: float  # カラーバーのタイトルラベルのy方向の調整（0.0〜1.0 でカラーバーの領域内）
+        colorbar_shrink: float
+        colorbar_aspect: float
+        colorbar_label_horizontalalignment: str
+        colorbar_label_verticalalignment: str
+        colorbar_label_x: float
+        colorbar_label_y: float
         colorbar_rotation: float
-        axis_lw_colorbar: float  # カラーバーの枠線の太さ
-        num_edges_colorbar: int  # カラーバーの区切りの数
-        is_drawedges_colorbar: bool  # カラーバーの区切り線を描画するか
-        # -主目盛り-
-        num_colorbar_ticks: int  # 主目盛りの数
-        colorbar_tickslabel_pad: float  # x軸主目盛りから目盛りラベルをどれだけ離すか
-        colorbar_ticks_length: float  # x軸主目盛り線の長さ
-        colorbar_ticks_width: float  # x軸主目盛り線の線幅
-        is_reverse_colorbar_tickslabel: (
-            bool  # 目盛ラベルの位置をカラーバーに対して反転させるか
-        )
-        # -副目盛り-
-        is_plot_mticks_colorbar: bool  # 副目盛りをプロットするか
-        num_colorbar_mtick: int  # 副目盛りの数
-        colorbar_mticks_length: float  # x軸補助目盛り線の長さ
-        colorbar_mticks_width: float  # x軸補助目盛り線の線幅
+        axis_lw_colorbar: float
+        num_edges_colorbar: int
+        is_drawedges_colorbar: bool
 
-        # * contourプロットでのグループ分けの選択
+        num_colorbar_ticks: int
+        colorbar_tickslabel_pad: float
+        colorbar_ticks_length: float
+        colorbar_ticks_width: float
+        is_reverse_colorbar_tickslabel: bool
+
+        is_plot_mticks_colorbar: bool
+        num_colorbar_mtick: int
+        colorbar_mticks_length: float
+        colorbar_mticks_width: float
+
         grouping_id: str
 
-        # * ベクトルプロットのid振り用（コード内部で直接使用することはない）
         vector_list: list
 
-        # * ベクトルプロットの選択
         vector_id: str
 
-        # * advanced setting
+        plot_order_list_zoom: list
+
         scaler_s_to_ms: int
         num_x_in_pathstr: int
-
-        # * 拡大図用
-        plot_order_list_zoom: list
 
         def __post_init__(self) -> None:
             class_dict = dataclasses.asdict(self)
@@ -298,8 +255,8 @@ def main_sub() -> None:
 
     @dataclasses.dataclass(frozen=True)
     class DataclassGroupConfig:
-        data_file_path: str  # データがあるファイルのpythonファイルからの相対パス
-        col_idx: int  # データが何列目にあるか　（0-index）
+        data_file_path: str
+        col_idx: int
 
         def __post_init__(self) -> None:
             class_dict = dataclasses.asdict(self)
@@ -558,9 +515,9 @@ def main_sub() -> None:
         plt.rcParams["ytick.minor.visible"] = IN_PARAMS.is_plot_mticks_y
 
         # 凡例の見た目設定（今は使用なし）
-        plt.rcParams["legend.fancybox"] = False  # 丸角OFF
-        plt.rcParams["legend.framealpha"] = 1  # 透明度の指定、0で塗りつぶしなし
-        plt.rcParams["legend.edgecolor"] = "black"  # edgeの色を変更
+        # plt.rcParams["legend.fancybox"] = False  # 丸角OFF
+        # plt.rcParams["legend.framealpha"] = 1  # 透明度の指定、0で塗りつぶしなし
+        # plt.rcParams["legend.edgecolor"] = "black"  # edgeの色を変更
 
     def get_mask_array_by_plot_region(snap_time_ms: int) -> NDArray[np.bool_]:
         original_data = np.loadtxt(
@@ -643,36 +600,15 @@ def main_sub() -> None:
     def data_unit_to_points_size(
         diameter_in_data_units: NDArray[np.float64], fig: Figure, axis: Axes
     ) -> NDArray[np.float64]:
-        """
-        データ単位で指定した直径を、matplotlib の scatter プロットで使用する s パラメータ（ポイントの面積）に変換します。
-
-        Parameters
-        ----------
-        diameter_in_data_units : NDArray[np.float64]
-            データ単位での直径の配列。
-        axis : matplotlib.axes.Axes
-            対象の Axes オブジェクト。
-
-        Returns
-        -------
-        NDArray[np.float64]
-            s パラメータとして使用可能なポイント^2 単位の面積の配列。
-        """
-        # データ座標からディスプレイ座標への変換関数
         trans = axis.transData.transform
-        # 基準点（0,0）のディスプレイ座標
         x0, y0 = trans((0, 0))
-        # 直径分離れた点のディスプレイ座標を取得（配列対応）
         x1, y1 = trans(
             np.column_stack(
                 (diameter_in_data_units, np.zeros_like(diameter_in_data_units))
             )
         ).T
-        # ディスプレイ座標での距離（ピクセル単位）を計算
         diameter_in_pixels = np.hypot(x1 - x0, y1 - y0)
-        # ピクセルをポイントに変換（1ポイント = 1/72 インチ）
         pixels_per_point = fig.dpi / 72.0
-        # `s` パラメータはポイントの面積（ポイント^2）で指定
         area_in_points_squared = (diameter_in_pixels / pixels_per_point) ** 2
         return area_in_points_squared
 
@@ -1215,7 +1151,7 @@ def main_sub() -> None:
                 PLOT_ZOOM_PARAMS[zoom_name].zoom_xlim_max,
                 PLOT_ZOOM_PARAMS[zoom_name].zoom_ylim_min,
                 PLOT_ZOOM_PARAMS[zoom_name].zoom_ylim_max,
-            )  # subregion of the original image
+            )
 
             insetbox_width = (x2 - x1) * PLOT_ZOOM_PARAMS[zoom_name].zoom_ratio
             insetbox_height = (y2 - y1) * PLOT_ZOOM_PARAMS[zoom_name].zoom_ratio
@@ -1430,10 +1366,12 @@ def main_sub() -> None:
         scaler_cm_to_inch = 1 / 2.54
         disired_fig_width = IN_PARAMS.fig_horizontal_cm * scaler_cm_to_inch
 
+        # pring debug
         print(
             "fig_horizontal（ピクセル単位） :",
             int(disired_fig_width * IN_PARAMS.snap_dpi),
         )
+
         # 縦方向が見切れないよう十分大きく取る
         fig = plt.figure(
             figsize=(disired_fig_width, 5 * disired_fig_width),
