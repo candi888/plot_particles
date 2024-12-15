@@ -35,6 +35,7 @@ snap_extension: &extension "jpeg" # 拡張子．svgやpdfは大量出力しな�
 
 #* アニメーション関連
 is_make_anim: True # アニメーション作成を実行するか
+ffmpeg_path: "ffmpeg"
 anim_extension: "jpeg" # アニメーション作成に使用するスナップショットの拡張子（基本は，png or jpeg）
 framerate: 100 # アニメーションのフレームレート．実スケールのものを作りたい時は 1000 / anim_timestep_ms を指定する
 crf_num: 35 # 値が大きいほどlowqualityの動画の質が下がる．パワポに載せる動画など，ファイルサイズ小さめのが要るとき用にチューニング（2MB以下になるのがよいか）
