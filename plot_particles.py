@@ -50,9 +50,9 @@ def main_sub() -> None:
 
         # * 必須の物理量（x, y, disa）がどの素データのどの列か．0-index
         xydisa_file_path: str
-        col_index_x: int
-        col_index_y: int
-        col_index_disa: int
+        col_idx_x: int
+        col_idx_y: int
+        col_idx_disa: int
 
         # * このファイルからの各相対パス
         path_list: list
@@ -208,6 +208,9 @@ def main_sub() -> None:
         scaler_s_to_ms: int
         num_x_in_pathstr: int
 
+        # * 拡大図用
+        plot_order_list_zoom: list
+
         def __post_init__(self) -> None:
             class_dict = dataclasses.asdict(self)
 
@@ -245,6 +248,12 @@ def main_sub() -> None:
                     f"vector_listの要素の型が一致しません．\nvector_listの中身の型は全て{str}である必要があります．"
                 )
 
+            # plot_order_list_zoomの処理
+            if not all([isinstance(name, str) for name in self.plot_order_list_zoom]):
+                raise ValueError(
+                    f"plot_order_list_zoomの要素の型が一致しません．\nplot_order_list_zoomの中身の型は全て{str}である必要があります．"
+                )
+
             print("1. 型チェック OK")
 
             # * 2.諸々のエラー処理
@@ -258,15 +267,19 @@ def main_sub() -> None:
                 raise ValueError(
                     "plot_order_list_group内に'NOT_PLOT_BELOW'という文字列を含めてください"
                 )
+            # plot_order_list_zoomの処理
+            if "NOT_PLOT_BELOW" not in self.plot_order_list_zoom:
+                raise ValueError(
+                    "plot_order_list_zoom内に'NOT_PLOT_BELOW'という文字列を含めてください"
+                )
 
-            print("IN_PARAMS construct OK")
             return
 
     @dataclasses.dataclass(frozen=True)
     class DataclassContour:
         label: str
         data_file_path: str
-        col_index: int
+        col_idx: int
         min_value_contour: float
         max_value_contour: float
         strformatter_colorbar: str | None
@@ -283,13 +296,48 @@ def main_sub() -> None:
                         f"{class_arg_name}の型が一致しません．\n{class_arg_name}の型は現在は{type(class_dict[class_arg_name])}ですが，{class_arg_expected_type}である必要があります．"
                     )
 
-            print("CUR_CONTOUR_PARAMS construct OK")
+    @dataclasses.dataclass(frozen=True)
+    class DataclassGroupConfig:
+        data_file_path: str  # データがあるファイルのpythonファイルからの相対パス
+        col_idx: int  # データが何列目にあるか　（0-index）
+
+        def __post_init__(self) -> None:
+            class_dict = dataclasses.asdict(self)
+            # * 1. 型チェック
+            # self.__annotations__は {引数の名前:指定する型}
+            for class_arg_name, class_arg_expected_type in self.__annotations__.items():
+                if not isinstance(class_dict[class_arg_name], class_arg_expected_type):
+                    raise ValueError(
+                        f"{class_arg_name}の型が一致しません．\n{class_arg_name}の型は現在は{type(class_dict[class_arg_name])}ですが，{class_arg_expected_type}である必要があります．"
+                    )
+
+    @dataclasses.dataclass(frozen=True)
+    class DataclassGroupEachidx:
+        label: str
+        group_color: str
+        group_alpha: float
+        group_is_plot_vector: bool
+        contour_color: str | None
+        contour_alpha: float
+        contour_is_plot_vector: bool
+        particle_zorder: float
+        vector_zorder: float
+
+        def __post_init__(self) -> None:
+            class_dict = dataclasses.asdict(self)
+            # * 1. 型チェック
+            # self.__annotations__は {引数の名前:指定する型}
+            for class_arg_name, class_arg_expected_type in self.__annotations__.items():
+                if not isinstance(class_dict[class_arg_name], class_arg_expected_type):
+                    raise ValueError(
+                        f"{class_arg_name}の型が一致しません．\n{class_arg_name}の型は現在は{type(class_dict[class_arg_name])}ですが，{class_arg_expected_type}である必要があります．"
+                    )
 
     @dataclasses.dataclass(frozen=True)
     class DataclassVector:
         data_file_path: str
-        col_index_vectorx: int
-        col_index_vectory: int
+        col_idx_vectorx: int
+        col_idx_vectory: int
         scaler_length_vector: float
         scaler_width_vector: float
         headlength_vector: float
@@ -314,12 +362,20 @@ def main_sub() -> None:
                         f"{class_arg_name}の型が一致しません．\n{class_arg_name}の型は現在は{type(class_dict[class_arg_name])}ですが，{class_arg_expected_type}である必要があります．"
                     )
 
-            print("PLOT_VECTOR_PARAMS construct OK")
-
     @dataclasses.dataclass(frozen=True)
-    class DataclassGroupConfig:
-        data_file_path: str  # データがあるファイルのpythonファイルからの相対パス
-        col_index: int  # データが何列目にあるか　（0-index）
+    class DataclassZoom:
+        zoom_ratio: float
+        zoom_xlim_min: float
+        zoom_ylim_min: float
+        zoom_xlim_max: float
+        zoom_ylim_max: float
+        insetbox_xmin: float
+        insetbox_ymin: float
+        zoom_edgecolor: str
+        zoom_lw: float
+        insetbox_edgecolor: str
+        insetbox_lw: float
+        is_indicate_2lines: bool
 
         def __post_init__(self) -> None:
             class_dict = dataclasses.asdict(self)
@@ -330,32 +386,6 @@ def main_sub() -> None:
                     raise ValueError(
                         f"{class_arg_name}の型が一致しません．\n{class_arg_name}の型は現在は{type(class_dict[class_arg_name])}ですが，{class_arg_expected_type}である必要があります．"
                     )
-
-            print("GROUP_CONFIG_PARAMS construct OK")
-
-    @dataclasses.dataclass(frozen=True)
-    class DataclassGroupEachIndex:
-        label: str
-        group_color: str
-        group_alpha: float
-        group_is_plot_vector: bool
-        contour_color: str | None
-        contour_alpha: float
-        contour_is_plot_vector: bool
-        particle_zorder: float
-        vector_zorder: float
-
-        def __post_init__(self) -> None:
-            class_dict = dataclasses.asdict(self)
-            # * 1. 型チェック
-            # self.__annotations__は {引数の名前:指定する型}
-            for class_arg_name, class_arg_expected_type in self.__annotations__.items():
-                if not isinstance(class_dict[class_arg_name], class_arg_expected_type):
-                    raise ValueError(
-                        f"{class_arg_name}の型が一致しません．\n{class_arg_name}の型は現在は{type(class_dict[class_arg_name])}ですが，{class_arg_expected_type}である必要があります．"
-                    )
-
-            print(f"GROUPIDX_PARAMS construct OK({self.label})")
 
     # ---dataclassの定義---
 
@@ -374,6 +404,9 @@ def main_sub() -> None:
         del inparam_dict["contour"]
         del inparam_dict["group"]
         del inparam_dict["vector"]
+        del inparam_dict["zoom"]
+
+        print("IN_PARAMS construct OK")
 
         return DataclassInputParameters(**inparam_dict)
 
@@ -389,12 +422,9 @@ def main_sub() -> None:
                 **inparam_dict_contour[plot_contour_name]
             )
 
+        print("PLOT_CONTOUR_PARAMS construct OK")
+
         return res_dict
-
-    def construct_vector_dataclass() -> DataclassVector:
-        inparam_dict = read_inparam_yaml_as_dict()
-
-        return DataclassVector(**inparam_dict["vector"][IN_PARAMS.vector_id])
 
     def construct_dict_of_group_config_dataclass() -> Dict[str, DataclassGroupConfig]:
         inparam_dict_group = read_inparam_yaml_as_dict()["group"]
@@ -409,27 +439,54 @@ def main_sub() -> None:
                 **inparam_dict_group[plot_group_name]["config"]
             )
 
+        print("PLOT_GROUP_CONFIG_PARAMS construct OK")
+
         return res_dict
 
     def construct_dict_of_group_idx_dataclass() -> (
-        Dict[str, Dict[int, DataclassGroupEachIndex]]
+        Dict[str, Dict[int, DataclassGroupEachidx]]
     ):
         inparam_dict_group = read_inparam_yaml_as_dict()["group"]
 
-        res_dict: Dict[str, Dict[int, DataclassGroupEachIndex]] = dict()
+        res_dict: Dict[str, Dict[int, DataclassGroupEachidx]] = dict()
 
         for plot_group_name in IN_PARAMS.plot_order_list_group:
             if plot_group_name == "NOT_PLOT_BELOW":
                 break
 
-            tmp_dict: Dict[int, DataclassGroupEachIndex] = {}
+            tmp_dict: Dict[int, DataclassGroupEachidx] = {}
             cur_group_dict: Dict[int, Dict[str, Any]] = inparam_dict_group[
                 plot_group_name
             ]["each_idx"]
             for group_idx, data_dict in cur_group_dict.items():
-                tmp_dict[group_idx] = DataclassGroupEachIndex(**data_dict)
+                tmp_dict[group_idx] = DataclassGroupEachidx(**data_dict)
 
             res_dict[plot_group_name] = tmp_dict
+
+        print("PLOT_GROUP_IDX_PARAMS construct OK")
+
+        return res_dict
+
+    def construct_vector_dataclass() -> DataclassVector:
+        inparam_dict = read_inparam_yaml_as_dict()
+
+        print("PLOT_VECTOR_PARAMS construct OK")
+
+        return DataclassVector(**inparam_dict["vector"][IN_PARAMS.vector_id])
+
+    def construct_dict_of_zoom_dataclass() -> Dict[str, DataclassZoom]:
+        inparam_dict_zoom = read_inparam_yaml_as_dict()["zoom"]
+
+        res_dict = dict()
+        for plot_zoom_name in IN_PARAMS.plot_order_list_zoom:
+            if plot_zoom_name == "NOT_PLOT_BELOW":
+                break
+
+            res_dict[plot_zoom_name] = DataclassZoom(
+                **inparam_dict_zoom[plot_zoom_name]
+            )
+
+        print("PLOT_ZOOM_PARAMS construct OK")
 
         return res_dict
 
@@ -515,9 +572,9 @@ def main_sub() -> None:
                 )
             ),
             usecols=(
-                IN_PARAMS.col_index_x,
-                IN_PARAMS.col_index_y,
-                IN_PARAMS.col_index_disa,
+                IN_PARAMS.col_idx_x,
+                IN_PARAMS.col_idx_y,
+                IN_PARAMS.col_idx_disa,
             ),
             dtype=np.float64,
             encoding="utf-8",
@@ -565,10 +622,10 @@ def main_sub() -> None:
 
         return masked_data.T
 
-    def get_group_index_array(
+    def get_group_idx_array(
         snap_time_ms: int, mask_array: NDArray[np.bool_]
     ) -> NDArray[np.int32]:
-        masked_group_index = np.loadtxt(
+        masked_group_idx = np.loadtxt(
             Path(__file__).parent
             / Path(
                 PLOT_GROUP_CONFIG_PARAMS[IN_PARAMS.grouping_id].data_file_path.replace(
@@ -577,11 +634,11 @@ def main_sub() -> None:
                 )
             ),
             dtype=np.int32,
-            usecols=PLOT_GROUP_CONFIG_PARAMS[IN_PARAMS.grouping_id].col_index,
+            usecols=PLOT_GROUP_CONFIG_PARAMS[IN_PARAMS.grouping_id].col_idx,
             encoding="utf-8",
         )[mask_array]
 
-        return masked_group_index
+        return masked_group_idx
 
     def data_unit_to_points_size(
         diameter_in_data_units: NDArray[np.float64], fig: Figure, axis: Axes
@@ -627,7 +684,7 @@ def main_sub() -> None:
         par_disa: NDArray[np.float64],
         par_color: NDArray[np.float64],
         group_id_prefix: str,
-        group_index: int,
+        group_idx: int,
     ) -> None:
         s = data_unit_to_points_size(diameter_in_data_units=par_disa, fig=fig, axis=ax)
 
@@ -638,8 +695,8 @@ def main_sub() -> None:
             s=s,
             c=par_color,
             linewidths=0,
-            gid=f"{group_id_prefix}_{PLOT_GROUP_IDX_PARAMS[groupingid][group_index].label}",
-            zorder=PLOT_GROUP_IDX_PARAMS[groupingid][group_index].particle_zorder,
+            gid=f"{group_id_prefix}_{PLOT_GROUP_IDX_PARAMS[groupingid][group_idx].label}",
+            zorder=PLOT_GROUP_IDX_PARAMS[groupingid][group_idx].particle_zorder,
         )
 
         return
@@ -683,7 +740,7 @@ def main_sub() -> None:
             ].data_file_path,
             snap_time_ms=snap_time_ms,
             mask_array=mask_array,
-            usecols=PLOT_CONTOUR_PARAMS[plot_name].col_index,
+            usecols=PLOT_CONTOUR_PARAMS[plot_name].col_idx,
             mask_array_by_group=mask_array_by_group,
         )
 
@@ -838,7 +895,7 @@ def main_sub() -> None:
         snap_time_ms: int,
         is_plot_reference_vector: bool,
         group_id_prefix: str,
-        group_index: int,
+        group_idx: int,
         par_x: NDArray[np.float64],
         par_y: NDArray[np.float64],
         refvec_corners_for_dummytext: List[List[float]],
@@ -850,8 +907,8 @@ def main_sub() -> None:
             snap_time_ms=snap_time_ms,
             mask_array=mask_array,
             usecols=(
-                PLOT_VECTOR_PARAMS.col_index_vectorx,
-                PLOT_VECTOR_PARAMS.col_index_vectory,
+                PLOT_VECTOR_PARAMS.col_idx_vectorx,
+                PLOT_VECTOR_PARAMS.col_idx_vectory,
             ),
             mask_array_by_group=mask_array_by_group,
         )
@@ -872,12 +929,13 @@ def main_sub() -> None:
             par_v,
             scale=scale,
             scale_units="x",
+            units="x",
             width=width,
             headlength=PLOT_VECTOR_PARAMS.headlength_vector,
             headaxislength=PLOT_VECTOR_PARAMS.headaxislength_vector,
             headwidth=PLOT_VECTOR_PARAMS.headwidth_vector,
-            gid=f"{group_id_prefix}_{PLOT_GROUP_IDX_PARAMS[groupingid][group_index].label}",
-            zorder=PLOT_GROUP_IDX_PARAMS[groupingid][group_index].vector_zorder,
+            gid=f"{group_id_prefix}_{PLOT_GROUP_IDX_PARAMS[groupingid][group_idx].label}",
+            zorder=PLOT_GROUP_IDX_PARAMS[groupingid][group_idx].vector_zorder,
         )
 
         # svg編集用
@@ -886,10 +944,9 @@ def main_sub() -> None:
                 ax=ax,
                 linepoint_xy1=[par_x, par_y],
                 linepoint_xy2=[par_x + par_u / scale, par_y + par_v / scale],
-                zorder=PLOT_GROUP_IDX_PARAMS[groupingid][group_index].vector_zorder
-                * 0.1
+                zorder=PLOT_GROUP_IDX_PARAMS[groupingid][group_idx].vector_zorder * 0.1
                 + 3 * 0.9,
-                gid=f"for_edit_{group_id_prefix}_{PLOT_GROUP_IDX_PARAMS[groupingid][group_index].label}",
+                gid=f"for_edit_{group_id_prefix}_{PLOT_GROUP_IDX_PARAMS[groupingid][group_idx].label}",
                 clip_on=True,
             )
 
@@ -1081,14 +1138,14 @@ def main_sub() -> None:
 
     def change_facecolor_and_alpha_by_groupidxparams(
         par_color_masked_by_group: NDArray[np.float64],
-        group_index: int,
+        group_idx: int,
     ) -> NDArray[np.float64]:
         groupingid = IN_PARAMS.grouping_id
         change_contour_color = PLOT_GROUP_IDX_PARAMS[groupingid][
-            group_index
+            group_idx
         ].contour_color
         change_contour_alpha = PLOT_GROUP_IDX_PARAMS[groupingid][
-            group_index
+            group_idx
         ].contour_alpha
 
         if change_contour_color is None:
@@ -1102,7 +1159,7 @@ def main_sub() -> None:
         return par_color_masked_by_group
 
     def get_facecolor_array_for_contour(
-        group_index: int,
+        group_idx: int,
         snap_time_ms: int,
         plot_name: str,
         mask_array: NDArray[np.bool_],
@@ -1117,38 +1174,93 @@ def main_sub() -> None:
 
         return change_facecolor_and_alpha_by_groupidxparams(
             par_color_masked_by_group=par_color,
-            group_index=group_index,
+            group_idx=group_idx,
         )
 
     def get_facecolor_array_for_group(
-        group_index: int,
+        group_idx: int,
         num_par_cur_group: int,
     ) -> NDArray[np.float64]:
         return np.full(
             (num_par_cur_group, 4),
             to_rgba(
-                c=PLOT_GROUP_IDX_PARAMS[IN_PARAMS.grouping_id][group_index].group_color,
+                c=PLOT_GROUP_IDX_PARAMS[IN_PARAMS.grouping_id][group_idx].group_color,
                 alpha=PLOT_GROUP_IDX_PARAMS[IN_PARAMS.grouping_id][
-                    group_index
+                    group_idx
                 ].group_alpha,
             ),
         )
 
     def get_cur_is_plot_vector(
-        plot_name: str, is_group_plot: bool, group_index: int
+        plot_name: str, is_group_plot: bool, group_idx: int
     ) -> bool:
         if is_group_plot:
             return PLOT_GROUP_IDX_PARAMS[IN_PARAMS.grouping_id][
-                group_index
+                group_idx
             ].group_is_plot_vector
 
         else:
             return (
                 PLOT_GROUP_IDX_PARAMS[IN_PARAMS.grouping_id][
-                    group_index
+                    group_idx
                 ].contour_is_plot_vector
                 and PLOT_CONTOUR_PARAMS[plot_name].is_plot_vector
             )
+
+    def get_inset_axes_list(original_ax: Axes) -> List[Axes]:
+        res_list = []
+        for zoom_name in PLOT_ZOOM_PARAMS.keys():
+            x1, x2, y1, y2 = (
+                PLOT_ZOOM_PARAMS[zoom_name].zoom_xlim_min,
+                PLOT_ZOOM_PARAMS[zoom_name].zoom_xlim_max,
+                PLOT_ZOOM_PARAMS[zoom_name].zoom_ylim_min,
+                PLOT_ZOOM_PARAMS[zoom_name].zoom_ylim_max,
+            )  # subregion of the original image
+
+            insetbox_width = (x2 - x1) * PLOT_ZOOM_PARAMS[zoom_name].zoom_ratio
+            insetbox_height = (y2 - y1) * PLOT_ZOOM_PARAMS[zoom_name].zoom_ratio
+
+            axins = original_ax.inset_axes(
+                (
+                    PLOT_ZOOM_PARAMS[zoom_name].insetbox_xmin,
+                    PLOT_ZOOM_PARAMS[zoom_name].insetbox_ymin,
+                    insetbox_width,
+                    insetbox_height,
+                ),
+                transform=original_ax.transData,
+                zorder=10000,  # 一旦適当に大きい値
+                gid=zoom_name,
+            )
+
+            # 拡大領域側の設定
+            indicate_inset = original_ax.indicate_inset_zoom(
+                inset_ax=axins,
+                alpha=1.0,
+                edgecolor=PLOT_ZOOM_PARAMS[zoom_name].zoom_edgecolor,
+                linewidth=PLOT_ZOOM_PARAMS[zoom_name].zoom_lw,
+            )
+            if not PLOT_ZOOM_PARAMS[zoom_name].is_indicate_2lines:
+                for connect in indicate_inset.connectors:  # type: ignore
+                    connect.set_visible(False)
+
+            # 拡大図側の設定
+            axins.set_xlim(x1, x2)
+            axins.set_ylim(y1, y2)
+            axins.set_xticks([])
+            axins.set_yticks([])
+            for spine_name in ["top", "bottom", "left", "right"]:
+                axins.spines[spine_name].set_visible(True)
+                axins.spines[spine_name].set_edgecolor(
+                    PLOT_ZOOM_PARAMS[zoom_name].insetbox_edgecolor
+                )
+                axins.spines[spine_name].set_linewidth(
+                    PLOT_ZOOM_PARAMS[zoom_name].insetbox_lw
+                )
+                axins.spines[spine_name].set_zorder(10001)  # 一旦適当に大きい値
+
+            res_list.append(axins)
+
+        return res_list
 
     def make_snap_each_snap_time(
         fig: Figure,
@@ -1159,19 +1271,23 @@ def main_sub() -> None:
         is_group_plot: bool,
         refvec_corners_for_dummytext: List[List[float]],
     ) -> None:
+        # プロットの表示範囲
         set_ax_lim(ax=ax)
 
+        # 軸目盛り設定
         if IN_PARAMS.is_plot_hypervisor2:
             set_ax_xticks(ax=ax)
             set_ax_yticks(ax=ax)
         else:
             ax.axis("off")
 
+        # 軸タイトル設定
         if IN_PARAMS.is_plot_hypervisor2 and IN_PARAMS.is_plot_xlabel_text:
             set_xlabel(ax=ax)
         if IN_PARAMS.is_plot_hypervisor2 and IN_PARAMS.is_plot_ylabel_text:
             set_ylabel(ax=ax)
 
+        # 時刻テキストをプロット
         if IN_PARAMS.is_plot_hypervisor2 and IN_PARAMS.is_plot_time_text:
             set_ax_time_text(ax=ax, snap_time_ms=snap_time_ms)
 
@@ -1179,19 +1295,25 @@ def main_sub() -> None:
         if snap_time_ms == IN_PARAMS.snap_start_time_ms:
             fig.canvas.draw()
 
+        # プロットの表示範囲の長方形で粒子やベクトルをクリッピングマスクする用のmask
         mask_array = get_mask_array_by_plot_region(snap_time_ms=snap_time_ms)
 
-        par_group_index = get_group_index_array(
+        # 今プロットする粒子のgroupidxを取得
+        par_group_idx = get_group_idx_array(
             snap_time_ms=snap_time_ms, mask_array=mask_array
         )
 
-        particle_group_id_prefix = "particle"
-        vector_group_id_prefix = "vector"
-
+        # reference vectorをプロットするか（動的に更新）
         is_plot_reference_vector = PLOT_VECTOR_PARAMS.is_plot_reference_vector
 
-        for group_index in np.unique(par_group_index)[::-1]:
-            mask_array_by_group: NDArray[np.bool_] = par_group_index == group_index
+        # axinsのリスト
+        axins_list = get_inset_axes_list(original_ax=ax)
+
+        # for gid
+        particle_group_id_prefix = "particle"
+        vector_group_id_prefix = "vector"
+        for group_idx in np.unique(par_group_idx)[::-1]:
+            mask_array_by_group: NDArray[np.bool_] = par_group_idx == group_idx
 
             # x, y, disaの取得
             par_x, par_y, par_disa = load_par_data_masked_by_plot_region(
@@ -1199,9 +1321,9 @@ def main_sub() -> None:
                 snap_time_ms=snap_time_ms,
                 mask_array=mask_array,
                 usecols=(
-                    IN_PARAMS.col_index_x,
-                    IN_PARAMS.col_index_y,
-                    IN_PARAMS.col_index_disa,
+                    IN_PARAMS.col_idx_x,
+                    IN_PARAMS.col_idx_y,
+                    IN_PARAMS.col_idx_disa,
                 ),
                 mask_array_by_group=mask_array_by_group,
             )
@@ -1209,11 +1331,11 @@ def main_sub() -> None:
             # 粒子の色の取得
             if is_group_plot:
                 par_color = get_facecolor_array_for_group(
-                    group_index=group_index, num_par_cur_group=par_x.shape[0]
+                    group_idx=group_idx, num_par_cur_group=par_x.shape[0]
                 )
             else:
                 par_color = get_facecolor_array_for_contour(
-                    group_index=group_index,
+                    group_idx=group_idx,
                     snap_time_ms=snap_time_ms,
                     plot_name=plot_name,
                     mask_array=mask_array,
@@ -1229,14 +1351,26 @@ def main_sub() -> None:
                 par_disa=par_disa,
                 par_color=par_color,
                 group_id_prefix=particle_group_id_prefix,
-                group_index=group_index,
+                group_idx=group_idx,
             )
+            # 拡大図
+            for axins in axins_list:
+                plot_particles_by_scatter(
+                    fig=fig,
+                    ax=axins,
+                    par_x=par_x,
+                    par_y=par_y,
+                    par_disa=par_disa,
+                    par_color=par_color,
+                    group_id_prefix=particle_group_id_prefix,
+                    group_idx=group_idx,
+                )
 
             # ベクトルのプロット
             if get_cur_is_plot_vector(
                 plot_name=plot_name,
                 is_group_plot=is_group_plot,
-                group_index=group_index,
+                group_idx=group_idx,
             ):
                 plot_vector(
                     fig=fig,
@@ -1246,7 +1380,7 @@ def main_sub() -> None:
                     par_x=par_x,
                     par_y=par_y,
                     group_id_prefix=vector_group_id_prefix,
-                    group_index=group_index,
+                    group_idx=group_idx,
                     refvec_corners_for_dummytext=refvec_corners_for_dummytext,
                     mask_array=mask_array,
                     mask_array_by_group=mask_array_by_group,
@@ -1254,6 +1388,22 @@ def main_sub() -> None:
 
                 # 最初のみreference vectorをプロットする
                 is_plot_reference_vector = False
+
+                # 拡大図
+                for axins in axins_list:
+                    plot_vector(
+                        fig=fig,
+                        ax=axins,
+                        snap_time_ms=snap_time_ms,
+                        mask_array=mask_array,
+                        is_plot_reference_vector=is_plot_reference_vector,
+                        mask_array_by_group=mask_array_by_group,
+                        par_x=par_x,
+                        par_y=par_y,
+                        group_id_prefix=vector_group_id_prefix,
+                        group_idx=group_idx,
+                        refvec_corners_for_dummytext=refvec_corners_for_dummytext,
+                    )
 
         # 以下，画像の保存処理
         save_file_name_without_extension = (
@@ -1477,14 +1627,17 @@ def main_sub() -> None:
         # contourの設定を格納．plot_order_list_contourの「plot_name -> contour内の設定」の辞書
         PLOT_CONTOUR_PARAMS = construct_dict_of_contour_dataclass()
 
-        # vectorの設定を格納（vector_idで指定したもの）
-        PLOT_VECTOR_PARAMS = construct_vector_dataclass()
-
         # groupの設定を格納1．plot_order_list_groupの「group_name -> config -> そのconfig内の設定」の辞書の辞書
         PLOT_GROUP_CONFIG_PARAMS = construct_dict_of_group_config_dataclass()
 
         # groupの設定を格納2．plot_order_list_groupの「group_name -> idx -> そのidx内の設定」の辞書の辞書
         PLOT_GROUP_IDX_PARAMS = construct_dict_of_group_idx_dataclass()
+
+        # vectorの設定を格納（vector_idで指定したもの）
+        PLOT_VECTOR_PARAMS = construct_vector_dataclass()
+
+        # zoomの設定を格納．plot_order_list_zoomの「plot_name -> zoom内の設定」の辞書
+        PLOT_ZOOM_PARAMS = construct_dict_of_zoom_dataclass()
 
         # ---グローバル変数群の更新----
 

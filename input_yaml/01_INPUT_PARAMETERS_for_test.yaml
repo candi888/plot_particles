@@ -20,7 +20,7 @@ plot_order_list_group:
 #* プロットに使用する時刻
 # -スナップショット-
 snap_timestep_ms: &snap_timestep_ms 10 # スナップショットの作成に使用するデータの時間間隔
-snap_start_time_ms: &snap_start_time_ms 10 # スナップショット作成の開始時刻．
+snap_start_time_ms: &snap_start_time_ms 1000 # スナップショット作成の開始時刻．
 snap_end_time_ms: &snap_end_time_ms 3000 # スナップショット作成の終了時刻．今あるデータ全てを出力したい場合は十分大きい値を指定してもよい．
 
 # -アニメーション-（アニメーションは作成したスナップショットをパラパラ漫画にして作るので，↑で必要な画像を全て作成しておく必要あり）
@@ -168,16 +168,16 @@ path_list:
 
 #* 必須の物理量（x, y, disa）がどの素データのどの列か．0-index
 xydisa_file_path: *xud_path
-col_index_x: 0
-col_index_y: 1
-col_index_disa: 5
+col_idx_x: 0
+col_idx_y: 1
+col_idx_disa: 5
 
 #* group設定
 group:
   *id_move :
     config:
       data_file_path: *tmd_path # データがあるファイルのpythonファイルからの相対パス
-      col_index: 1 # データが何列目にあるか　（0-index）
+      col_idx: 1 # データが何列目にあるか　（0-index）
 
     each_idx:
       0:
@@ -244,7 +244,7 @@ contour:
   *id_pressure :
     label: "Pressure $\\mathrm{(kN/m^2)}$" # colorbarのlegendのラベル
     data_file_path: *xud_path # データがあるファイルのpythonファイルからの相対パス
-    col_index: 4 # データが何列目にあるか　（0-index）
+    col_idx: 4 # データが何列目にあるか　（0-index）
     min_value_contour: 0.0 #コンターの最小値
     max_value_contour: 1000.0 # コンターの最大値
     strformatter_colorbar: null # カラーバーの主目盛りの値の書式等を変更したいときにいじる（変更しない場合はnullにする）．
@@ -255,7 +255,7 @@ contour:
   *id_density :
     label: "Density $\\rho / \\rho_0$" # colorbarのlegendのラベル
     data_file_path: *xud_path # データがあるファイルのpythonファイルからの相対パス
-    col_index: 7 # データが何列目にあるか　（0-index）
+    col_idx: 7 # データが何列目にあるか　（0-index）
     min_value_contour: 0.97 #コンターの最小値
     max_value_contour: 1.03 # コンターの最大値
     strformatter_colorbar: null # カラーバーの主目盛りの値の書式等を変更したいときにいじる（変更しない場合はnullにする）．
@@ -278,8 +278,8 @@ vector:
 
   *id_velocity_vector :
     data_file_path: *xud_path
-    col_index_vectorx: 2 # ベクトルのx成分がデータの何列目か 0-index
-    col_index_vectory: 3 # ベクトルのy成分がデータの何列目か 0-index
+    col_idx_vectorx: 2 # ベクトルのx成分がデータの何列目か 0-index
+    col_idx_vectory: 3 # ベクトルのy成分がデータの何列目か 0-index
     scaler_length_vector: 0.6 # ベクトルの長さの調整用．nに設定 -> ベクトルの長さをn倍
     scaler_width_vector: 1.0 # ベクトルの太さの調整用．nに設定 -> ベクトルの太さをn倍
     headlength_vector: 8.0 # ベクトルの見た目の設定１(default:5.0)
@@ -292,6 +292,41 @@ vector:
     reference_vector_pos_x: 1.1 # reference vectorのx座標（データの単位）
     reference_vector_pos_y: *ylim_max # reference vectorのy座標（データの単位）
     reference_vector_labelpad: 0.1 # reference vectorのラベルを矢印からどれだけ離すか
+
+#* 拡大図（試験版）（大量にやるとその分動作が重くなるので注意）
+plot_order_list_zoom:
+  - &zoom1 "zoom1"
+  - &zoom2 "zoom2"
+  - "NOT_PLOT_BELOW"
+
+#* 拡大図プロット設定（試験版）
+zoom:
+  *zoom1 :
+    zoom_ratio: 3.0 # 拡大率
+    zoom_xlim_min: 1.0 # 拡大したい領域の左下のx座標
+    zoom_ylim_min: 0.0 # 拡大したい領域の左下のy座標
+    zoom_xlim_max: 1.1 # 拡大したい領域の右上のx座標
+    zoom_ylim_max: 0.1 # 拡大したい領域の右上のy座標
+    insetbox_xmin: 0.8 # 拡大図の左下のx座標
+    insetbox_ymin: 0.15 # 拡大図の左下のy座標
+    zoom_edgecolor: "#000000" # 拡大領域の枠線の色．16進数カラーコードで指定
+    zoom_lw: 2.0 # 拡大図の枠線の太さ
+    insetbox_edgecolor: "#000000" # 拡大図の枠線の色．16進数で
+    insetbox_lw: 2.0 # 拡大図の枠線の太さ
+    is_indicate_2lines: False #  引き出し線を二つ自動プロットするか（試験版．使いづらいが一応）
+  *zoom2 :
+    zoom_ratio: 1.0 # 拡大率
+    zoom_xlim_min: 0.0 # 拡大したい領域の左下のx座標
+    zoom_ylim_min: 0.0 # 拡大したい領域の左下のy座標
+    zoom_xlim_max: 0.3 # 拡大したい領域の右上のx座標
+    zoom_ylim_max: 0.1 # 拡大したい領域の右上のy座標
+    insetbox_xmin: 0.0 # 拡大図の左下のx座標
+    insetbox_ymin: -0.30 # 拡大図の左下のy座標
+    zoom_edgecolor: "#ff0000" # 拡大領域の枠線の色．16進数カラーコードで指定
+    zoom_lw: 1.0 # 拡大図の枠線の太さ
+    insetbox_edgecolor: "#ff0000" # 拡大図の枠線の色．16進数カラーコードで指定
+    insetbox_lw: 1.0 # 拡大図の枠線の太さ
+    is_indicate_2lines: True #  引き出し線を二つ自動プロットするか（試験版．使いづらいが一応）
 
 #* 以下は基本いじらなくてOK
 num_x_in_pathstr: 5 # 数字の部分の"xx..."でxがいくつあるか
