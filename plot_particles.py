@@ -38,6 +38,7 @@ def main_sub() -> None:
 
         # * アニメーション関連
         is_make_anim: bool
+        ffmpeg_path: str
         anim_extension: str
         framerate: int
         crf_num: int
@@ -1369,7 +1370,7 @@ def main_sub() -> None:
                 f.write(f"{i}\n")
 
         cmd_list1 = [
-            "ffmpeg",
+            IN_PARAMS.ffmpeg_path,
             "-y",
             "-r",
             f"{IN_PARAMS.framerate}",
