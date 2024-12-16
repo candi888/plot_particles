@@ -125,7 +125,7 @@ class ForModeP:
             get_dict_of_snaptimems_to_startrowidx_and_nrow(
                 outputdat_path=self.outputdat_path,
                 timeInterval_ms=self.timeInterval_ms,
-                timeStart_ms=self.timeInterval_ms,
+                timeStart_ms=self.timeStart_ms,
             )
         )
         return
