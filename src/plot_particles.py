@@ -9,6 +9,7 @@ import matplotlib.style as mplstyle
 import matplotlib.ticker as ticker
 import numpy as np
 import yaml  # type: ignore
+from for_mode_p import ForModeP
 from matplotlib.axes import Axes
 from matplotlib.cm import ScalarMappable
 from matplotlib.collections import LineCollection
@@ -1595,6 +1596,11 @@ def main_sub() -> None:
 
         # zoomの設定を格納．plot_order_list_zoomの「plot_name -> zoom内の設定」の辞書
         PLOT_ZOOM_PARAMS = construct_dict_of_zoom_dataclass()
+
+        # for_mode_p
+        FOR_MODE_P_CLASS = ForModeP(
+            outputdat_path=Path("output.dat"), scaler_s_to_ms=IN_PARAMS.scaler_s_to_ms
+        )
 
         # ---グローバル変数群の更新----
 
