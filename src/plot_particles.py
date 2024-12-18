@@ -1658,4 +1658,43 @@ def main_sub() -> None:
         # contourの設定を格納．plot_order_list_contourの「plot_name -> contour内の設定」の辞書
         PLOT_CONTOUR_PARAMS = construct_dict_of_contour_dataclass()
 
-        # groupの設定を格納1．plot_order_list_groupの「group_name -> config -> �
+        # groupの設定を格納1．plot_order_list_groupの「group_name -> config -> そのconfig内の設定」の辞書の辞書
+        PLOT_GROUP_CONFIG_PARAMS = construct_dict_of_group_config_dataclass()
+
+        # groupの設定を格納2．plot_order_list_groupの「group_name -> idx -> そのidx内の設定」の辞書の辞書
+        PLOT_GROUP_IDX_PARAMS = construct_dict_of_group_idx_dataclass()
+
+        # vectorの設定を格納（vector_idで指定したもの）
+        PLOT_VECTOR_PARAMS = construct_vector_dataclass()
+
+        # zoomの設定を格納．plot_order_list_zoomの「plot_name -> zoom内の設定」の辞書
+        PLOT_ZOOM_PARAMS = construct_dict_of_zoom_dataclass()
+
+        # for_mode_p
+        FOR_MODE_P_CLASS = (
+            ForModeP(
+                outputdat_path=Path(__file__).parents[2] / "output.dat",
+                scaler_s_to_ms=IN_PARAMS.scaler_s_to_ms,
+            )
+            if IN_PARAMS.data_mode == "p"
+            else None
+        )
+
+        # ---グローバル変数群の更新----
+
+        print(f"plot by {YAML_FILE_PATH.name} start\n")
+
+        # matplotlibの初期設定
+        set_mplparams_init()
+
+        # contourプロット
+        execute_plot_all(is_group_plot=False)
+
+        # groupプロット
+        execute_plot_all(is_group_plot=True)
+
+        print(f"plot by {YAML_FILE_PATH.name} finish\n")
+
+    return
+
+    # * ------main部分------

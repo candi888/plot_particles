@@ -332,4 +332,5 @@ zoom:
 data_mode: "p" # "lab" or "p"
 
 #* 以下は基本いじらなくてOK
-num_x_in_pathstr: 5 # 数字の部分の"xx..."でxが�
+num_x_in_pathstr: 5 # 数字の部分の"xx..."でxがいくつあるか
+scaler_s_to_ms: 1000
