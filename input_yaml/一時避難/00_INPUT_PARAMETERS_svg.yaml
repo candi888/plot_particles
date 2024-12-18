@@ -1,5 +1,5 @@
 #* スナップやアニメーションを保存するディレクトリ名
-save_dir_name: "plot_test_allregion"
+save_dir_name: "plot_test_svg"
 
 #* contourプロットの順序．上から順番にプロットを行う．いらないものはNOT_PLOT_BELOWの下へ移動．ラベル名は結果の保存ディレクトリ名と同じになる．
 plot_order_list_contour:
@@ -35,7 +35,7 @@ ylim_max: &ylim_max 0.41 # 上端のx座標（データ座標）
 # -スナップショット-
 snap_timestep_ms: &snap_timestep_ms 10 # スナップショットの作成に使用するデータの時間間隔
 snap_start_time_ms: &snap_start_time_ms 1000 # スナップショット作成の開始時刻．
-snap_end_time_ms: &snap_end_time_ms 3000 # スナップショット作成の終了時刻．今あるデータ全てを出力したい場合は十分大きい値を指定してもよい．
+snap_end_time_ms: &snap_end_time_ms 1000 # スナップショット作成の終了時刻．今あるデータ全てを出力したい場合は十分大きい値を指定してもよい．
 # -アニメーション-（アニメーションは作成したスナップショットをパラパラ漫画にして作るので，↑で必要な画像を全て作成しておく必要あり）
 anim_timestep_ms: *snap_timestep_ms # アニメーションの作成に使用するデータの時間間隔
 anim_start_time_ms: *snap_start_time_ms # アニメーション作成の開始時刻．
@@ -49,7 +49,7 @@ tooning_for_fig: 0.9 # 現時点，↑で指定したサイズより少し大き
 # * スナップショット関連
 is_make_snap: True # スナップショット作成を実行するか
 snap_dpi: 200 # dpi．大きすぎる値にしないよう注意（ファイル容量が膨大になりうるため）
-snap_extension: &extension "jpeg" # 拡張子．svgやpdfは大量出力しないように注意する（ファイル容量が膨大になりうるため）
+snap_extension: &extension "svg" # 拡張子．svgやpdfは大量出力しないように注意する（ファイル容量が膨大になりうるため）
 
 #* アニメーション関連
 is_make_anim: True # アニメーション作成を実行するか
@@ -327,6 +327,9 @@ zoom:
     insetbox_edgecolor: "#ff0000" # 拡大図の枠線の色．16進数カラーコードで指定
     insetbox_lw: 1.0 # 拡大図の枠線の太さ
     is_indicate_2lines: True #  引き出し線を二つ自動プロットするか（試験版．使いづらいが一応）
+
+#* mode
+data_mode: "p" # "lab" or "p"
 
 #* 以下は基本いじらなくてOK
 num_x_in_pathstr: 5 # 数字の部分の"xx..."でxがいくつあるか

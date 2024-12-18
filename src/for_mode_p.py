@@ -3,6 +3,7 @@ from typing import Dict
 
 import numpy as np
 import pandas as pd
+from numpy.typing import NDArray
 
 
 def get_floatdata_from_input(search_string: str) -> float:
@@ -39,13 +40,11 @@ def converter_for_floatnotcontainE(x: str) -> np.float32 | float:
             "素データの数値が大きすぎて，指数部を表すEが存在しないパターンが検出されました．符号付きE+99程度の大きさの数値に置き換えます．"
         )
         # Eがない場合には特殊ルール適用
-        if "-" in x:
-            return -9.1234 * 10**99
-        elif "+" in x:
+        # 必ず+を先にすること，先頭の-対策
+        if "+" in x:
             return 9.1234 * 10**99
         else:
-            # どちらも含まれない場合はそもそもありえないはずなので止める
-            raise ValueError("output.datの読み取り時に問題が発生しました．")
+            return -9.1234 * 10**99
 
 
 def get_dict_of_snaptimems_to_startrowidx_and_nrow(
@@ -63,9 +62,10 @@ def get_dict_of_snaptimems_to_startrowidx_and_nrow(
     with pd.read_table(
         outputdat_path,
         iterator=True,
+        header=None,
         comment="#",
-        usecols=[0],
         escapechar="#",
+        usecols=[1, 0],
         encoding="utf-8",
         sep=r"\s+",
         dtype=np.int32,
@@ -92,11 +92,13 @@ def get_dict_of_snaptimems_to_startrowidx_and_nrow(
                 print(f"{time_s=}, {number_of_particles=}")
 
                 # データ部分を読み進める
-                reader.get_chunk(number_of_particles)
+                print(np.array(reader.get_chunk(number_of_particles)))
 
                 # snaptimems_to_startrowidx_nrowを更新
-                nrow = nrow_header + number_of_particles
-                snaptimems_to_startrowidx_nrow[cur_time_ms] = (cur_row, nrow)
+                snaptimems_to_startrowidx_nrow[cur_time_ms] = (
+                    cur_row + nrow_header,
+                    number_of_particles,
+                )
 
                 # cur情報を更新．次の時刻の処理へ
                 cur_row += nrow_header + number_of_particles + 1  # +1は空白行分
@@ -121,6 +123,8 @@ class ForModeP:
             get_floatdata_from_input(search_string="timeInterval") * scaler_s_to_ms
         )
         self.d0 = get_floatdata_from_input(search_string="d0")
+
+        #
         self.snaptimems_to_startrowidx_nrow = (
             get_dict_of_snaptimems_to_startrowidx_and_nrow(
                 outputdat_path=self.outputdat_path,
@@ -128,4 +132,64 @@ class ForModeP:
                 timeStart_ms=self.timeStart_ms,
             )
         )
+
+        print(self.snaptimems_to_startrowidx_nrow)
+
         return
+
+    def get_original_data_float(
+        self,
+        usecols: tuple[int, ...] | int,
+        snap_time_ms: int,
+    ) -> NDArray[np.float64]:
+        return np.loadtxt(
+            self.outputdat_path,
+            usecols=usecols,
+            skiprows=self.snaptimems_to_startrowidx_nrow[snap_time_ms][0],
+            max_rows=self.snaptimems_to_startrowidx_nrow[snap_time_ms][1],
+            dtype=np.float64,
+            encoding="utf-8",
+        )
+
+    # return np.array(
+    #     pd.read_table(
+    #         self.outputdat_path,
+    #         usecols=usecols,
+    #         header=None,
+    #         comment="#",
+    #         escapechar="#",
+    #         skiprows=self.snaptimems_to_startrowidx_nrow[snap_time_ms][0],
+    #         nrows=self.snaptimems_to_startrowidx_nrow[snap_time_ms][1],
+    #         sep=r"\s+",
+    #         dtype=np.float64,
+    #         encoding="utf-8",
+    #     )
+    # ).T
+
+    def get_original_data_int(
+        self,
+        usecols: tuple[int, ...] | int,
+        snap_time_ms: int,
+    ) -> NDArray[np.int32]:
+        return np.loadtxt(
+            self.outputdat_path,
+            usecols=usecols,
+            skiprows=self.snaptimems_to_startrowidx_nrow[snap_time_ms][0],
+            max_rows=self.snaptimems_to_startrowidx_nrow[snap_time_ms][1],
+            dtype=np.int32,
+            encoding="utf-8",
+        )
+        # return np.array(
+        #     pd.read_table(
+        #         self.outputdat_path,
+        #         usecols=usecols,
+        #         header=None,
+        #         comment="#",
+        #         escapechar="#",
+        #         skiprows=self.snaptimems_to_startrowidx_nrow[snap_time_ms][0],
+        #         nrows=self.snaptimems_to_startrowidx_nrow[snap_time_ms][1],
+        #         sep=r"\s+",
+        #         dtype=np.int32,
+        #         encoding="utf-8",
+        #     )
+        # )
