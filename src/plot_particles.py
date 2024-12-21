@@ -171,6 +171,8 @@ def main_sub() -> None:
         num_x_in_pathstr: int
         data_mode: str
         marker_style: str
+        load_dtype_float: str
+        load_dtype_int: str
 
         def __post_init__(self) -> None:
             class_dict = dataclasses.asdict(self)
@@ -331,8 +333,8 @@ def main_sub() -> None:
         zoom_ratio: float
         zoom_xlim_min: float
         zoom_ylim_min: float
-        zoom_xlim_max: float
-        zoom_ylim_max: float
+        zoom_width: float
+        zoom_height: float
         insetbox_xmin: float
         insetbox_ymin: float
         zoom_edgecolor: str
@@ -340,6 +342,11 @@ def main_sub() -> None:
         insetbox_edgecolor: str
         insetbox_lw: float
         is_indicate_2lines: bool
+
+        is_trace_particle: bool
+        particle_id_file_path: str
+        col_idx: int
+        particle_id: int
 
         def __post_init__(self) -> None:
             class_dict = dataclasses.asdict(self)
@@ -526,6 +533,25 @@ def main_sub() -> None:
         # plt.rcParams["legend.framealpha"] = 1  # 透明度の指定、0で塗りつぶしなし
         # plt.rcParams["legend.edgecolor"] = "black"  # edgeの色を変更
 
+    def get_original_data(
+        pardata_filepath_str_time_replaced_by_xxxxx: str,
+        snap_time_ms: int,
+        usecols: tuple[int, ...] | int,
+        dtype: str,
+    ) -> NDArray[Any]:
+        return np.loadtxt(
+            Path(__file__).parents[2]
+            / Path(
+                pardata_filepath_str_time_replaced_by_xxxxx.replace(
+                    "x" * IN_PARAMS.num_x_in_pathstr,
+                    f"{snap_time_ms:0{IN_PARAMS.num_x_in_pathstr}}",
+                )
+            ),
+            usecols=usecols,
+            dtype=dtype,
+            encoding="utf-8",
+        )
+
     def get_mask_array_by_rectangle_region(
         original_x: NDArray[np.float32],
         original_y: NDArray[np.float32],
@@ -549,21 +575,15 @@ def main_sub() -> None:
         snap_time_ms: int,
     ) -> tuple[NDArray[np.bool_], np.float32]:
         if IN_PARAMS.data_mode == "lab":
-            x, y, disa = np.loadtxt(
-                Path(__file__).parents[2]
-                / Path(
-                    IN_PARAMS.xydisa_file_path.replace(
-                        "x" * IN_PARAMS.num_x_in_pathstr,
-                        f"{snap_time_ms:0{IN_PARAMS.num_x_in_pathstr}}",
-                    )
-                ),
+            x, y, disa = get_original_data(
+                pardata_filepath_str_time_replaced_by_xxxxx=IN_PARAMS.xydisa_file_path,
+                snap_time_ms=snap_time_ms,
                 usecols=(
                     IN_PARAMS.col_idx_x,
                     IN_PARAMS.col_idx_y,
                     IN_PARAMS.col_idx_disa,
                 ),
-                dtype=np.float32,
-                encoding="utf-8",
+                dtype=IN_PARAMS.load_dtype_float,
             ).T
 
         elif IN_PARAMS.data_mode == "p":
@@ -602,17 +622,11 @@ def main_sub() -> None:
         mask_array_by_zoom: NDArray[np.bool_] | None = None,
     ) -> NDArray[np.float32]:
         if IN_PARAMS.data_mode == "lab":
-            original_data = np.loadtxt(
-                Path(__file__).parents[2]
-                / Path(
-                    pardata_filepath_str_time_replaced_by_xxxxx.replace(
-                        "x" * IN_PARAMS.num_x_in_pathstr,
-                        f"{snap_time_ms:0{IN_PARAMS.num_x_in_pathstr}}",
-                    )
-                ),
+            original_data = get_original_data(
+                pardata_filepath_str_time_replaced_by_xxxxx=pardata_filepath_str_time_replaced_by_xxxxx,
+                snap_time_ms=snap_time_ms,
                 usecols=usecols,
-                dtype=np.float32,
-                encoding="utf-8",
+                dtype=IN_PARAMS.load_dtype_float,
             )
 
         elif IN_PARAMS.data_mode == "p":
@@ -640,18 +654,15 @@ def main_sub() -> None:
         cur_grouping = plot_name if is_group_plot else IN_PARAMS.grouping_id
 
         if IN_PARAMS.data_mode == "lab":
-            masked_group_idx = np.loadtxt(
-                Path(__file__).parents[2]
-                / Path(
-                    PLOT_GROUP_CONFIG_PARAMS[cur_grouping].data_file_path.replace(
-                        "x" * IN_PARAMS.num_x_in_pathstr,
-                        f"{snap_time_ms:0{IN_PARAMS.num_x_in_pathstr}}",
-                    )
-                ),
-                dtype=np.int32,
+            masked_group_idx = get_original_data(
+                pardata_filepath_str_time_replaced_by_xxxxx=PLOT_GROUP_CONFIG_PARAMS[
+                    cur_grouping
+                ].data_file_path,
+                snap_time_ms=snap_time_ms,
                 usecols=PLOT_GROUP_CONFIG_PARAMS[cur_grouping].col_idx,
-                encoding="utf-8",
+                dtype=IN_PARAMS.load_dtype_int,
             )[mask_array]
+
         elif IN_PARAMS.data_mode == "p":
             assert FOR_MODE_P_CLASS is not None
             masked_group_idx = FOR_MODE_P_CLASS.get_original_data_int(
@@ -1220,9 +1231,11 @@ def main_sub() -> None:
         for zoom_name in PLOT_ZOOM_PARAMS.keys():
             x1, x2, y1, y2 = (
                 PLOT_ZOOM_PARAMS[zoom_name].zoom_xlim_min,
-                PLOT_ZOOM_PARAMS[zoom_name].zoom_xlim_max,
+                PLOT_ZOOM_PARAMS[zoom_name].zoom_xlim_min
+                + PLOT_ZOOM_PARAMS[zoom_name].zoom_width,
                 PLOT_ZOOM_PARAMS[zoom_name].zoom_ylim_min,
-                PLOT_ZOOM_PARAMS[zoom_name].zoom_ylim_max,
+                PLOT_ZOOM_PARAMS[zoom_name].zoom_ylim_min
+                + PLOT_ZOOM_PARAMS[zoom_name].zoom_height,
             )
 
             insetbox_width = (x2 - x1) * PLOT_ZOOM_PARAMS[zoom_name].zoom_ratio
