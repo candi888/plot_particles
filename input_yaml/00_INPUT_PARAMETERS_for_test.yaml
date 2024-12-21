@@ -34,7 +34,7 @@ ylim_max: &ylim_max 0.41 # 上端のx座標（データ座標）
 #* プロットに使用する時刻
 # -スナップショット-
 snap_timestep_ms: &snap_timestep_ms 10 # スナップショットの作成に使用するデータの時間間隔
-snap_start_time_ms: &snap_start_time_ms 1000 # スナップショット作成の開始時刻．
+snap_start_time_ms: &snap_start_time_ms 10 # スナップショット作成の開始時刻．
 snap_end_time_ms: &snap_end_time_ms 3000 # スナップショット作成の終了時刻．今あるデータ全てを出力したい場合は十分大きい値を指定してもよい．
 # -アニメーション-（アニメーションは作成したスナップショットをパラパラ漫画にして作るので，↑で必要な画像を全て作成しておく必要あり）
 anim_timestep_ms: *snap_timestep_ms # アニメーションの作成に使用するデータの時間間隔
@@ -55,7 +55,7 @@ snap_extension: &extension "jpeg" # 拡張子．svgやpdfは大量出力しな�
 is_make_anim: True # アニメーション作成を実行するか
 ffmpeg_path: "ffmpeg" # ffmpegのパス
 anim_extension: "jpeg" # アニメーション作成に使用するスナップショットの拡張子（png or jpeg）
-framerate: 100 # アニメーションのフレームレート．実スケールのものを作りたい時は 1000 / anim_timestep_ms を指定する
+framerate: 49 # アニメーションのフレームレート．実スケールのものを作りたい時は 1000 / anim_timestep_ms を指定する
 crf_num: 35 # 値が大きいほどlowqualityの動画の質が下がる．パワポに載せる動画など，ファイルサイズ小さめのが要るとき用にチューニング（2MB以下になるのがよいか）
 
 # *フォント関連
@@ -145,10 +145,10 @@ colorbar_pos: 0.5 # カラーバーの位置の微調整（横向きならx方�
 colorbar_pad: 0.005 # カラーバーをプロットのボックスからどれだけ離すか（0.0, 0.01くらいから試して最初に感覚を掴むことを推奨）
 colorbar_shrink: 0.3 # カラーバーをどれくらい縮めるか（0より大きく1以下の値）
 colorbar_aspect: 20.0 # カラーバーのアスペクト比（shrinkを先に調整してからがよさそう）
-colorbar_label_horizontalalignment: "right" # カラーバーのタイトルラベルのx方向の配置の基準（"center" or "left" or "right"）
-colorbar_label_verticalalignment: "center" # カラーバーのタイトルラベルのy方向の配置の基準（基本は"center" or "bottom" or "top"）
-colorbar_label_x: -0.05 # カラーバーのタイトルラベルのx方向の調整（0.0〜1.0 でカラバーの領域内）
-colorbar_label_y: 0.5 # カラーバーのタイトルラベルのy方向の調整（0.0〜1.0 でカラーバーの領域内）
+colorbar_label_horizontalalignment: "center" # カラーバーのタイトルラベルのx方向の配置の基準（"center" or "left" or "right"）
+colorbar_label_verticalalignment: "bottom" # カラーバーのタイトルラベルのy方向の配置の基準（基本は"center" or "bottom" or "top"）
+colorbar_label_x: 0.5 # カラーバーのタイトルラベルのx方向の調整（0.0〜1.0 でカラバーの領域内）
+colorbar_label_y: 1.25 # カラーバーのタイトルラベルのy方向の調整（0.0〜1.0 でカラーバーの領域内）
 colorbar_rotation: 0.0 # カラーバーのタイトルラベルを何°傾けるか
 axis_lw_colorbar: &axis_lw_colorbar 0.0 # カラーバーの枠線の太さ
 num_edges_colorbar: 256 # カラーバーの区切りの数
@@ -297,8 +297,8 @@ vector:
 #* 拡大図（試験版）
 plot_order_list_zoom:
   - &zoom1 "zoom1"
-  - "NOT_PLOT_BELOW"
   - &zoom2 "zoom2"
+  - "NOT_PLOT_BELOW"
 
 #拡大図プロット設定
 zoom:
@@ -308,18 +308,36 @@ zoom:
     zoom_ylim_min: 0.0 # 拡大したい領域の左下のy座標（データ座標系）（特定粒子の追跡では未使用）
     zoom_width: 0.1 # 拡大したい領域の幅（データ座標系）
     zoom_height: 0.1 # 拡大したい領域の高さ（データ座標系）
-    insetbox_xmin: 0.8 # 拡大図の左下のx座標（データ座標系）
-    insetbox_ymin: 0.15 # 拡大図の左下のy座標（データ座標系）
-    zoom_edgecolor: "#000000" # 拡大領域の枠線の色．16進数カラーコードで指定
-    zoom_lw: 2.0 # 拡大図の枠線の太さ
+    insetbox_xmin: 0.83 # 拡大図の左下のx座標（データ座標系）
+    insetbox_ymin: 0.20 # 拡大図の左下のy座標（データ座標系）
+    zoom_edgecolor: "#000000" # 拡大したい領域の枠線の色．16進数カラーコードで指定
+    zoom_lw: 2.0 # 拡大したい領域の枠線の太さ
     insetbox_edgecolor: "#000000" # 拡大図の枠線の色．16進数で
     insetbox_lw: 2.0 # 拡大図の枠線の太さ
-    is_indicate_2lines: False #  引き出し線を二つ自動プロットするか（試験版．使いづらいが一応）
+    is_indicate_2lines: True #  引き出し線を二つ自動プロットするか（試験版．使いづらいが一応）
     # 以下は特定粒子を追跡する際に使用（is_trace_particleがTrueのとき）（特定粒子を中心として，zoom_widthとzoom_heightによる寸法の拡大図を作成する）
     is_trace_particle: True # 拡大図において特定粒子を追跡するか
     particle_id_file_path: *tmd_path # データがあるファイルのplot_particlesディレクトリからの相対パス
     col_idx: 2 # 粒子のID(glbnやnum)のデータが何列目にあるか　（0-index）
-    particle_id: 1 # 粒子のID
+    particle_id: 1500 # 粒子のID
+  *zoom2 :
+    zoom_ratio: 3.0 # 拡大率
+    zoom_xlim_min: 1.0 # 拡大したい領域の左下のx座標（データ座標系）（特定粒子の追跡では未使用）
+    zoom_ylim_min: 0.0 # 拡大したい領域の左下のy座標（データ座標系）（特定粒子の追跡では未使用）
+    zoom_width: 0.1 # 拡大したい領域の幅（データ座標系）
+    zoom_height: 0.1 # 拡大したい領域の高さ（データ座標系）
+    insetbox_xmin: 0.13 # 拡大図の左下のx座標（データ座標系）
+    insetbox_ymin: 0.20 # 拡大図の左下のy座標（データ座標系）
+    zoom_edgecolor: "#000000" # 拡大したい領域の枠線の色．16進数カラーコードで指定
+    zoom_lw: 2.0 # 拡大したい領域の枠線の太さ
+    insetbox_edgecolor: "#000000" # 拡大図の枠線の色．16進数で
+    insetbox_lw: 2.0 # 拡大図の枠線の太さ
+    is_indicate_2lines: True #  引き出し線を二つ自動プロットするか（試験版．使いづらいが一応）
+    # 以下は特定粒子を追跡する際に使用（is_trace_particleがTrueのとき）（特定粒子を中心として，zoom_widthとzoom_heightによる寸法の拡大図を作成する）
+    is_trace_particle: True # 拡大図において特定粒子を追跡するか
+    particle_id_file_path: *tmd_path # データがあるファイルのplot_particlesディレクトリからの相対パス
+    col_idx: 2 # 粒子のID(glbnやnum)のデータが何列目にあるか　（0-index）
+    particle_id: 0 # 粒子のID
 
 #* 以下は基本いじらなくてOK
 num_x_in_pathstr: 5 # 数字の部分の"xx..."でxがいくつあるか

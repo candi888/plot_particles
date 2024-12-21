@@ -73,7 +73,7 @@ def get_dict_of_snaptimems_to_startrowidx_and_nrow(
         header=None,
         comment="#",
         escapechar="#",
-        usecols=[1, 0],
+        usecols=[0],
         encoding="utf-8",
         sep=r"\s+",
         dtype=np.int32,
@@ -187,30 +187,14 @@ class ForModeP:
 
         return
 
-    def get_original_data_float(
-        self,
-        usecols: tuple[int, ...] | int,
-        snap_time_ms: int,
-    ) -> NDArray[np.float32]:
+    def get_original_data(
+        self, snap_time_ms: int, usecols: tuple[int, ...] | int, dtype: str
+    ) -> NDArray[np.float32 | np.int32]:
         return np.loadtxt(
             self.outputdat_path,
             usecols=usecols,
             skiprows=self.snaptimems_to_startrowidx_nrow[snap_time_ms][0],
             max_rows=self.snaptimems_to_startrowidx_nrow[snap_time_ms][1],
-            dtype=np.float32,
-            encoding="utf-8",
-        )
-
-    def get_original_data_int(
-        self,
-        usecols: tuple[int, ...] | int,
-        snap_time_ms: int,
-    ) -> NDArray[np.int32]:
-        return np.loadtxt(
-            self.outputdat_path,
-            usecols=usecols,
-            skiprows=self.snaptimems_to_startrowidx_nrow[snap_time_ms][0],
-            max_rows=self.snaptimems_to_startrowidx_nrow[snap_time_ms][1],
-            dtype=np.int32,
+            dtype=dtype,
             encoding="utf-8",
         )

@@ -588,12 +588,13 @@ def main_sub() -> None:
 
         elif IN_PARAMS.data_mode == "p":
             assert FOR_MODE_P_CLASS is not None
-            x, y = FOR_MODE_P_CLASS.get_original_data_float(
+            x, y = FOR_MODE_P_CLASS.get_original_data(
+                snap_time_ms=snap_time_ms,
                 usecols=(
                     IN_PARAMS.col_idx_x,
                     IN_PARAMS.col_idx_y,
                 ),
-                snap_time_ms=snap_time_ms,
+                dtype=IN_PARAMS.load_dtype_float,
             ).T
             disa = np.full_like(x, FOR_MODE_P_CLASS.d0)
 
@@ -617,23 +618,25 @@ def main_sub() -> None:
         pardata_filepath_str_time_replaced_by_xxxxx: str,
         snap_time_ms: int,
         usecols: tuple[int, ...] | int,
+        dtype: str,
         mask_array: NDArray[np.bool_],
         mask_array_by_group: NDArray[np.bool_] | None = None,
         mask_array_by_zoom: NDArray[np.bool_] | None = None,
-    ) -> NDArray[np.float32]:
+    ) -> NDArray[np.float32 | np.int32]:
         if IN_PARAMS.data_mode == "lab":
             original_data = get_original_data(
                 pardata_filepath_str_time_replaced_by_xxxxx=pardata_filepath_str_time_replaced_by_xxxxx,
                 snap_time_ms=snap_time_ms,
                 usecols=usecols,
-                dtype=IN_PARAMS.load_dtype_float,
+                dtype=dtype,
             )
 
         elif IN_PARAMS.data_mode == "p":
             assert FOR_MODE_P_CLASS is not None
-            original_data = FOR_MODE_P_CLASS.get_original_data_float(
-                usecols=usecols,
+            original_data = FOR_MODE_P_CLASS.get_original_data(
                 snap_time_ms=snap_time_ms,
+                usecols=usecols,
+                dtype=dtype,
             )
 
         masked_data = original_data[mask_array]
@@ -665,9 +668,10 @@ def main_sub() -> None:
 
         elif IN_PARAMS.data_mode == "p":
             assert FOR_MODE_P_CLASS is not None
-            masked_group_idx = FOR_MODE_P_CLASS.get_original_data_int(
-                usecols=PLOT_GROUP_CONFIG_PARAMS[cur_grouping].col_idx,
+            masked_group_idx = FOR_MODE_P_CLASS.get_original_data(
                 snap_time_ms=snap_time_ms,
+                usecols=PLOT_GROUP_CONFIG_PARAMS[cur_grouping].col_idx,
+                dtype=IN_PARAMS.load_dtype_int,
             )[mask_array]
 
         return masked_group_idx
@@ -737,7 +741,7 @@ def main_sub() -> None:
 
         except ValueError:
             raise ValueError(
-                f'cmap で設定されているcolormap名（{cmap_name}）は存在しません．\nhttps://matplotlib.org/stable/users/explain/colors/colormaps.html に載っているcolormap名，もしくは"small rainbow"を設定してください．'
+                f'cmap で設定されているcolormap名（{cmap_name}）は存在しません．\n公式リファレンスに載っているcolormap名，もしくは"small rainbow"を設定してください．'
             )
 
     def get_facecolor_by_physics_contour(
@@ -754,8 +758,9 @@ def main_sub() -> None:
                 plot_name
             ].data_file_path,
             snap_time_ms=snap_time_ms,
-            mask_array=mask_array,
             usecols=PLOT_CONTOUR_PARAMS[plot_name].col_idx,
+            dtype=IN_PARAMS.load_dtype_float,
+            mask_array=mask_array,
             mask_array_by_group=mask_array_by_group,
         )
 
@@ -923,11 +928,12 @@ def main_sub() -> None:
         par_u, par_v = load_par_data_masked_by_plot_region(
             pardata_filepath_str_time_replaced_by_xxxxx=PLOT_VECTOR_PARAMS.data_file_path,
             snap_time_ms=snap_time_ms,
-            mask_array=mask_array,
             usecols=(
                 PLOT_VECTOR_PARAMS.col_idx_vectorx,
                 PLOT_VECTOR_PARAMS.col_idx_vectory,
             ),
+            dtype=IN_PARAMS.load_dtype_float,
+            mask_array=mask_array,
             mask_array_by_group=mask_array_by_group,
             mask_array_by_zoom=mask_array_by_zoom,
         )
@@ -1226,17 +1232,63 @@ def main_sub() -> None:
                 and PLOT_CONTOUR_PARAMS[plot_name].is_plot_vector
             )
 
-    def get_inset_axes_list(original_ax: Axes) -> List[Axes]:
+    def get_trace_particle_xy(
+        snap_time_ms: int, zoom_name: str, mask_array: NDArray[np.bool_]
+    ) -> tuple[int, int]:
+        tmp_idxarray = np.argwhere(
+            load_par_data_masked_by_plot_region(
+                pardata_filepath_str_time_replaced_by_xxxxx=PLOT_ZOOM_PARAMS[
+                    zoom_name
+                ].particle_id_file_path,
+                snap_time_ms=snap_time_ms,
+                usecols=PLOT_ZOOM_PARAMS[zoom_name].col_idx,
+                dtype=IN_PARAMS.load_dtype_int,
+                mask_array=mask_array,
+            )
+            == PLOT_ZOOM_PARAMS[zoom_name].particle_id
+        )
+        if tmp_idxarray.shape[0] != 1:
+            raise ValueError(
+                f"traceする粒子が{tmp_idxarray.shape[0]}個見つかりました．\n指定した粒子のIDである{PLOT_ZOOM_PARAMS[zoom_name].particle_id=} の値が正しいか確認してください．"
+            )
+
+        tmp_x, tmp_y = load_par_data_masked_by_plot_region(
+            pardata_filepath_str_time_replaced_by_xxxxx=IN_PARAMS.xydisa_file_path,
+            snap_time_ms=snap_time_ms,
+            usecols=(IN_PARAMS.col_idx_x, IN_PARAMS.col_idx_y),
+            dtype=IN_PARAMS.load_dtype_float,
+            mask_array=mask_array,
+        )
+
+        return tmp_x[tmp_idxarray[0][0]], tmp_y[tmp_idxarray[0][0]]
+
+    def get_inset_axes_list(
+        original_ax: Axes, snap_time_ms: int, mask_array: NDArray[np.bool_]
+    ) -> List[Axes]:
         res_list = []
         for zoom_name in PLOT_ZOOM_PARAMS.keys():
-            x1, x2, y1, y2 = (
-                PLOT_ZOOM_PARAMS[zoom_name].zoom_xlim_min,
-                PLOT_ZOOM_PARAMS[zoom_name].zoom_xlim_min
-                + PLOT_ZOOM_PARAMS[zoom_name].zoom_width,
-                PLOT_ZOOM_PARAMS[zoom_name].zoom_ylim_min,
-                PLOT_ZOOM_PARAMS[zoom_name].zoom_ylim_min
-                + PLOT_ZOOM_PARAMS[zoom_name].zoom_height,
-            )
+            if PLOT_ZOOM_PARAMS[zoom_name].is_trace_particle:
+                xmid, ymid = get_trace_particle_xy(
+                    snap_time_ms=snap_time_ms,
+                    zoom_name=zoom_name,
+                    mask_array=mask_array,
+                )
+                x1, x2, y1, y2 = (
+                    xmid - PLOT_ZOOM_PARAMS[zoom_name].zoom_width / 2,
+                    xmid + PLOT_ZOOM_PARAMS[zoom_name].zoom_width / 2,
+                    ymid - PLOT_ZOOM_PARAMS[zoom_name].zoom_height / 2,
+                    ymid + PLOT_ZOOM_PARAMS[zoom_name].zoom_height / 2,
+                )
+
+            else:
+                x1, x2, y1, y2 = (
+                    PLOT_ZOOM_PARAMS[zoom_name].zoom_xlim_min,
+                    PLOT_ZOOM_PARAMS[zoom_name].zoom_xlim_min
+                    + PLOT_ZOOM_PARAMS[zoom_name].zoom_width,
+                    PLOT_ZOOM_PARAMS[zoom_name].zoom_ylim_min,
+                    PLOT_ZOOM_PARAMS[zoom_name].zoom_ylim_min
+                    + PLOT_ZOOM_PARAMS[zoom_name].zoom_height,
+                )
 
             insetbox_width = (x2 - x1) * PLOT_ZOOM_PARAMS[zoom_name].zoom_ratio
             insetbox_height = (y2 - y1) * PLOT_ZOOM_PARAMS[zoom_name].zoom_ratio
@@ -1330,7 +1382,9 @@ def main_sub() -> None:
         is_plot_reference_vector = PLOT_VECTOR_PARAMS.is_plot_reference_vector
 
         # axinsのリスト
-        axins_list = get_inset_axes_list(original_ax=ax)
+        axins_list = get_inset_axes_list(
+            original_ax=ax, snap_time_ms=snap_time_ms, mask_array=mask_array
+        )
 
         # for gid
         particle_group_id_prefix = "particle"
@@ -1343,12 +1397,13 @@ def main_sub() -> None:
             par_x, par_y, par_disa = load_par_data_masked_by_plot_region(
                 pardata_filepath_str_time_replaced_by_xxxxx=IN_PARAMS.xydisa_file_path,
                 snap_time_ms=snap_time_ms,
-                mask_array=mask_array,
                 usecols=(
                     IN_PARAMS.col_idx_x,
                     IN_PARAMS.col_idx_y,
                     IN_PARAMS.col_idx_disa,
                 ),
+                dtype=IN_PARAMS.load_dtype_float,
+                mask_array=mask_array,
                 mask_array_by_group=mask_array_by_group,
             )
 
