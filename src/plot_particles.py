@@ -526,9 +526,9 @@ def main_sub() -> None:
         # plt.rcParams["legend.edgecolor"] = "black"  # edgeの色を変更
 
     def get_mask_array_by_rectangle_region(
-        original_x: NDArray[np.float64],
-        original_y: NDArray[np.float64],
-        mask_margin: np.float64,
+        original_x: NDArray[np.float32],
+        original_y: NDArray[np.float32],
+        mask_margin: np.float32,
         x_min: float,
         x_max: float,
         y_min: float,
@@ -546,7 +546,7 @@ def main_sub() -> None:
 
     def get_mask_array_and_margin_by_ax_plot_region(
         snap_time_ms: int,
-    ) -> tuple[NDArray[np.bool_], np.float64]:
+    ) -> tuple[NDArray[np.bool_], np.float32]:
         if IN_PARAMS.data_mode == "lab":
             x, y, disa = np.loadtxt(
                 Path(__file__).parents[2]
@@ -561,19 +561,20 @@ def main_sub() -> None:
                     IN_PARAMS.col_idx_y,
                     IN_PARAMS.col_idx_disa,
                 ),
-                dtype=np.float64,
+                dtype=np.float32,
                 encoding="utf-8",
             ).T
 
         elif IN_PARAMS.data_mode == "p":
-            x, y, disa = FOR_MODE_P_CLASS.get_original_data_float(
+            assert FOR_MODE_P_CLASS is not None
+            x, y = FOR_MODE_P_CLASS.get_original_data_float(
                 usecols=(
                     IN_PARAMS.col_idx_x,
                     IN_PARAMS.col_idx_y,
-                    IN_PARAMS.col_idx_disa,
                 ),
                 snap_time_ms=snap_time_ms,
             ).T
+            disa = np.full_like(x, FOR_MODE_P_CLASS.d0)
 
         # 最大粒径の2倍分marginを設定
         margin = np.max(disa) * 2
@@ -598,7 +599,7 @@ def main_sub() -> None:
         mask_array: NDArray[np.bool_],
         mask_array_by_group: NDArray[np.bool_] | None = None,
         mask_array_by_zoom: NDArray[np.bool_] | None = None,
-    ) -> NDArray[np.float64]:
+    ) -> NDArray[np.float32]:
         if IN_PARAMS.data_mode == "lab":
             original_data = np.loadtxt(
                 Path(__file__).parents[2]
@@ -609,11 +610,12 @@ def main_sub() -> None:
                     )
                 ),
                 usecols=usecols,
-                dtype=np.float64,
+                dtype=np.float32,
                 encoding="utf-8",
             )
 
         elif IN_PARAMS.data_mode == "p":
+            assert FOR_MODE_P_CLASS is not None
             original_data = FOR_MODE_P_CLASS.get_original_data_float(
                 usecols=usecols,
                 snap_time_ms=snap_time_ms,
@@ -650,6 +652,7 @@ def main_sub() -> None:
                 encoding="utf-8",
             )[mask_array]
         elif IN_PARAMS.data_mode == "p":
+            assert FOR_MODE_P_CLASS is not None
             masked_group_idx = FOR_MODE_P_CLASS.get_original_data_int(
                 usecols=PLOT_GROUP_CONFIG_PARAMS[cur_grouping].col_idx,
                 snap_time_ms=snap_time_ms,
@@ -658,8 +661,8 @@ def main_sub() -> None:
         return masked_group_idx
 
     def data_unit_to_points_size(
-        diameter_in_data_units: NDArray[np.float64], fig: Figure, axis: Axes
-    ) -> NDArray[np.float64]:
+        diameter_in_data_units: NDArray[np.float32], fig: Figure, axis: Axes
+    ) -> NDArray[np.float32]:
         trans = axis.transData.transform
         x0, y0 = trans((0, 0))
         x1, y1 = trans(
@@ -675,10 +678,10 @@ def main_sub() -> None:
     def plot_particles_by_scatter(
         fig: Figure,
         ax: Axes,
-        par_x: NDArray[np.float64],
-        par_y: NDArray[np.float64],
-        par_disa: NDArray[np.float64],
-        par_color: NDArray[np.float64],
+        par_x: NDArray[np.float32],
+        par_y: NDArray[np.float32],
+        par_disa: NDArray[np.float32],
+        par_color: NDArray[np.float32],
         plot_name: str,
         is_group_plot: bool,
         group_id_prefix: str,
@@ -729,7 +732,7 @@ def main_sub() -> None:
         plot_name: str,
         mask_array: NDArray[np.bool_],
         mask_array_by_group: NDArray[np.bool_] | None = None,
-    ) -> NDArray[np.float64]:
+    ) -> NDArray[np.float32]:
         cmap = get_cmap_for_color_contour(plot_name=plot_name)
         norm = get_norm_for_color_contour(plot_name=plot_name)
 
@@ -866,8 +869,8 @@ def main_sub() -> None:
 
     def plot_redline_as_vector_for_svg(
         ax: Axes,
-        linepoint_xy1: List[NDArray[np.float64] | List[float]],
-        linepoint_xy2: List[NDArray[np.float64] | List[float]],
+        linepoint_xy1: List[NDArray[np.float32] | List[float]],
+        linepoint_xy2: List[NDArray[np.float32] | List[float]],
         zorder: float,
         gid: str,
         clip_on: bool,
@@ -897,8 +900,8 @@ def main_sub() -> None:
         group_idx: int,
         plot_name: str,
         is_group_plot: bool,
-        par_x: NDArray[np.float64],
-        par_y: NDArray[np.float64],
+        par_x: NDArray[np.float32],
+        par_y: NDArray[np.float32],
         refvec_corners_for_dummytext: List[List[float]],
         mask_array: NDArray[np.bool_],
         mask_array_by_group: NDArray[np.bool_] | None = None,
@@ -1142,9 +1145,9 @@ def main_sub() -> None:
         return
 
     def change_facecolor_and_alpha_by_groupidxparams(
-        par_color_masked_by_group: NDArray[np.float64],
+        par_color_masked_by_group: NDArray[np.float32],
         group_idx: int,
-    ) -> NDArray[np.float64]:
+    ) -> NDArray[np.float32]:
         groupingid = IN_PARAMS.grouping_id
         change_contour_color = PLOT_GROUP_IDX_PARAMS[groupingid][
             group_idx
@@ -1169,7 +1172,7 @@ def main_sub() -> None:
         plot_name: str,
         mask_array: NDArray[np.bool_],
         mask_array_by_group: NDArray[np.bool_],
-    ) -> NDArray[np.float64]:
+    ) -> NDArray[np.float32]:
         par_color = get_facecolor_by_physics_contour(
             snap_time_ms=snap_time_ms,
             plot_name=plot_name,
@@ -1186,7 +1189,7 @@ def main_sub() -> None:
         plot_name: str,
         group_idx: int,
         num_par_cur_group: int,
-    ) -> NDArray[np.float64]:
+    ) -> NDArray[np.float32]:
         return np.full(
             (num_par_cur_group, 4),
             to_rgba(
@@ -1332,6 +1335,11 @@ def main_sub() -> None:
                 ),
                 mask_array_by_group=mask_array_by_group,
             )
+
+            # for_mode_p（粒径のデータを正しいものに更新）
+            if IN_PARAMS.data_mode == "p":
+                assert FOR_MODE_P_CLASS is not None
+                par_disa = np.full_like(par_x, FOR_MODE_P_CLASS.d0)
 
             # 粒子の色の取得
             if is_group_plot:

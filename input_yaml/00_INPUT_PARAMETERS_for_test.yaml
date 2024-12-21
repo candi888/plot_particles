@@ -329,7 +329,7 @@ zoom:
     is_indicate_2lines: True #  引き出し線を二つ自動プロットするか（試験版．使いづらいが一応）
 
 #* mode
-data_mode: "p" # "lab" or "p"
+data_mode: "lab" # "lab" or "p"
 
 #* 以下は基本いじらなくてOK
 num_x_in_pathstr: 5 # 数字の部分の"xx..."でxがいくつあるか
