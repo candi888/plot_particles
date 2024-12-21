@@ -238,6 +238,27 @@ def main_sub() -> None:
             # data_mode
             if self.data_mode not in {"lab", "p"}:
                 raise ValueError("data_modeは'lab'，'p'のいずれかを指定してください")
+            # pdf or svg or eps の出力対策
+            if self.snap_extension in {"eps", "svg", "pdf"}:
+                if (
+                    self.snap_end_time_ms - self.snap_start_time_ms
+                ) // self.snap_timestep_ms >= 5:
+                    y_or_n = input(
+                        f"{self.snap_extension}を大量に出力する設定になっています．出力画像のファイル容量が膨大になる可能性があります．\n処理を開始してよろしいですか？（y or n）"
+                    )
+                    if y_or_n == "y":
+                        pass
+                    else:
+                        raise ValueError("処理を終了しました．")
+            # dpi
+            if self.snap_dpi >= 1000:
+                y_or_n = input(
+                    f"snap_dpiが{self.snap_dpi}と1000以上の大きい値に設定されています．出力画像のファイル容量に注意して下さい．\n処理を開始してよろしいですか？（y or n）"
+                )
+                if y_or_n == "y":
+                    pass
+                else:
+                    raise ValueError("処理を終了しました．")
 
             return
 
@@ -528,29 +549,35 @@ def main_sub() -> None:
         plt.rcParams["xtick.minor.visible"] = IN_PARAMS.is_plot_mticks_x
         plt.rcParams["ytick.minor.visible"] = IN_PARAMS.is_plot_mticks_y
 
-        # 凡例の見た目設定（今は使用なし）
-        # plt.rcParams["legend.fancybox"] = False  # 丸角OFF
-        # plt.rcParams["legend.framealpha"] = 1  # 透明度の指定、0で塗りつぶしなし
-        # plt.rcParams["legend.edgecolor"] = "black"  # edgeの色を変更
-
     def get_original_data(
         pardata_filepath_str_time_replaced_by_xxxxx: str,
         snap_time_ms: int,
         usecols: tuple[int, ...] | int,
         dtype: str,
     ) -> NDArray[Any]:
-        return np.loadtxt(
-            Path(__file__).parents[2]
-            / Path(
-                pardata_filepath_str_time_replaced_by_xxxxx.replace(
-                    "x" * IN_PARAMS.num_x_in_pathstr,
-                    f"{snap_time_ms:0{IN_PARAMS.num_x_in_pathstr}}",
-                )
-            ),
-            usecols=usecols,
-            dtype=dtype,
-            encoding="utf-8",
-        )
+        if IN_PARAMS.data_mode == "lab":
+            res = np.loadtxt(
+                Path(__file__).parents[2]
+                / Path(
+                    pardata_filepath_str_time_replaced_by_xxxxx.replace(
+                        "x" * IN_PARAMS.num_x_in_pathstr,
+                        f"{snap_time_ms:0{IN_PARAMS.num_x_in_pathstr}}",
+                    )
+                ),
+                usecols=usecols,
+                dtype=dtype,
+                encoding="utf-8",
+            )
+
+        elif IN_PARAMS.data_mode == "p":
+            assert FOR_MODE_P_CLASS is not None
+            res = FOR_MODE_P_CLASS.get_original_data(
+                snap_time_ms=snap_time_ms,
+                usecols=usecols,
+                dtype=dtype,
+            )
+
+        return res
 
     def get_mask_array_by_rectangle_region(
         original_x: NDArray[np.float32],
@@ -574,28 +601,19 @@ def main_sub() -> None:
     def get_mask_array_and_margin_by_ax_plot_region(
         snap_time_ms: int,
     ) -> tuple[NDArray[np.bool_], np.float32]:
-        if IN_PARAMS.data_mode == "lab":
-            x, y, disa = get_original_data(
-                pardata_filepath_str_time_replaced_by_xxxxx=IN_PARAMS.xydisa_file_path,
-                snap_time_ms=snap_time_ms,
-                usecols=(
-                    IN_PARAMS.col_idx_x,
-                    IN_PARAMS.col_idx_y,
-                    IN_PARAMS.col_idx_disa,
-                ),
-                dtype=IN_PARAMS.load_dtype_float,
-            ).T
+        x, y, disa = get_original_data(
+            pardata_filepath_str_time_replaced_by_xxxxx=IN_PARAMS.xydisa_file_path,
+            snap_time_ms=snap_time_ms,
+            usecols=(
+                IN_PARAMS.col_idx_x,
+                IN_PARAMS.col_idx_y,
+                IN_PARAMS.col_idx_disa,
+            ),
+            dtype=IN_PARAMS.load_dtype_float,
+        ).T
 
-        elif IN_PARAMS.data_mode == "p":
+        if IN_PARAMS.data_mode == "p":
             assert FOR_MODE_P_CLASS is not None
-            x, y = FOR_MODE_P_CLASS.get_original_data(
-                snap_time_ms=snap_time_ms,
-                usecols=(
-                    IN_PARAMS.col_idx_x,
-                    IN_PARAMS.col_idx_y,
-                ),
-                dtype=IN_PARAMS.load_dtype_float,
-            ).T
             disa = np.full_like(x, FOR_MODE_P_CLASS.d0)
 
         # 最大粒径の2倍分marginを設定
@@ -619,25 +637,17 @@ def main_sub() -> None:
         snap_time_ms: int,
         usecols: tuple[int, ...] | int,
         dtype: str,
+        is_transpose: bool,
         mask_array: NDArray[np.bool_],
         mask_array_by_group: NDArray[np.bool_] | None = None,
         mask_array_by_zoom: NDArray[np.bool_] | None = None,
     ) -> NDArray[np.float32 | np.int32]:
-        if IN_PARAMS.data_mode == "lab":
-            original_data = get_original_data(
-                pardata_filepath_str_time_replaced_by_xxxxx=pardata_filepath_str_time_replaced_by_xxxxx,
-                snap_time_ms=snap_time_ms,
-                usecols=usecols,
-                dtype=dtype,
-            )
-
-        elif IN_PARAMS.data_mode == "p":
-            assert FOR_MODE_P_CLASS is not None
-            original_data = FOR_MODE_P_CLASS.get_original_data(
-                snap_time_ms=snap_time_ms,
-                usecols=usecols,
-                dtype=dtype,
-            )
+        original_data = get_original_data(
+            pardata_filepath_str_time_replaced_by_xxxxx=pardata_filepath_str_time_replaced_by_xxxxx,
+            snap_time_ms=snap_time_ms,
+            usecols=usecols,
+            dtype=dtype,
+        )
 
         masked_data = original_data[mask_array]
 
@@ -646,7 +656,7 @@ def main_sub() -> None:
             if mask_array_by_zoom is not None:
                 masked_data = masked_data[mask_array_by_zoom]
 
-        return masked_data.T
+        return masked_data.T if is_transpose else masked_data
 
     def get_group_idx_array(
         plot_name: str,
@@ -656,23 +666,14 @@ def main_sub() -> None:
     ) -> NDArray[np.int32]:
         cur_grouping = plot_name if is_group_plot else IN_PARAMS.grouping_id
 
-        if IN_PARAMS.data_mode == "lab":
-            masked_group_idx = get_original_data(
-                pardata_filepath_str_time_replaced_by_xxxxx=PLOT_GROUP_CONFIG_PARAMS[
-                    cur_grouping
-                ].data_file_path,
-                snap_time_ms=snap_time_ms,
-                usecols=PLOT_GROUP_CONFIG_PARAMS[cur_grouping].col_idx,
-                dtype=IN_PARAMS.load_dtype_int,
-            )[mask_array]
-
-        elif IN_PARAMS.data_mode == "p":
-            assert FOR_MODE_P_CLASS is not None
-            masked_group_idx = FOR_MODE_P_CLASS.get_original_data(
-                snap_time_ms=snap_time_ms,
-                usecols=PLOT_GROUP_CONFIG_PARAMS[cur_grouping].col_idx,
-                dtype=IN_PARAMS.load_dtype_int,
-            )[mask_array]
+        masked_group_idx = get_original_data(
+            pardata_filepath_str_time_replaced_by_xxxxx=PLOT_GROUP_CONFIG_PARAMS[
+                cur_grouping
+            ].data_file_path,
+            snap_time_ms=snap_time_ms,
+            usecols=PLOT_GROUP_CONFIG_PARAMS[cur_grouping].col_idx,
+            dtype=IN_PARAMS.load_dtype_int,
+        )[mask_array]
 
         return masked_group_idx
 
@@ -700,7 +701,6 @@ def main_sub() -> None:
         par_color: NDArray[np.float32],
         plot_name: str,
         is_group_plot: bool,
-        group_id_prefix: str,
         group_idx: int,
     ) -> None:
         s = data_unit_to_points_size(diameter_in_data_units=par_disa, fig=fig, axis=ax)
@@ -714,7 +714,7 @@ def main_sub() -> None:
             c=par_color,
             linewidths=0,
             marker=IN_PARAMS.marker_style,
-            gid=f"{group_id_prefix}_{PLOT_GROUP_IDX_PARAMS[cur_grouping][group_idx].label}",
+            gid=f"particle_{PLOT_GROUP_IDX_PARAMS[cur_grouping][group_idx].label}",
             zorder=PLOT_GROUP_IDX_PARAMS[cur_grouping][group_idx].particle_zorder,
         )
 
@@ -760,6 +760,7 @@ def main_sub() -> None:
             snap_time_ms=snap_time_ms,
             usecols=PLOT_CONTOUR_PARAMS[plot_name].col_idx,
             dtype=IN_PARAMS.load_dtype_float,
+            is_transpose=True,
             mask_array=mask_array,
             mask_array_by_group=mask_array_by_group,
         )
@@ -914,7 +915,6 @@ def main_sub() -> None:
         ax: Axes,
         snap_time_ms: int,
         is_plot_reference_vector: bool,
-        group_id_prefix: str,
         group_idx: int,
         plot_name: str,
         is_group_plot: bool,
@@ -933,6 +933,7 @@ def main_sub() -> None:
                 PLOT_VECTOR_PARAMS.col_idx_vectory,
             ),
             dtype=IN_PARAMS.load_dtype_float,
+            is_transpose=True,
             mask_array=mask_array,
             mask_array_by_group=mask_array_by_group,
             mask_array_by_zoom=mask_array_by_zoom,
@@ -960,7 +961,7 @@ def main_sub() -> None:
             headlength=PLOT_VECTOR_PARAMS.headlength_vector,
             headaxislength=PLOT_VECTOR_PARAMS.headaxislength_vector,
             headwidth=PLOT_VECTOR_PARAMS.headwidth_vector,
-            gid=f"{group_id_prefix}_{PLOT_GROUP_IDX_PARAMS[cur_grouping][group_idx].label}",
+            gid=f"vector_{PLOT_GROUP_IDX_PARAMS[cur_grouping][group_idx].label}",
             zorder=PLOT_GROUP_IDX_PARAMS[cur_grouping][group_idx].vector_zorder,
         )
 
@@ -973,7 +974,7 @@ def main_sub() -> None:
                 zorder=PLOT_GROUP_IDX_PARAMS[cur_grouping][group_idx].vector_zorder
                 * 0.1
                 + 2.5 * 0.9,
-                gid=f"for_edit_{group_id_prefix}_{PLOT_GROUP_IDX_PARAMS[cur_grouping][group_idx].label}",
+                gid=f"(for_edit)_vector_{PLOT_GROUP_IDX_PARAMS[cur_grouping][group_idx].label}",
                 clip_on=True,
             )
 
@@ -1243,6 +1244,7 @@ def main_sub() -> None:
                 snap_time_ms=snap_time_ms,
                 usecols=PLOT_ZOOM_PARAMS[zoom_name].col_idx,
                 dtype=IN_PARAMS.load_dtype_int,
+                is_transpose=True,
                 mask_array=mask_array,
             )
             == PLOT_ZOOM_PARAMS[zoom_name].particle_id
@@ -1257,6 +1259,7 @@ def main_sub() -> None:
             snap_time_ms=snap_time_ms,
             usecols=(IN_PARAMS.col_idx_x, IN_PARAMS.col_idx_y),
             dtype=IN_PARAMS.load_dtype_float,
+            is_transpose=True,
             mask_array=mask_array,
         )
 
@@ -1344,7 +1347,7 @@ def main_sub() -> None:
         is_group_plot: bool,
         refvec_corners_for_dummytext: List[List[float]],
     ) -> None:
-        # プロットの表示範囲
+        # プロットの表示範囲設定
         set_ax_lim(ax=ax)
 
         # 軸目盛り設定
@@ -1354,7 +1357,7 @@ def main_sub() -> None:
         else:
             ax.axis("off")
 
-        # 軸タイトル設定
+        # 軸ラベル設定
         if IN_PARAMS.is_plot_hypervisor2 and IN_PARAMS.is_plot_xlabel_text:
             set_xlabel(ax=ax)
         if IN_PARAMS.is_plot_hypervisor2 and IN_PARAMS.is_plot_ylabel_text:
@@ -1363,10 +1366,6 @@ def main_sub() -> None:
         # 時刻テキストをプロット
         if IN_PARAMS.is_plot_hypervisor2 and IN_PARAMS.is_plot_time_text:
             set_ax_time_text(ax=ax, snap_time_ms=snap_time_ms)
-
-        #  初回だけキャンバス更新が必要（scatterの大きさを揃えるため）
-        if snap_time_ms == IN_PARAMS.snap_start_time_ms:
-            fig.canvas.draw()
 
         # プロットの表示範囲の長方形で粒子やベクトルをクリッピングマスクする用のmask
         mask_array, mask_margin = get_mask_array_and_margin_by_ax_plot_region(
@@ -1381,14 +1380,14 @@ def main_sub() -> None:
         # reference vectorをプロットするか（動的に更新）
         is_plot_reference_vector = PLOT_VECTOR_PARAMS.is_plot_reference_vector
 
-        # axinsのリスト
+        # axins（拡大図用）のリスト
         axins_list = get_inset_axes_list(
             original_ax=ax, snap_time_ms=snap_time_ms, mask_array=mask_array
         )
 
-        # for gid
-        particle_group_id_prefix = "particle"
-        vector_group_id_prefix = "vector"
+        #  初回だけキャンバス更新が必要（scatterの大きさを揃えるため）
+        if snap_time_ms == IN_PARAMS.snap_start_time_ms:
+            fig.canvas.draw()
 
         for group_idx in np.unique(par_group_idx)[::-1]:
             mask_array_by_group: NDArray[np.bool_] = par_group_idx == group_idx
@@ -1403,6 +1402,7 @@ def main_sub() -> None:
                     IN_PARAMS.col_idx_disa,
                 ),
                 dtype=IN_PARAMS.load_dtype_float,
+                is_transpose=True,
                 mask_array=mask_array,
                 mask_array_by_group=mask_array_by_group,
             )
@@ -1438,17 +1438,17 @@ def main_sub() -> None:
                 par_color=par_color,
                 plot_name=plot_name,
                 is_group_plot=is_group_plot,
-                group_id_prefix=particle_group_id_prefix,
                 group_idx=group_idx,
             )
 
-            # ベクトルのプロット
+            # ベクトルをプロットするか
             is_plot_vector_cur = get_cur_is_plot_vector(
                 plot_name=plot_name,
                 is_group_plot=is_group_plot,
                 group_idx=group_idx,
             )
             if is_plot_vector_cur:
+                # ベクトルのプロット
                 plot_vector(
                     fig=fig,
                     ax=ax,
@@ -1458,7 +1458,6 @@ def main_sub() -> None:
                     is_group_plot=is_group_plot,
                     par_x=par_x,
                     par_y=par_y,
-                    group_id_prefix=vector_group_id_prefix,
                     group_idx=group_idx,
                     refvec_corners_for_dummytext=refvec_corners_for_dummytext,
                     mask_array=mask_array,
@@ -1468,7 +1467,7 @@ def main_sub() -> None:
                 # 最初のみreference vectorをプロットする
                 is_plot_reference_vector = False
 
-            # 拡大図
+            # 拡大図のプロット
             for axins in axins_list:
                 mask_array_by_zoom = get_mask_array_by_rectangle_region(
                     original_x=par_x,
@@ -1492,7 +1491,6 @@ def main_sub() -> None:
                     par_color=par_color[mask_array_by_zoom],
                     plot_name=plot_name,
                     is_group_plot=is_group_plot,
-                    group_id_prefix=particle_group_id_prefix,
                     group_idx=group_idx,
                 )
                 if is_plot_vector_cur:
@@ -1508,7 +1506,6 @@ def main_sub() -> None:
                         mask_array_by_zoom=mask_array_by_zoom,
                         par_x=par_x_masked_by_zoom,
                         par_y=par_y_masked_by_zoom,
-                        group_id_prefix=vector_group_id_prefix,
                         group_idx=group_idx,
                         refvec_corners_for_dummytext=refvec_corners_for_dummytext,
                     )
@@ -1556,6 +1553,7 @@ def main_sub() -> None:
             aspect="equal",
         )
 
+        # カラーバープロット
         if IN_PARAMS.is_plot_colorbar and (not is_group_plot):
             plot_colorbar(fig=fig, ax=ax, plot_name=plot_name)
 
@@ -1590,6 +1588,7 @@ def main_sub() -> None:
             f"{snap_time_ms/IN_PARAMS.scaler_s_to_ms:.03f} s {plot_name} all make snapshot finished\n"
         )
         plt.close()
+
         return
 
     def make_animation_from_snap(
@@ -1629,6 +1628,7 @@ def main_sub() -> None:
             for i in for_ffmpeg:
                 f.write(f"{i}\n")
 
+        # 使用するffmpegコマンド
         cmd_list1 = [
             IN_PARAMS.ffmpeg_path,
             "-y",
@@ -1649,13 +1649,14 @@ def main_sub() -> None:
         ]
         cmd_list2 = ["-pix_fmt", "yuv420p"]
 
+        # 1.画質維持
         cur_save_file_name = f"{plot_name}.mp4"
         subprocess.run(
             cmd_list1 + cmd_list2 + [str(save_dir_animation_path / cur_save_file_name)],
             cwd=str(save_dir_sub_path / "snap_shot"),
         )
 
-        # 以下は低画質用
+        # 2.以下は低画質用
         cur_save_file_name = f"{plot_name}_lowquality.mp4"
         subprocess.run(
             cmd_list1

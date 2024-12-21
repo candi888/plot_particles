@@ -34,8 +34,8 @@ ylim_max: &ylim_max 0.41 # 上端のx座標（データ座標）
 #* プロットに使用する時刻
 # -スナップショット-
 snap_timestep_ms: &snap_timestep_ms 10 # スナップショットの作成に使用するデータの時間間隔
-snap_start_time_ms: &snap_start_time_ms 10 # スナップショット作成の開始時刻．
-snap_end_time_ms: &snap_end_time_ms 3000 # スナップショット作成の終了時刻．今あるデータ全てを出力したい場合は十分大きい値を指定してもよい．
+snap_start_time_ms: &snap_start_time_ms 1000 # スナップショット作成の開始時刻．
+snap_end_time_ms: &snap_end_time_ms 30000 # スナップショット作成の終了時刻．今あるデータ全てを出力したい場合は十分大きい値を指定してもよい．
 # -アニメーション-（アニメーションは作成したスナップショットをパラパラ漫画にして作るので，↑で必要な画像を全て作成しておく必要あり）
 anim_timestep_ms: *snap_timestep_ms # アニメーションの作成に使用するデータの時間間隔
 anim_start_time_ms: *snap_start_time_ms # アニメーション作成の開始時刻．
@@ -61,15 +61,15 @@ crf_num: 35 # 値が大きいほどlowqualityの動画の質が下がる．パ�
 # *フォント関連
 font_name: "Times New Roman" # 全体で使用するフォント．スパコンでTimes New Romanを使う設定をしていないときなどには変更が必要
 is_use_userfont_in_mathtext: True # 数式で可能な限りfont_nameで指定したフォントを使うか（FalseでTeXっぽいフォントを使う）
-base_font_size: &base_font_size 15.0 # 基準フォントサイズ
-xlabel_font_size: *base_font_size # x軸タイトルのフォントサイズ
-ylabel_font_size: *base_font_size # y軸 タイトルのフォントサイズ
+base_font_size: &base_font_size 11.0 # 基準フォントサイズ
+xlabel_font_size: 12.0 # x軸タイトルのフォントサイズ
+ylabel_font_size: 12.0 # y軸 タイトルのフォントサイズ
 xticks_font_size: *base_font_size # x軸目盛りの値のフォントサイズ
 yticks_font_size: *base_font_size # y軸目盛りの値のフォントサイズ
-timetext_font_size: 17.0 # 時刻テキストのフォントサイズ
-colorbar_title_font_size: 12.0 # カラーバーのタイトルのサイズ
-colorbar_ticks_font_size: 12.0 # カラーバーの目盛りの値のサイズ
-reference_vector_font_size: 12.0 # reference vectorのラベルのフォントサイズ
+timetext_font_size: 12.0 # 時刻テキストのフォントサイズ
+colorbar_title_font_size: 10.5 # カラーバーのタイトルのサイズ
+colorbar_ticks_font_size: 10.5 # カラーバーの目盛りの値のサイズ
+reference_vector_font_size: 10.5 # reference vectorのラベルのフォントサイズ
 
 #* 軸線の設定
 axis_lw: &axis_lw 1.7 # 軸線の太さ
@@ -174,7 +174,7 @@ path_list:
 xydisa_file_path: *xud_path
 col_idx_x: 0
 col_idx_y: 1
-col_idx_disa: 5
+col_idx_disa: 5 # data_mode: "p"のときは，データが存在するかつcol_idx_x, col_idx_yと被らない値を設定
 
 #* group設定
 group:
