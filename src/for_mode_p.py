@@ -40,6 +40,7 @@ def converter_for_floatnotcontainE(x: str) -> np.float32 | float:
         print(
             f"素データの指数部の数値が大きすぎて，指数部を表すEが存在しないパターンが検出されました（{x}）．"
         )
+
         # Eがない場合には特殊ルール適用
         # 必ず+を先にすること，先頭の-対策
         if "+" in x:
@@ -48,10 +49,12 @@ def converter_for_floatnotcontainE(x: str) -> np.float32 | float:
             )
             if "-" in x:
                 CONVERT_LOG_LIST.append([x, -converted_inf])
+                return -converted_inf
+
             else:
                 CONVERT_LOG_LIST.append([x, converted_inf])
+                return converted_inf
 
-            return converted_inf
         else:
             print(f"{x}は非常に小さい数値のため，0に置き換えます．")
             CONVERT_LOG_LIST.append([x, 0.0])
@@ -133,7 +136,14 @@ def get_dict_of_snaptimems_to_startrowidx_and_nrow(
 
                 # for_mode_p.datに情報を保存するために
                 for_mode_p_tmp.append(
-                    [cur_time_ms, startrow_idx, number_of_particles, timestep, n0]
+                    [
+                        cur_time_ms,
+                        startrow_idx,
+                        number_of_particles,
+                        time_s,
+                        timestep,
+                        n0,
+                    ]
                 )
 
                 # cur情報を更新．次の時刻の処理へ
@@ -145,15 +155,15 @@ def get_dict_of_snaptimems_to_startrowidx_and_nrow(
 
                 save_dir_path.mkdir(exist_ok=True)
 
-                # for_mode_p.datを保存
+                # for_mode_p.datを記録
                 np.savetxt(
                     save_dir_path / "for_mode_p.dat",
                     for_mode_p_tmp,
-                    fmt=["%d", "%d", "%d", "%d", "%f"],
-                    header="time(ms), startrow_idx, number_of_particle, timestep, n0",
+                    fmt=["%d", "%d", "%d", "%f", "%d", "%f"],
+                    header="time(ms)(integer), startrow_idx, number_of_particle, time(s)(float), timestep, n0",
                 )
 
-                # convert_log.datを保存
+                # convert_log.datを記録
                 np.savetxt(
                     save_dir_path / "convert_log.dat",
                     CONVERT_LOG_LIST,
