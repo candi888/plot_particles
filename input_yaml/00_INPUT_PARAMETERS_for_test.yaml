@@ -118,16 +118,17 @@ y_mticks_width: 0.75 # y軸補助目盛り線の線幅
 
 # * 軸ラベルの設定（x軸）
 is_plot_xlabel_text: *is_plot_hypervisor1 # x軸ラベルを表示するか
-xlabel_text: "$x \\, \\mathrm{(m)}$" # x軸ルのテキスト
+xlabel_text: "$x \\, \\mathrm{(m)}$" # x軸ラべルのテキスト
 xlabel_pos: 1.2 # テキストの中心のx座標（データ座標系）
-xlabel_offset: -0.055 #yminからの，テキストの上端のy座標の変位（データ座標系）
+xlabel_offset: 0.0 # テキストをプロットのボックスからどれだけ離すかの変位（ポイント単位）（基本は0.0でいい感じになるはず）
 
 # * 軸ラベルの設定（y軸）
 is_plot_ylabel_text: *is_plot_hypervisor1 # y軸ラベルを表示するか
 ylabel_text: "$y \\, \\mathrm{(m)}$" # y軸ラベルのテキスト
 ylabel_pos: 0.3 # テキストの中心のy座標（データ座標系）
-ylabel_horizontalalignment: "right" # テキストのx方向の配置の基準（基本は"center" or "right"）
-ylabel_offset: -0.025 #  #xminからの，テキストのhorizontalalignmentのx座標の変位（データ座標系）
+ylabel_offset: 2.0 #  # テキストをプロットのボックスからどれだけ離すかの変位（ポイント単位）（基本は0.0でいい感じになるはず）
+ylabel_horizontalalignment: "left" # テキストの水平方向の配置の基準（基本は"center" or "left"）
+ylabel_verticalalignment: "center" # テキストの鉛直方向の配置の基準（基本は"bottom" or "center"）
 is_horizontal_ylabel: True # ラベルを横向きにするか
 
 #* 時刻のテキストの設定
@@ -164,7 +165,7 @@ num_colorbar_mtick: 3 # 副目盛りの数
 colorbar_mticks_length: 3.0 # 補助目盛り線の長さ
 colorbar_mticks_width: 0.75 # 補助目盛り線の線幅
 
-#* かplot_particlesディレクトリからの各データファイルの相対パス．数字の部分は"xxxxx"を入れる．（コード内部で直接使用することはない）
+#* plot_particlesディレクトリからの各データファイルの相対パス．数字の部分は"xxxxx"を入れる．（コード内部で直接使用することはない）
 path_list:
   - &xud_path "OUTPUT/SNAP/XUDxxxxx.DAT"
   - &tmd_path "OUTPUT/SNAP/TMDxxxxx.DAT"
@@ -191,8 +192,8 @@ group:
         contour_color: null # contourプロットの色（nullでコンターの色でそのままプロット）
         contour_alpha: 1.0 # contourプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
         contour_is_plot_vector: True # contourプロットでベクトルをプロットするか
-        particle_zorder: 2.91 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
-        vector_zorder: 2.92 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+        particle_zorder: 2.091 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,2.5)内で設定）
+        vector_zorder: 2.092 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,2.5)内で設定）
       1:
         label: "wall"
         group_color: "#6c2735" # groupプロットの色（16進数カラーコードで指定）
@@ -201,8 +202,8 @@ group:
         contour_color: "#000000" # contourプロットの色（nullでコンターの色でそのままプロット）
         contour_alpha: 1.0 # contourプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
         contour_is_plot_vector: False # contourプロットでベクトルをプロットするか
-        particle_zorder: 2.21 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
-        vector_zorder: 2.22 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+        particle_zorder: 2.021 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,2.5)内で設定）
+        vector_zorder: 2.022 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,2.5)内で設定）
       2:
         label: "walldummy"
         group_color: "#6c2735" # groupプロットの色（16進数カラーコードで指定）
@@ -211,8 +212,8 @@ group:
         contour_color: "#000000" # contourプロットの色（nullでコンターの色でそのままプロット）
         contour_alpha: 1.0 # contourプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
         contour_is_plot_vector: False # contourプロットでベクトルをプロットするか
-        particle_zorder: 2.11 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
-        vector_zorder: 2.12 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+        particle_zorder: 2.011 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,2.5)内で設定）
+        vector_zorder: 2.012 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,2.5)内で設定）
       4:
         label: "wallmove"
         group_color: "#ff1493" # groupプロットの色（16進数カラーコードで指定）
@@ -221,8 +222,8 @@ group:
         contour_color: "#000000" # contourプロットの色（nullでコンターの色でそのままプロット）
         contour_alpha: 1.0 # contourプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
         contour_is_plot_vector: False # contourプロットでベクトルをプロットするか
-        particle_zorder: 2.41 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
-        vector_zorder: 2.42 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+        particle_zorder: 2.041 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,2.5)内で設定）
+        vector_zorder: 2.042 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,2.5)内で設定）
       5:
         label: "wallmovedummy"
         group_color: "#ff1493" # groupプロットの色（16進数カラーコードで指定）
@@ -231,8 +232,8 @@ group:
         contour_color: "#000000" # contourプロットの色（nullでコンターの色でそのままプロット）
         contour_alpha: 1.0 # contourプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
         contour_is_plot_vector: False # contourプロットでベクトルをプロットするか
-        particle_zorder: 2.31 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
-        vector_zorder: 2.32 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+        particle_zorder: 2.031 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,2.5)内で設定）
+        vector_zorder: 2.032 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,2.5)内で設定）
 
 #* contour設定
 #contourプロットでのグループ分けの選択
@@ -289,11 +290,11 @@ vector:
     length_reference_vector: 1.0 # reference vectorの単位
     reference_vector_text: "Velocity $\\mathbfit{{u}}$\nxxxxx m/s" # reference vectorのラベルのテキスト（xxxxxの部分に長さlength_reference_vectorが挿入される）
     strformatter_reference_vector_text: ".01f" # reference vectorのラベルのテキストの書式（小数点以下のゼロ埋めの調節で使用）
-    reference_vector_pos_x: 1.1 # reference vectorのx座標（データ座標系）
+    reference_vector_pos_x: *xlim_max # reference vectorのx座標（データ座標系）
     reference_vector_pos_y: *ylim_max # reference vectorのy座標（データ座標系）
     reference_vector_labelpad: 0.1 # reference vectorのラベルを矢印からどれだけ離すか
 
-#* 拡大図（試験版）（大量にやるとその分動作が重くなるので注意）
+#* 拡大図（試験版）
 plot_order_list_zoom:
   - &zoom1 "zoom1"
   - &zoom2 "zoom2"
@@ -328,9 +329,8 @@ zoom:
     insetbox_lw: 1.0 # 拡大図の枠線の太さ
     is_indicate_2lines: True #  引き出し線を二つ自動プロットするか（試験版．使いづらいが一応）
 
-#* mode
-data_mode: "lab" # "lab" or "p"
-
 #* 以下は基本いじらなくてOK
 num_x_in_pathstr: 5 # 数字の部分の"xx..."でxがいくつあるか
-scaler_s_to_ms: 1000
+scaler_s_to_ms: 1000 # for microsecond plot?
+data_mode: "lab" # "lab" or "p"
+marker_style: "o" # "o" で円，"s"で正方形

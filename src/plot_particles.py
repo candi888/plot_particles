@@ -122,6 +122,7 @@ def main_sub() -> None:
         is_plot_ylabel_text: bool
         ylabel_text: str
         ylabel_pos: float
+        ylabel_verticalalignment: str
         ylabel_horizontalalignment: str
         ylabel_offset: float
         is_horizontal_ylabel: bool
@@ -166,10 +167,10 @@ def main_sub() -> None:
 
         plot_order_list_zoom: list
 
-        data_mode: str
-
         scaler_s_to_ms: int
         num_x_in_pathstr: int
+        data_mode: str
+        marker_style: str
 
         def __post_init__(self) -> None:
             class_dict = dataclasses.asdict(self)
@@ -697,6 +698,7 @@ def main_sub() -> None:
             s=s,
             c=par_color,
             linewidths=0,
+            marker=IN_PARAMS.marker_style,
             gid=f"{group_id_prefix}_{PLOT_GROUP_IDX_PARAMS[cur_grouping][group_idx].label}",
             zorder=PLOT_GROUP_IDX_PARAMS[cur_grouping][group_idx].particle_zorder,
         )
@@ -1101,30 +1103,31 @@ def main_sub() -> None:
         return
 
     def set_xlabel(ax: Axes) -> None:
-        ax.text(
-            s=IN_PARAMS.xlabel_text,
-            x=IN_PARAMS.xlabel_pos,
-            y=IN_PARAMS.ylim_min + IN_PARAMS.xlabel_offset,
+        ax.set_xlabel(
+            IN_PARAMS.xlabel_text,
+            # Axes座標系での指定のため正規化する
+            x=(IN_PARAMS.xlabel_pos - IN_PARAMS.xlim_min)
+            / (IN_PARAMS.xlim_max - IN_PARAMS.xlim_min),
+            labelpad=IN_PARAMS.xlabel_offset,
             horizontalalignment="center",
-            verticalalignment="center",
+            verticalalignment="bottom",
             fontsize=IN_PARAMS.xlabel_font_size,
-            gid="x_title_text",
+            gid="x_label_text",
         )
         return
 
     def set_ylabel(ax: Axes) -> None:
-        tmp = ax.text(
-            s=IN_PARAMS.ylabel_text,
-            y=IN_PARAMS.ylabel_pos,
-            x=IN_PARAMS.xlim_min + IN_PARAMS.ylabel_offset,
-            verticalalignment="center",
+        ax.set_ylabel(
+            IN_PARAMS.ylabel_text,
+            y=(IN_PARAMS.ylabel_pos - IN_PARAMS.ylim_min)
+            / (IN_PARAMS.ylim_max - IN_PARAMS.ylim_min),
+            labelpad=IN_PARAMS.ylabel_offset,
+            verticalalignment=IN_PARAMS.ylabel_verticalalignment,
             horizontalalignment=IN_PARAMS.ylabel_horizontalalignment,
             fontsize=IN_PARAMS.ylabel_font_size,
-            gid="y_title_text",
+            gid="y_label_text",
+            rotation="horizontal" if IN_PARAMS.is_horizontal_ylabel else "vertical",
         )
-
-        if not IN_PARAMS.is_horizontal_ylabel:
-            tmp.set_rotation(90.0)
 
         return
 
