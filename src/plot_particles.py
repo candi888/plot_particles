@@ -953,7 +953,7 @@ def main_sub() -> None:
                 linepoint_xy2=[par_x + par_u / scale, par_y + par_v / scale],
                 zorder=PLOT_GROUP_IDX_PARAMS[cur_grouping][group_idx].vector_zorder
                 * 0.1
-                + 3 * 0.9,
+                + 2.5 * 0.9,
                 gid=f"for_edit_{group_id_prefix}_{PLOT_GROUP_IDX_PARAMS[cur_grouping][group_idx].label}",
                 clip_on=True,
             )
