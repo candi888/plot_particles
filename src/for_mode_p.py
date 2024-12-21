@@ -20,42 +20,49 @@ def get_floatdata_from_input(search_string: str) -> float:
     return res_data
 
 
+def converter_for_floatnotcontainE(x: str) -> np.float32 | float:
+    """素データの数値が大きすぎて，0.1234234のように指数部を表すEが存在しない場合のエラー処理
+
+    Args:
+        x (_type_): _description_
+
+    Raises:
+        ValueError: _description_
+
+    Returns:
+        _type_: _description_
+    """
+    # もし"E"を含む場合は通常通りfloat化（例: "1.23E+02"など）
+    try:
+        return np.float32(x)
+    except:  # noqa: E722
+        converted_inf = 9.1234 * 10**99
+        print(
+            f"素データの指数部の数値が大きすぎて，指数部を表すEが存在しないパターンが検出されました（{x}）．"
+        )
+        # Eがない場合には特殊ルール適用
+        # 必ず+を先にすること，先頭の-対策
+        if "+" in x:
+            print(
+                f"{x}は非常に大きい数値のため，符号付きのE+99程度の大きさの数値に置き換えます．"
+            )
+            if "-" in x:
+                CONVERT_LOG_LIST.append([x, -converted_inf])
+            else:
+                CONVERT_LOG_LIST.append([x, converted_inf])
+
+            return converted_inf
+        else:
+            print(f"{x}は非常に小さい数値のため，0に置き換えます．")
+            CONVERT_LOG_LIST.append([x, 0.0])
+            return 0.0
+
+
 def get_dict_of_snaptimems_to_startrowidx_and_nrow(
     outputdat_path: Path,
     timeInterval_ms: int,
     timeStart_ms: int,
 ) -> Dict[int, tuple[int, int]]:
-    convert_log_list: List[List[str | float]] = []
-
-    def converter_for_floatnotcontainE(x: str) -> np.float32 | float:
-        """素データの数値が大きすぎて，0.1234234のように指数部を表すEが存在しない場合のエラー処理
-
-        Args:
-            x (_type_): _description_
-
-        Raises:
-            ValueError: _description_
-
-        Returns:
-            _type_: _description_
-        """
-        # もし"E"を含む場合は通常通りfloat化（例: "1.23E+02"など）
-        try:
-            return np.float32(x)
-        except:  # noqa: E722
-            converted_inf = 9.1234 * 10**99
-            print(
-                f"素データの数値が大きすぎて，指数部を表すEが存在しないパターンが検出されました（{x}）．符号付きE+99程度の大きさの数値に置き換えます．"
-            )
-            # Eがない場合には特殊ルール適用
-            # 必ず+を先にすること，先頭の-対策
-            if "+" in x:
-                convert_log_list.append([x, converted_inf])
-                return converted_inf
-            else:
-                convert_log_list.append([x, -converted_inf])
-                return -converted_inf
-
     snaptimems_to_startrowidx_nrow = dict()
 
     nrow_header = 4
@@ -67,16 +74,28 @@ def get_dict_of_snaptimems_to_startrowidx_and_nrow(
 
     for_mode_p_tmp = []
 
+    n_columns = len(
+        pd.read_table(
+            outputdat_path,
+            header=None,
+            comment="#",
+            escapechar="#",
+            encoding="utf-8",
+            sep=r"\s+",
+            nrows=1,
+        ).columns
+    )
+    print(f"列数は {n_columns} 列です")
+
     with pd.read_table(
         outputdat_path,
         iterator=True,
         header=None,
         comment="#",
         escapechar="#",
-        usecols=[0],
         encoding="utf-8",
         sep=r"\s+",
-        dtype=np.int32,
+        converters={i: converter_for_floatnotcontainE for i in range(n_columns)},
     ) as reader:
         for i in range(10000000):
             try:
@@ -137,14 +156,18 @@ def get_dict_of_snaptimems_to_startrowidx_and_nrow(
                 # convert_log.datを保存
                 np.savetxt(
                     save_dir_path / "convert_log.dat",
-                    convert_log_list,
+                    CONVERT_LOG_LIST,
                     header="original_data, converted_data",
+                    fmt="%s",
                 )
 
                 return snaptimems_to_startrowidx_nrow
 
         else:
             raise ValueError("for_mode_p.pyの初期化処理の際に問題が発生しました")
+
+
+CONVERT_LOG_LIST: List[List[str | float]] = []
 
 
 class ForModeP:
@@ -190,11 +213,19 @@ class ForModeP:
     def get_original_data(
         self, snap_time_ms: int, usecols: tuple[int, ...] | int, dtype: str
     ) -> NDArray[np.float32 | np.int32]:
-        return np.loadtxt(
-            self.outputdat_path,
-            usecols=usecols,
-            skiprows=self.snaptimems_to_startrowidx_nrow[snap_time_ms][0],
-            max_rows=self.snaptimems_to_startrowidx_nrow[snap_time_ms][1],
-            dtype=dtype,
-            encoding="utf-8",
-        )
+        try:
+            return np.loadtxt(
+                self.outputdat_path,
+                usecols=usecols,
+                skiprows=self.snaptimems_to_startrowidx_nrow[snap_time_ms][0],
+                max_rows=self.snaptimems_to_startrowidx_nrow[snap_time_ms][1],
+                dtype=dtype,
+                encoding="utf-8",
+                # 圧力などの物理量においてE100のようにfloat型の出力が壊れている時対策
+                converters={usecols: converter_for_floatnotcontainE}
+                if "float" in dtype and isinstance(usecols, int)
+                else None,
+            )
+        except KeyError as e:
+            print(e)
+            raise FileNotFoundError

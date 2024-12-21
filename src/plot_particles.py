@@ -237,14 +237,16 @@ def main_sub() -> None:
                 )
             # data_mode
             if self.data_mode not in {"lab", "p"}:
-                raise ValueError("data_modeは'lab'，'p'のいずれかを指定してください")
+                raise ValueError(
+                    f"{self.data_mode=}は'lab'，'p'のいずれかを指定してください"
+                )
             # pdf or svg or eps の出力対策
             if self.snap_extension in {"eps", "svg", "pdf"}:
                 if (
                     self.snap_end_time_ms - self.snap_start_time_ms
                 ) // self.snap_timestep_ms >= 5:
                     y_or_n = input(
-                        f"{self.snap_extension}を大量に出力する設定になっています．出力画像のファイル容量が膨大になる可能性があります．\n処理を開始してよろしいですか？（y or n）"
+                        f"{self.snap_extension=}を大量に出力する設定になっています．出力画像のファイル容量が膨大になる可能性があります．\n処理を開始してよろしいですか？（y or n）"
                     )
                     if y_or_n == "y":
                         pass
@@ -253,12 +255,18 @@ def main_sub() -> None:
             # dpi
             if self.snap_dpi >= 1000:
                 y_or_n = input(
-                    f"snap_dpiが{self.snap_dpi}と1000以上の大きい値に設定されています．出力画像のファイル容量に注意して下さい．\n処理を開始してよろしいですか？（y or n）"
+                    f"{self.snap_dpi=}と1000以上の大きい値に設定されています．出力画像のファイル容量に注意して下さい．\n処理を開始してよろしいですか？（y or n）"
                 )
                 if y_or_n == "y":
                     pass
                 else:
                     raise ValueError("処理を終了しました．")
+
+            # anim_extension
+            if self.anim_extension not in {"jpeg", "jpg", "png"}:
+                raise ValueError(
+                    "anim_extensionには'jpeg'か'png'のいずれかを指定してください．"
+                )
 
             return
 
