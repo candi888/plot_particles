@@ -1,0 +1,336 @@
+#* スナップやアニメーションを保存するディレクトリ名
+save_dir_name: "plot_test_allregion"
+
+#* contourプロットの順序．上から順番にプロットを行う．いらないものはNOT_PLOT_BELOWの下へ移動．ラベル名は結果の保存ディレクトリ名と同じになる．
+plot_order_list_contour:
+  - &id_density "Density"
+  - &id_pressure "Pressure"
+  - "NOT_PLOT_BELOW"
+  # - "speed"
+  # - "div_U"
+  # - "vorticity"
+  # - "Q_signed"
+  # - "eddy_viscos"
+
+#* groupプロットの順序．上から順番にプロットを行う．いらないものはNOT_PLOT_BELOWの下へ移動．ラベル名は結果の保存ディレクトリ名と同じになる．
+plot_order_list_group:
+  - &id_move "move"
+  - "NOT_PLOT_BELOW"
+
+# *全体の見た目の一括設定
+# xy軸ラベル，時刻テキストなど，軸の表示範囲を変えると再度調整が必要なものの表示有無
+# 最初にレイアウトを調整する時にはFalse，最後にTrueにして軸ラベルなどの位置調整を行うとよい．「データ座標系」でyaml内を検索．
+is_plot_hypervisor1: &is_plot_hypervisor1 True
+
+# 粒子，ベクトル，カラーバーのみをプロットしたい時にはFalse
+is_plot_hypervisor2: &is_plot_hypervisor2 True
+
+# * プロット範囲の設定
+xlim_min: &xlim_min -0.06 # 左端のx座標（データ座標）
+xlim_max: &xlim_max 1.24 # 右端のx座標（データ座標）
+ylim_min: &ylim_min -0.06 # 下端のx座標（データ座標）
+ylim_max: &ylim_max 0.41 # 上端のx座標（データ座標）
+
+#* プロットに使用する時刻
+# -スナップショット-
+snap_timestep_ms: &snap_timestep_ms 10 # スナップショットの作成に使用するデータの時間間隔
+snap_start_time_ms: &snap_start_time_ms 1000 # スナップショット作成の開始時刻．
+snap_end_time_ms: &snap_end_time_ms 3000 # スナップショット作成の終了時刻．今あるデータ全てを出力したい場合は十分大きい値を指定してもよい．
+# -アニメーション-（アニメーションは作成したスナップショットをパラパラ漫画にして作るので，↑で必要な画像を全て作成しておく必要あり）
+anim_timestep_ms: *snap_timestep_ms # アニメーションの作成に使用するデータの時間間隔
+anim_start_time_ms: *snap_start_time_ms # アニメーション作成の開始時刻．
+anim_end_time_ms: *snap_end_time_ms # アニメーション作成の終了時刻．今あるデータ全てを出力したい場合は十分大きい値を指定してもよい．
+
+# *出力画像の大きさ [cm]
+# （参考）A4用紙の縦向きサイズ（縦 × 横）は 29.7 × 21.0[cm]
+fig_horizontal_cm: 18.0 # 横方向のみ設定．縦方向は自動で調節される．大きすぎる値にしないよう注意（ファイル容量が膨大になりうるため）
+tooning_for_fig: 0.9 # 現時点，↑で指定したサイズより少し大きくなるのでこれで調節（0より大きく1以下である必要．0.9付近が良いか．）
+
+# * スナップショット関連
+is_make_snap: True # スナップショット作成を実行するか
+snap_dpi: 200 # dpi．大きすぎる値にしないよう注意（ファイル容量が膨大になりうるため）
+snap_extension: &extension "jpeg" # 拡張子．svgやpdfは大量出力しないように注意する（ファイル容量が膨大になりうるため）
+
+#* アニメーション関連
+is_make_anim: True # アニメーション作成を実行するか
+ffmpeg_path: "ffmpeg" # ffmpegのパス
+anim_extension: "jpeg" # アニメーション作成に使用するスナップショットの拡張子（png or jpeg）
+framerate: 100 # アニメーションのフレームレート．実スケールのものを作りたい時は 1000 / anim_timestep_ms を指定する
+crf_num: 35 # 値が大きいほどlowqualityの動画の質が下がる．パワポに載せる動画など，ファイルサイズ小さめのが要るとき用にチューニング（2MB以下になるのがよいか）
+
+# *フォント関連
+font_name: "Times New Roman" # 全体で使用するフォント．スパコンでTimes New Romanを使う設定をしていないときなどには変更が必要
+is_use_userfont_in_mathtext: True # 数式で可能な限りfont_nameで指定したフォントを使うか（FalseでTeXっぽいフォントを使う）
+base_font_size: &base_font_size 15.0 # 基準フォントサイズ
+xlabel_font_size: *base_font_size # x軸タイトルのフォントサイズ
+ylabel_font_size: *base_font_size # y軸 タイトルのフォントサイズ
+xticks_font_size: *base_font_size # x軸目盛りの値のフォントサイズ
+yticks_font_size: *base_font_size # y軸目盛りの値のフォントサイズ
+timetext_font_size: 17.0 # 時刻テキストのフォントサイズ
+colorbar_title_font_size: 12.0 # カラーバーのタイトルのサイズ
+colorbar_ticks_font_size: 12.0 # カラーバーの目盛りの値のサイズ
+reference_vector_font_size: 12.0 # reference vectorのラベルのフォントサイズ
+
+#* 軸線の設定
+axis_lw: &axis_lw 1.7 # 軸線の太さ
+is_plot_axis_bottom: &is_plot_axis_bottom True # 下側の軸を表示するか
+is_plot_axis_left: &is_plot_axis_left True # 左側の軸を表示するか
+is_plot_axis_top: &is_plot_axis_top False # 上側の軸を表示するか
+is_plot_axis_right: &is_plot_axis_right False # 右側の軸を表示するか
+
+# *目盛りの設定（x軸）
+# -主目盛り-
+anchor_x_ticks: 0.0 # 主目盛りで必ず表示する座標
+space_x_ticks: 0.5 # 主目盛りの間隔
+strformatter_x: null # 主目盛りの値の書式等を変更したいときにいじる（変更しない場合はnullにする）．
+x_tickslabel_pad: &x_tickslabel_pad 4.0 # x軸主目盛りから目盛りラベルをどれだけ離すか
+x_ticks_length: &x_ticks_length 10.0 # x軸主目盛り線の長さ
+x_ticks_width: *axis_lw # x軸主目盛り線の線幅
+is_plot_ticks_bottom: *is_plot_axis_bottom # 下側のx軸の目盛りを表示するか
+is_plot_ticks_top: False # 上側のx軸の目盛りを表示するか
+is_plot_xtickslabel_bottom: *is_plot_axis_bottom #下側のy軸の目盛ラベルを表示するか
+is_plot_xtickslabel_top: False #上側のy軸の目盛ラベルを表示するか
+
+# -副目盛り-
+is_plot_mticks_x: True # 副目盛りをプロットするか
+num_x_mtick: 3 # 副目盛りの数
+x_mticks_length: 5.0 # x軸補助目盛り線の長さ
+x_mticks_width: 0.75 # x軸補助目盛り線の線幅
+
+# *目盛りの設定（y軸）
+# -主目盛り-
+anchor_y_ticks: 0.0 # 主目盛りで必ず表示する座標
+space_y_ticks: 0.2 # 主目盛りの間隔
+strformatter_y: "%.02f" # 主目盛りの値の書式等を変更したいときにいじる（変更しない場合はnullにする）．
+y_tickslabel_pad: 4.0 # y軸主目盛りから目盛りラベルをどれだけ離すか
+y_ticks_length: 10.0 # y軸主目盛り線の長さ
+y_ticks_width: *axis_lw # y軸主目盛り線の線幅
+is_plot_ticks_left: *is_plot_axis_left # 左側のy軸の目盛りを表示するか
+is_plot_ticks_right: False # 右側のy軸の目盛りを表示するか
+is_plot_ytickslabel_left: *is_plot_axis_left # 左側のy軸の目盛ラベルを表示するか
+is_plot_ytickslabel_right: False # 右側のy軸の目盛ラベルを表示するか
+
+# -副目盛り-
+is_plot_mticks_y: True # 副目盛りをプロットするか
+num_y_mtick: 3 # 副目盛りの数
+y_mticks_length: 5.0 # y軸補助目盛り線の長さ
+y_mticks_width: 0.75 # y軸補助目盛り線の線幅
+
+# * 軸ラベルの設定（x軸）
+is_plot_xlabel_text: *is_plot_hypervisor1 # x軸ラベルを表示するか
+xlabel_text: "$x \\, \\mathrm{(m)}$" # x軸ルのテキスト
+xlabel_pos: 1.2 # テキストの中心のx座標（データ座標系）
+xlabel_offset: -0.055 #yminからの，テキストの上端のy座標の変位（データ座標系）
+
+# * 軸ラベルの設定（y軸）
+is_plot_ylabel_text: *is_plot_hypervisor1 # y軸ラベルを表示するか
+ylabel_text: "$y \\, \\mathrm{(m)}$" # y軸ラベルのテキスト
+ylabel_pos: 0.3 # テキストの中心のy座標（データ座標系）
+ylabel_horizontalalignment: "right" # テキストのx方向の配置の基準（基本は"center" or "right"）
+ylabel_offset: -0.025 #  #xminからの，テキストのhorizontalalignmentのx座標の変位（データ座標系）
+is_horizontal_ylabel: True # ラベルを横向きにするか
+
+#* 時刻のテキストの設定
+is_plot_time_text: *is_plot_hypervisor1 # 時刻テキストをプロットするか
+time_text: "$t = xxxxx \\, \\mathrm{s}$" # 時刻テキスト（xxxxxの部分に時刻が挿入される）
+strformatter_timetext: ".03f" # 時刻テキストの書式（小数点以下のゼロ埋めの調節で使用）
+time_text_pos_x: *xlim_min # 時刻テキストの左端のx座標（データ座標系）
+time_text_pos_y: *ylim_max # 時刻テキストの下端のy座標（データ座標系）
+
+#* カラーバー関連の設定（一部はcontourの方にある）
+is_plot_colorbar: *is_plot_hypervisor1 # カラーバーを表示するか
+is_horizontal_colorbar: True # カラーバーを横向きにするか
+colorbar_pos: 0.5 # カラーバーの位置の微調整（横向きならx方向，縦向きならy方向について，0.5でちょうどプロットのボックスの中心．0.0〜1.0 でプロットのボックスの領域内）
+colorbar_pad: 0.005 # カラーバーをプロットのボックスからどれだけ離すか（0.0, 0.01くらいから試して最初に感覚を掴むことを推奨）
+colorbar_shrink: 0.3 # カラーバーをどれくらい縮めるか（0より大きく1以下の値）
+colorbar_aspect: 20.0 # カラーバーのアスペクト比（shrinkを先に調整してからがよさそう）
+colorbar_label_horizontalalignment: "right" # カラーバーのタイトルラベルのx方向の配置の基準（"center" or "left" or "right"）
+colorbar_label_verticalalignment: "center" # カラーバーのタイトルラベルのy方向の配置の基準（基本は"center" or "bottom" or "top"）
+colorbar_label_x: -0.05 # カラーバーのタイトルラベルのx方向の調整（0.0〜1.0 でカラバーの領域内）
+colorbar_label_y: 0.5 # カラーバーのタイトルラベルのy方向の調整（0.0〜1.0 でカラーバーの領域内）
+colorbar_rotation: 0.0 # カラーバーのタイトルラベルを何°傾けるか
+axis_lw_colorbar: &axis_lw_colorbar 0.0 # カラーバーの枠線の太さ
+num_edges_colorbar: 256 # カラーバーの区切りの数
+is_drawedges_colorbar: False # カラーバーの区切り線を描画するか
+# -主目盛り-
+num_colorbar_ticks: 3 # 主目盛りの数
+colorbar_tickslabel_pad: 2.0 # 主目盛りから目盛りラベルをどれだけ離すか
+colorbar_ticks_length: 5.0 # 主目盛り線の長さ
+colorbar_ticks_width: *axis_lw_colorbar # 主目盛り線の線幅
+is_reverse_colorbar_tickslabel: False # 目盛ラベルの位置をカラーバーに対して反転させるか
+# -副目盛り-
+is_plot_mticks_colorbar: False # 副目盛りをプロットするか
+num_colorbar_mtick: 3 # 副目盛りの数
+colorbar_mticks_length: 3.0 # 補助目盛り線の長さ
+colorbar_mticks_width: 0.75 # 補助目盛り線の線幅
+
+#* かplot_particlesディレクトリからの各データファイルの相対パス．数字の部分は"xxxxx"を入れる．（コード内部で直接使用することはない）
+path_list:
+  - &xud_path "OUTPUT/SNAP/XUDxxxxx.DAT"
+  - &tmd_path "OUTPUT/SNAP/TMDxxxxx.DAT"
+
+#* 必須の物理量（x, y, disa）がどの素データのどの列か．0-index
+xydisa_file_path: *xud_path
+col_idx_x: 0
+col_idx_y: 1
+col_idx_disa: 5
+
+#* group設定
+group:
+  *id_move :
+    config:
+      data_file_path: *tmd_path # データがあるファイルのpythonファイルからの相対パス
+      col_idx: 1 # データが何列目にあるか　（0-index）
+
+    each_idx:
+      0:
+        label: "fluid"
+        group_color: "#1f77b4" # groupプロットの色（16進数カラーコードで指定）
+        group_alpha: 1.0 # groupプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        group_is_plot_vector: True # groupプロットでベクトルをプロットするか
+        contour_color: null # contourプロットの色（nullでコンターの色でそのままプロット）
+        contour_alpha: 1.0 # contourプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        contour_is_plot_vector: True # contourプロットでベクトルをプロットするか
+        particle_zorder: 2.91 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+        vector_zorder: 2.92 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+      1:
+        label: "wall"
+        group_color: "#6c2735" # groupプロットの色（16進数カラーコードで指定）
+        group_alpha: 1.0 # groupプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        group_is_plot_vector: False # groupプロットでベクトルをプロットするか
+        contour_color: "#000000" # contourプロットの色（nullでコンターの色でそのままプロット）
+        contour_alpha: 1.0 # contourプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        contour_is_plot_vector: False # contourプロットでベクトルをプロットするか
+        particle_zorder: 2.21 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+        vector_zorder: 2.22 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+      2:
+        label: "walldummy"
+        group_color: "#6c2735" # groupプロットの色（16進数カラーコードで指定）
+        group_alpha: 1.0 # groupプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        group_is_plot_vector: False # groupプロットでベクトルをプロットするか
+        contour_color: "#000000" # contourプロットの色（nullでコンターの色でそのままプロット）
+        contour_alpha: 1.0 # contourプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        contour_is_plot_vector: False # contourプロットでベクトルをプロットするか
+        particle_zorder: 2.11 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+        vector_zorder: 2.12 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+      4:
+        label: "wallmove"
+        group_color: "#ff1493" # groupプロットの色（16進数カラーコードで指定）
+        group_alpha: 1.0 # groupプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        group_is_plot_vector: False # groupプロットでベクトルをプロットするか
+        contour_color: "#000000" # contourプロットの色（nullでコンターの色でそのままプロット）
+        contour_alpha: 1.0 # contourプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        contour_is_plot_vector: False # contourプロットでベクトルをプロットするか
+        particle_zorder: 2.41 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+        vector_zorder: 2.42 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+      5:
+        label: "wallmovedummy"
+        group_color: "#ff1493" # groupプロットの色（16進数カラーコードで指定）
+        group_alpha: 1.0 # groupプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        group_is_plot_vector: False # groupプロットでベクトルをプロットするか
+        contour_color: "#000000" # contourプロットの色（nullでコンターの色でそのままプロット）
+        contour_alpha: 1.0 # contourプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
+        contour_is_plot_vector: False # contourプロットでベクトルをプロットするか
+        particle_zorder: 2.31 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+        vector_zorder: 2.32 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
+
+#* contour設定
+#contourプロットでのグループ分けの選択
+grouping_id: *id_move
+
+# 各コンターの設定
+contour:
+  #他のcontourで参照する用のベースの設定（コード内部で直接使用することはない）
+  base_config:
+    cmap: &contourbase_cmap "small rainbow"
+
+  #圧力コンター作成関係
+  *id_pressure :
+    label: "Pressure $\\mathrm{(kN/m^2)}$" # colorbarのlegendのラベル
+    data_file_path: *xud_path # データがあるファイルのpythonファイルからの相対パス
+    col_idx: 4 # データが何列目にあるか　（0-index）
+    min_value_contour: 0.0 #コンターの最小値
+    max_value_contour: 1000.0 # コンターの最大値
+    strformatter_colorbar: null # カラーバーの主目盛りの値の書式等を変更したいときにいじる（変更しない場合はnullにする）．
+    cmap: *contourbase_cmap # matplotlibのカラーマップ or "small rainbow"
+    is_plot_vector: False # Trueの場合，group内のbasecontourで設定したis_plot_vectorが反映される
+
+  #densityコンター作成関係
+  *id_density :
+    label: "Density $\\rho / \\rho_0$" # colorbarのlegendのラベル
+    data_file_path: *xud_path # データがあるファイルのpythonファイルからの相対パス
+    col_idx: 7 # データが何列目にあるか　（0-index）
+    min_value_contour: 0.97 #コンターの最小値
+    max_value_contour: 1.03 # コンターの最大値
+    strformatter_colorbar: null # カラーバーの主目盛りの値の書式等を変更したいときにいじる（変更しない場合はnullにする）．
+    cmap: *contourbase_cmap # matplotlibのカラーマップ or "small rainbow"
+    is_plot_vector: True # Trueの場合，group内のbasecontourで設定したis_plot_vectorが反映される
+
+#*　ベクトル設定
+# ベクトルプロットのid振り用
+vector_list:
+  - &id_velocity_vector "velocity"
+
+# ベクトルプロットの選択
+vector_id: *id_velocity_vector
+
+# ベクトルプロットの設定
+vector:
+  *id_velocity_vector :
+    data_file_path: *xud_path
+    col_idx_vectorx: 2 # ベクトルのx成分がデータの何列目か 0-index
+    col_idx_vectory: 3 # ベクトルのy成分がデータの何列目か 0-index
+    scaler_length_vector: 0.6 # ベクトルの長さの調整用．nに設定 -> ベクトルの長さをn倍
+    scaler_width_vector: 1.0 # ベクトルの太さの調整用．nに設定 -> ベクトルの太さをn倍
+    headlength_vector: 8.0 # ベクトルの見た目の設定１(default:5.0)
+    headaxislength_vector: 4.0 # ベクトルの見た目の設定２(default:4.5)
+    headwidth_vector: 6.0 # ベクトルの見た目の設定３(default:3.0)
+    is_plot_reference_vector: *is_plot_hypervisor1 # reference vectorを表示するか
+    length_reference_vector: 1.0 # reference vectorの単位
+    reference_vector_text: "Velocity $\\mathbfit{{u}}$\nxxxxx m/s" # reference vectorのラベルのテキスト（xxxxxの部分に長さlength_reference_vectorが挿入される）
+    strformatter_reference_vector_text: ".01f" # reference vectorのラベルのテキストの書式（小数点以下のゼロ埋めの調節で使用）
+    reference_vector_pos_x: 1.1 # reference vectorのx座標（データ座標系）
+    reference_vector_pos_y: *ylim_max # reference vectorのy座標（データ座標系）
+    reference_vector_labelpad: 0.1 # reference vectorのラベルを矢印からどれだけ離すか
+
+#* 拡大図（試験版）（大量にやるとその分動作が重くなるので注意）
+plot_order_list_zoom:
+  - &zoom1 "zoom1"
+  - &zoom2 "zoom2"
+  - "NOT_PLOT_BELOW"
+
+#拡大図プロット設定
+zoom:
+  *zoom1 :
+    zoom_ratio: 3.0 # 拡大率
+    zoom_xlim_min: 1.0 # 拡大したい領域の左下のx座標（データ座標系）
+    zoom_ylim_min: 0.0 # 拡大したい領域の左下のy座標（データ座標系）
+    zoom_xlim_max: 1.1 # 拡大したい領域の右上のx座標（データ座標系）
+    zoom_ylim_max: 0.1 # 拡大したい領域の右上のy座標（データ座標系）
+    insetbox_xmin: 0.8 # 拡大図の左下のx座標（データ座標系）
+    insetbox_ymin: 0.15 # 拡大図の左下のy座標（データ座標系）
+    zoom_edgecolor: "#000000" # 拡大領域の枠線の色．16進数カラーコードで指定
+    zoom_lw: 2.0 # 拡大図の枠線の太さ
+    insetbox_edgecolor: "#000000" # 拡大図の枠線の色．16進数で
+    insetbox_lw: 2.0 # 拡大図の枠線の太さ
+    is_indicate_2lines: False #  引き出し線を二つ自動プロットするか（試験版．使いづらいが一応）
+  *zoom2 :
+    zoom_ratio: 1.0 # 拡大率
+    zoom_xlim_min: 0.0 # 拡大したい領域の左下のx座標（データ座標系）
+    zoom_ylim_min: 0.0 # 拡大したい領域の左下のy座標（データ座標系）
+    zoom_xlim_max: 0.3 # 拡大したい領域の右上のx座標（データ座標系）
+    zoom_ylim_max: 0.1 # 拡大したい領域の右上のy座標（データ座標系）
+    insetbox_xmin: 0.0 # 拡大図の左下のx座標（データ座標系）
+    insetbox_ymin: -0.30 # 拡大図の左下のy座標（データ座標系）
+    zoom_edgecolor: "#ff0000" # 拡大領域の枠線の色．16進数カラーコードで指定
+    zoom_lw: 1.0 # 拡大図の枠線の太さ
+    insetbox_edgecolor: "#ff0000" # 拡大図の枠線の色．16進数カラーコードで指定
+    insetbox_lw: 1.0 # 拡大図の枠線の太さ
+    is_indicate_2lines: True #  引き出し線を二つ自動プロットするか（試験版．使いづらいが一応）
+
+#* mode
+data_mode: "lab" # "lab" or "p"
+
+#* 以下は基本いじらなくてOK
+num_x_in_pathstr: 5 # 数字の部分の"xx..."でxがいくつあるか
+scaler_s_to_ms: 1000

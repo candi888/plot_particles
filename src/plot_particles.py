@@ -9,6 +9,7 @@ import matplotlib.style as mplstyle
 import matplotlib.ticker as ticker
 import numpy as np
 import yaml  # type: ignore
+from for_mode_p import ForModeP
 from matplotlib.axes import Axes
 from matplotlib.cm import ScalarMappable
 from matplotlib.collections import LineCollection
@@ -165,6 +166,8 @@ def main_sub() -> None:
 
         plot_order_list_zoom: list
 
+        data_mode: str
+
         scaler_s_to_ms: int
         num_x_in_pathstr: int
 
@@ -229,6 +232,9 @@ def main_sub() -> None:
                 raise ValueError(
                     "plot_order_list_zoom内に'NOT_PLOT_BELOW'という文字列を含めてください"
                 )
+            # data_mode
+            if self.data_mode not in {"lab", "p"}:
+                raise ValueError("data_modeは'lab'，'p'のいずれかを指定してください")
 
             return
 
@@ -519,38 +525,72 @@ def main_sub() -> None:
         # plt.rcParams["legend.framealpha"] = 1  # 透明度の指定、0で塗りつぶしなし
         # plt.rcParams["legend.edgecolor"] = "black"  # edgeの色を変更
 
-    def get_mask_array_by_plot_region(snap_time_ms: int) -> NDArray[np.bool_]:
-        original_data = np.loadtxt(
-            Path(__file__).parents[2]
-            / Path(
-                IN_PARAMS.xydisa_file_path.replace(
-                    "x" * IN_PARAMS.num_x_in_pathstr,
-                    f"{snap_time_ms:0{IN_PARAMS.num_x_in_pathstr}}",
-                )
-            ),
-            usecols=(
-                IN_PARAMS.col_idx_x,
-                IN_PARAMS.col_idx_y,
-                IN_PARAMS.col_idx_disa,
-            ),
-            dtype=np.float64,
-            encoding="utf-8",
-        )
-
-        x = original_data[:, 0]
-        y = original_data[:, 1]
-        # 最大粒径の2倍分marginを設定
-        margin = np.max(original_data[:, 2]) * 2
-
+    def get_mask_array_by_rectangle_region(
+        original_x: NDArray[np.float32],
+        original_y: NDArray[np.float32],
+        mask_margin: np.float32,
+        x_min: float,
+        x_max: float,
+        y_min: float,
+        y_max: float,
+    ) -> NDArray[np.bool_]:
         # 範囲条件を設定
         mask_array = (
-            (x >= IN_PARAMS.xlim_min - margin)
-            & (x <= IN_PARAMS.xlim_max + margin)
-            & (y >= IN_PARAMS.ylim_min - margin)
-            & (y <= IN_PARAMS.ylim_max + margin)
+            (original_x >= x_min - mask_margin)
+            & (original_x <= x_max + mask_margin)
+            & (original_y >= y_min - mask_margin)
+            & (original_y <= y_max + mask_margin)
         )
 
         return mask_array
+
+    def get_mask_array_and_margin_by_ax_plot_region(
+        snap_time_ms: int,
+    ) -> tuple[NDArray[np.bool_], np.float32]:
+        if IN_PARAMS.data_mode == "lab":
+            x, y, disa = np.loadtxt(
+                Path(__file__).parents[2]
+                / Path(
+                    IN_PARAMS.xydisa_file_path.replace(
+                        "x" * IN_PARAMS.num_x_in_pathstr,
+                        f"{snap_time_ms:0{IN_PARAMS.num_x_in_pathstr}}",
+                    )
+                ),
+                usecols=(
+                    IN_PARAMS.col_idx_x,
+                    IN_PARAMS.col_idx_y,
+                    IN_PARAMS.col_idx_disa,
+                ),
+                dtype=np.float32,
+                encoding="utf-8",
+            ).T
+
+        elif IN_PARAMS.data_mode == "p":
+            assert FOR_MODE_P_CLASS is not None
+            x, y = FOR_MODE_P_CLASS.get_original_data_float(
+                usecols=(
+                    IN_PARAMS.col_idx_x,
+                    IN_PARAMS.col_idx_y,
+                ),
+                snap_time_ms=snap_time_ms,
+            ).T
+            disa = np.full_like(x, FOR_MODE_P_CLASS.d0)
+
+        # 最大粒径の2倍分marginを設定
+        margin = np.max(disa) * 2
+
+        return (
+            get_mask_array_by_rectangle_region(
+                original_x=x,
+                original_y=y,
+                mask_margin=margin,
+                x_min=IN_PARAMS.xlim_min,
+                x_max=IN_PARAMS.xlim_max,
+                y_min=IN_PARAMS.ylim_min,
+                y_max=IN_PARAMS.ylim_max,
+            ),
+            margin,
+        )
 
     def load_par_data_masked_by_plot_region(
         pardata_filepath_str_time_replaced_by_xxxxx: str,
@@ -558,24 +598,35 @@ def main_sub() -> None:
         usecols: tuple[int, ...] | int,
         mask_array: NDArray[np.bool_],
         mask_array_by_group: NDArray[np.bool_] | None = None,
-    ) -> NDArray[np.float64]:
-        original_data = np.loadtxt(
-            Path(__file__).parents[2]
-            / Path(
-                pardata_filepath_str_time_replaced_by_xxxxx.replace(
-                    "x" * IN_PARAMS.num_x_in_pathstr,
-                    f"{snap_time_ms:0{IN_PARAMS.num_x_in_pathstr}}",
-                )
-            ),
-            usecols=usecols,
-            dtype=np.float64,
-            encoding="utf-8",
-        )
+        mask_array_by_zoom: NDArray[np.bool_] | None = None,
+    ) -> NDArray[np.float32]:
+        if IN_PARAMS.data_mode == "lab":
+            original_data = np.loadtxt(
+                Path(__file__).parents[2]
+                / Path(
+                    pardata_filepath_str_time_replaced_by_xxxxx.replace(
+                        "x" * IN_PARAMS.num_x_in_pathstr,
+                        f"{snap_time_ms:0{IN_PARAMS.num_x_in_pathstr}}",
+                    )
+                ),
+                usecols=usecols,
+                dtype=np.float32,
+                encoding="utf-8",
+            )
+
+        elif IN_PARAMS.data_mode == "p":
+            assert FOR_MODE_P_CLASS is not None
+            original_data = FOR_MODE_P_CLASS.get_original_data_float(
+                usecols=usecols,
+                snap_time_ms=snap_time_ms,
+            )
 
         masked_data = original_data[mask_array]
 
         if mask_array_by_group is not None:
             masked_data = masked_data[mask_array_by_group]
+            if mask_array_by_zoom is not None:
+                masked_data = masked_data[mask_array_by_zoom]
 
         return masked_data.T
 
@@ -587,24 +638,31 @@ def main_sub() -> None:
     ) -> NDArray[np.int32]:
         cur_grouping = plot_name if is_group_plot else IN_PARAMS.grouping_id
 
-        masked_group_idx = np.loadtxt(
-            Path(__file__).parents[2]
-            / Path(
-                PLOT_GROUP_CONFIG_PARAMS[cur_grouping].data_file_path.replace(
-                    "x" * IN_PARAMS.num_x_in_pathstr,
-                    f"{snap_time_ms:0{IN_PARAMS.num_x_in_pathstr}}",
-                )
-            ),
-            dtype=np.int32,
-            usecols=PLOT_GROUP_CONFIG_PARAMS[cur_grouping].col_idx,
-            encoding="utf-8",
-        )[mask_array]
+        if IN_PARAMS.data_mode == "lab":
+            masked_group_idx = np.loadtxt(
+                Path(__file__).parents[2]
+                / Path(
+                    PLOT_GROUP_CONFIG_PARAMS[cur_grouping].data_file_path.replace(
+                        "x" * IN_PARAMS.num_x_in_pathstr,
+                        f"{snap_time_ms:0{IN_PARAMS.num_x_in_pathstr}}",
+                    )
+                ),
+                dtype=np.int32,
+                usecols=PLOT_GROUP_CONFIG_PARAMS[cur_grouping].col_idx,
+                encoding="utf-8",
+            )[mask_array]
+        elif IN_PARAMS.data_mode == "p":
+            assert FOR_MODE_P_CLASS is not None
+            masked_group_idx = FOR_MODE_P_CLASS.get_original_data_int(
+                usecols=PLOT_GROUP_CONFIG_PARAMS[cur_grouping].col_idx,
+                snap_time_ms=snap_time_ms,
+            )[mask_array]
 
         return masked_group_idx
 
     def data_unit_to_points_size(
-        diameter_in_data_units: NDArray[np.float64], fig: Figure, axis: Axes
-    ) -> NDArray[np.float64]:
+        diameter_in_data_units: NDArray[np.float32], fig: Figure, axis: Axes
+    ) -> NDArray[np.float32]:
         trans = axis.transData.transform
         x0, y0 = trans((0, 0))
         x1, y1 = trans(
@@ -620,10 +678,10 @@ def main_sub() -> None:
     def plot_particles_by_scatter(
         fig: Figure,
         ax: Axes,
-        par_x: NDArray[np.float64],
-        par_y: NDArray[np.float64],
-        par_disa: NDArray[np.float64],
-        par_color: NDArray[np.float64],
+        par_x: NDArray[np.float32],
+        par_y: NDArray[np.float32],
+        par_disa: NDArray[np.float32],
+        par_color: NDArray[np.float32],
         plot_name: str,
         is_group_plot: bool,
         group_id_prefix: str,
@@ -674,7 +732,7 @@ def main_sub() -> None:
         plot_name: str,
         mask_array: NDArray[np.bool_],
         mask_array_by_group: NDArray[np.bool_] | None = None,
-    ) -> NDArray[np.float64]:
+    ) -> NDArray[np.float32]:
         cmap = get_cmap_for_color_contour(plot_name=plot_name)
         norm = get_norm_for_color_contour(plot_name=plot_name)
 
@@ -811,8 +869,8 @@ def main_sub() -> None:
 
     def plot_redline_as_vector_for_svg(
         ax: Axes,
-        linepoint_xy1: List[NDArray[np.float64] | List[float]],
-        linepoint_xy2: List[NDArray[np.float64] | List[float]],
+        linepoint_xy1: List[NDArray[np.float32] | List[float]],
+        linepoint_xy2: List[NDArray[np.float32] | List[float]],
         zorder: float,
         gid: str,
         clip_on: bool,
@@ -842,11 +900,12 @@ def main_sub() -> None:
         group_idx: int,
         plot_name: str,
         is_group_plot: bool,
-        par_x: NDArray[np.float64],
-        par_y: NDArray[np.float64],
+        par_x: NDArray[np.float32],
+        par_y: NDArray[np.float32],
         refvec_corners_for_dummytext: List[List[float]],
         mask_array: NDArray[np.bool_],
         mask_array_by_group: NDArray[np.bool_] | None = None,
+        mask_array_by_zoom: NDArray[np.bool_] | None = None,
     ) -> None:
         par_u, par_v = load_par_data_masked_by_plot_region(
             pardata_filepath_str_time_replaced_by_xxxxx=PLOT_VECTOR_PARAMS.data_file_path,
@@ -857,6 +916,7 @@ def main_sub() -> None:
                 PLOT_VECTOR_PARAMS.col_idx_vectory,
             ),
             mask_array_by_group=mask_array_by_group,
+            mask_array_by_zoom=mask_array_by_zoom,
         )
 
         # scale_units="x"で軸の長さが基準
@@ -1085,9 +1145,9 @@ def main_sub() -> None:
         return
 
     def change_facecolor_and_alpha_by_groupidxparams(
-        par_color_masked_by_group: NDArray[np.float64],
+        par_color_masked_by_group: NDArray[np.float32],
         group_idx: int,
-    ) -> NDArray[np.float64]:
+    ) -> NDArray[np.float32]:
         groupingid = IN_PARAMS.grouping_id
         change_contour_color = PLOT_GROUP_IDX_PARAMS[groupingid][
             group_idx
@@ -1112,7 +1172,7 @@ def main_sub() -> None:
         plot_name: str,
         mask_array: NDArray[np.bool_],
         mask_array_by_group: NDArray[np.bool_],
-    ) -> NDArray[np.float64]:
+    ) -> NDArray[np.float32]:
         par_color = get_facecolor_by_physics_contour(
             snap_time_ms=snap_time_ms,
             plot_name=plot_name,
@@ -1129,7 +1189,7 @@ def main_sub() -> None:
         plot_name: str,
         group_idx: int,
         num_par_cur_group: int,
-    ) -> NDArray[np.float64]:
+    ) -> NDArray[np.float32]:
         return np.full(
             (num_par_cur_group, 4),
             to_rgba(
@@ -1241,7 +1301,9 @@ def main_sub() -> None:
             fig.canvas.draw()
 
         # プロットの表示範囲の長方形で粒子やベクトルをクリッピングマスクする用のmask
-        mask_array = get_mask_array_by_plot_region(snap_time_ms=snap_time_ms)
+        mask_array, mask_margin = get_mask_array_and_margin_by_ax_plot_region(
+            snap_time_ms=snap_time_ms
+        )
 
         # 今プロットする粒子のgroupidxを取得
         par_group_idx = get_group_idx_array(
@@ -1257,6 +1319,7 @@ def main_sub() -> None:
         # for gid
         particle_group_id_prefix = "particle"
         vector_group_id_prefix = "vector"
+
         for group_idx in np.unique(par_group_idx)[::-1]:
             mask_array_by_group: NDArray[np.bool_] = par_group_idx == group_idx
 
@@ -1272,6 +1335,11 @@ def main_sub() -> None:
                 ),
                 mask_array_by_group=mask_array_by_group,
             )
+
+            # for_mode_p（粒径のデータを正しいものに更新）
+            if IN_PARAMS.data_mode == "p":
+                assert FOR_MODE_P_CLASS is not None
+                par_disa = np.full_like(par_x, FOR_MODE_P_CLASS.d0)
 
             # 粒子の色の取得
             if is_group_plot:
@@ -1302,27 +1370,14 @@ def main_sub() -> None:
                 group_id_prefix=particle_group_id_prefix,
                 group_idx=group_idx,
             )
-            # 拡大図
-            for axins in axins_list:
-                plot_particles_by_scatter(
-                    fig=fig,
-                    ax=axins,
-                    par_x=par_x,
-                    par_y=par_y,
-                    par_disa=par_disa,
-                    par_color=par_color,
-                    plot_name=plot_name,
-                    is_group_plot=is_group_plot,
-                    group_id_prefix=particle_group_id_prefix,
-                    group_idx=group_idx,
-                )
 
             # ベクトルのプロット
-            if get_cur_is_plot_vector(
+            is_plot_vector_cur = get_cur_is_plot_vector(
                 plot_name=plot_name,
                 is_group_plot=is_group_plot,
                 group_idx=group_idx,
-            ):
+            )
+            if is_plot_vector_cur:
                 plot_vector(
                     fig=fig,
                     ax=ax,
@@ -1342,8 +1397,34 @@ def main_sub() -> None:
                 # 最初のみreference vectorをプロットする
                 is_plot_reference_vector = False
 
-                # 拡大図
-                for axins in axins_list:
+            # 拡大図
+            for axins in axins_list:
+                mask_array_by_zoom = get_mask_array_by_rectangle_region(
+                    original_x=par_x,
+                    original_y=par_y,
+                    mask_margin=mask_margin,
+                    x_min=axins.get_xlim()[0],
+                    x_max=axins.get_xlim()[1],
+                    y_min=axins.get_ylim()[0],
+                    y_max=axins.get_ylim()[1],
+                )
+
+                par_x_masked_by_zoom = par_x[mask_array_by_zoom]
+                par_y_masked_by_zoom = par_y[mask_array_by_zoom]
+
+                plot_particles_by_scatter(
+                    fig=fig,
+                    ax=axins,
+                    par_x=par_x_masked_by_zoom,
+                    par_y=par_y_masked_by_zoom,
+                    par_disa=par_disa[mask_array_by_zoom],
+                    par_color=par_color[mask_array_by_zoom],
+                    plot_name=plot_name,
+                    is_group_plot=is_group_plot,
+                    group_id_prefix=particle_group_id_prefix,
+                    group_idx=group_idx,
+                )
+                if is_plot_vector_cur:
                     plot_vector(
                         fig=fig,
                         ax=axins,
@@ -1353,8 +1434,9 @@ def main_sub() -> None:
                         plot_name=plot_name,
                         is_group_plot=is_group_plot,
                         mask_array_by_group=mask_array_by_group,
-                        par_x=par_x,
-                        par_y=par_y,
+                        mask_array_by_zoom=mask_array_by_zoom,
+                        par_x=par_x_masked_by_zoom,
+                        par_y=par_y_masked_by_zoom,
                         group_id_prefix=vector_group_id_prefix,
                         group_idx=group_idx,
                         refvec_corners_for_dummytext=refvec_corners_for_dummytext,
@@ -1595,6 +1677,16 @@ def main_sub() -> None:
 
         # zoomの設定を格納．plot_order_list_zoomの「plot_name -> zoom内の設定」の辞書
         PLOT_ZOOM_PARAMS = construct_dict_of_zoom_dataclass()
+
+        # for_mode_p
+        FOR_MODE_P_CLASS = (
+            ForModeP(
+                outputdat_path=Path(__file__).parents[2] / "output.dat",
+                scaler_s_to_ms=IN_PARAMS.scaler_s_to_ms,
+            )
+            if IN_PARAMS.data_mode == "p"
+            else None
+        )
 
         # ---グローバル変数群の更新----
 

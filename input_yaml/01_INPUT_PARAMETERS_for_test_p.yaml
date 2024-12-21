@@ -1,5 +1,5 @@
 #* スナップやアニメーションを保存するディレクトリ名
-save_dir_name: "plot_test_allregion"
+save_dir_name: "plot_test_allregion_p"
 
 #* contourプロットの順序．上から順番にプロットを行う．いらないものはNOT_PLOT_BELOWの下へ移動．ラベル名は結果の保存ディレクトリ名と同じになる．
 plot_order_list_contour:
@@ -33,8 +33,8 @@ ylim_max: &ylim_max 0.41 # 上端のx座標（データ座標）
 
 #* プロットに使用する時刻
 # -スナップショット-
-snap_timestep_ms: &snap_timestep_ms 10 # スナップショットの作成に使用するデータの時間間隔
-snap_start_time_ms: &snap_start_time_ms 1000 # スナップショット作成の開始時刻．
+snap_timestep_ms: &snap_timestep_ms 250 # スナップショットの作成に使用するデータの時間間隔
+snap_start_time_ms: &snap_start_time_ms 0 # スナップショット作成の開始時刻．
 snap_end_time_ms: &snap_end_time_ms 3000 # スナップショット作成の終了時刻．今あるデータ全てを出力したい場合は十分大きい値を指定してもよい．
 # -アニメーション-（アニメーションは作成したスナップショットをパラパラ漫画にして作るので，↑で必要な画像を全て作成しておく必要あり）
 anim_timestep_ms: *snap_timestep_ms # アニメーションの作成に使用するデータの時間間隔
@@ -55,7 +55,7 @@ snap_extension: &extension "jpeg" # 拡張子．svgやpdfは大量出力しな�
 is_make_anim: True # アニメーション作成を実行するか
 ffmpeg_path: "ffmpeg" # ffmpegのパス
 anim_extension: "jpeg" # アニメーション作成に使用するスナップショットの拡張子（png or jpeg）
-framerate: 100 # アニメーションのフレームレート．実スケールのものを作りたい時は 1000 / anim_timestep_ms を指定する
+framerate: 4 # アニメーションのフレームレート．実スケールのものを作りたい時は 1000 / anim_timestep_ms を指定する
 crf_num: 35 # 値が大きいほどlowqualityの動画の質が下がる．パワポに載せる動画など，ファイルサイズ小さめのが要るとき用にチューニング（2MB以下になるのがよいか）
 
 # *フォント関連
@@ -166,24 +166,25 @@ colorbar_mticks_width: 0.75 # 補助目盛り線の線幅
 
 #* かplot_particlesディレクトリからの各データファイルの相対パス．数字の部分は"xxxxx"を入れる．（コード内部で直接使用することはない）
 path_list:
-  - &xud_path "OUTPUT/SNAP/XUDxxxxx.DAT"
-  - &tmd_path "OUTPUT/SNAP/TMDxxxxx.DAT"
+  # - &xud_path "OUTPUT/SNAP/XUDxxxxx.DAT"
+  # - &tmd_path "OUTPUT/SNAP/TMDxxxxx.DAT"
+  - &outputdat_path "output.dat"
 
 #* 必須の物理量（x, y, disa）がどの素データのどの列か．0-index
-xydisa_file_path: *xud_path
-col_idx_x: 0
-col_idx_y: 1
-col_idx_disa: 5
+xydisa_file_path: *outputdat_path
+col_idx_x: 2
+col_idx_y: 3
+col_idx_disa: 9
 
 #* group設定
 group:
   *id_move :
     config:
-      data_file_path: *tmd_path # データがあるファイルのpythonファイルからの相対パス
+      data_file_path: *outputdat_path # データがあるファイルのpythonファイルからの相対パス
       col_idx: 1 # データが何列目にあるか　（0-index）
 
     each_idx:
-      0:
+      1:
         label: "fluid"
         group_color: "#1f77b4" # groupプロットの色（16進数カラーコードで指定）
         group_alpha: 1.0 # groupプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
@@ -193,7 +194,7 @@ group:
         contour_is_plot_vector: True # contourプロットでベクトルをプロットするか
         particle_zorder: 2.91 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
         vector_zorder: 2.92 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
-      1:
+      900:
         label: "wall"
         group_color: "#6c2735" # groupプロットの色（16進数カラーコードで指定）
         group_alpha: 1.0 # groupプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
@@ -213,7 +214,7 @@ group:
         contour_is_plot_vector: False # contourプロットでベクトルをプロットするか
         particle_zorder: 2.11 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
         vector_zorder: 2.12 # 重ね順の調整．この値が大きいほど手前にプロットされる（開区間(2,3)内で設定）
-      4:
+      81:
         label: "wallmove"
         group_color: "#ff1493" # groupプロットの色（16進数カラーコードで指定）
         group_alpha: 1.0 # groupプロットの透明度（0で完全透明，1で不透明）．rgbaのaの部分．
@@ -247,8 +248,8 @@ contour:
   #圧力コンター作成関係
   *id_pressure :
     label: "Pressure $\\mathrm{(kN/m^2)}$" # colorbarのlegendのラベル
-    data_file_path: *xud_path # データがあるファイルのpythonファイルからの相対パス
-    col_idx: 4 # データが何列目にあるか　（0-index）
+    data_file_path: *outputdat_path # データがあるファイルのpythonファイルからの相対パス
+    col_idx: 8 # データが何列目にあるか　（0-index）
     min_value_contour: 0.0 #コンターの最小値
     max_value_contour: 1000.0 # コンターの最大値
     strformatter_colorbar: null # カラーバーの主目盛りの値の書式等を変更したいときにいじる（変更しない場合はnullにする）．
@@ -258,8 +259,8 @@ contour:
   #densityコンター作成関係
   *id_density :
     label: "Density $\\rho / \\rho_0$" # colorbarのlegendのラベル
-    data_file_path: *xud_path # データがあるファイルのpythonファイルからの相対パス
-    col_idx: 7 # データが何列目にあるか　（0-index）
+    data_file_path: *outputdat_path # データがあるファイルのpythonファイルからの相対パス
+    col_idx: 10 # データが何列目にあるか　（0-index）
     min_value_contour: 0.97 #コンターの最小値
     max_value_contour: 1.03 # コンターの最大値
     strformatter_colorbar: null # カラーバーの主目盛りの値の書式等を変更したいときにいじる（変更しない場合はnullにする）．
@@ -277,9 +278,9 @@ vector_id: *id_velocity_vector
 # ベクトルプロットの設定
 vector:
   *id_velocity_vector :
-    data_file_path: *xud_path
-    col_idx_vectorx: 2 # ベクトルのx成分がデータの何列目か 0-index
-    col_idx_vectory: 3 # ベクトルのy成分がデータの何列目か 0-index
+    data_file_path: *outputdat_path
+    col_idx_vectorx: 5 # ベクトルのx成分がデータの何列目か 0-index
+    col_idx_vectory: 6 # ベクトルのy成分がデータの何列目か 0-index
     scaler_length_vector: 0.6 # ベクトルの長さの調整用．nに設定 -> ベクトルの長さをn倍
     scaler_width_vector: 1.0 # ベクトルの太さの調整用．nに設定 -> ベクトルの太さをn倍
     headlength_vector: 8.0 # ベクトルの見た目の設定１(default:5.0)
@@ -295,9 +296,9 @@ vector:
 
 #* 拡大図（試験版）（大量にやるとその分動作が重くなるので注意）
 plot_order_list_zoom:
+  - "NOT_PLOT_BELOW"
   - &zoom1 "zoom1"
   - &zoom2 "zoom2"
-  - "NOT_PLOT_BELOW"
 
 #拡大図プロット設定
 zoom:
@@ -327,6 +328,9 @@ zoom:
     insetbox_edgecolor: "#ff0000" # 拡大図の枠線の色．16進数カラーコードで指定
     insetbox_lw: 1.0 # 拡大図の枠線の太さ
     is_indicate_2lines: True #  引き出し線を二つ自動プロットするか（試験版．使いづらいが一応）
+
+#* mode
+data_mode: "p" # "lab" or "p"
 
 #* 以下は基本いじらなくてOK
 num_x_in_pathstr: 5 # 数字の部分の"xx..."でxがいくつあるか
